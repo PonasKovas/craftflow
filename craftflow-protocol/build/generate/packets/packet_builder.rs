@@ -57,8 +57,7 @@ pub fn generate(
 		.collect();
 
 	format!(
-		r#"
-		{enum_code}
+		r#"{enum_code}
 
 		impl {enum_name} {{
 			/// Constructs a new packet builder for a specific protocol version

@@ -3,7 +3,6 @@
 
 mod array;
 mod buffer;
-mod json;
 mod nbt;
 mod option;
 mod primitives;
@@ -14,7 +13,6 @@ mod varlong;
 
 pub use array::Array;
 pub use buffer::Buffer;
-pub use json::Json;
 pub use nbt::{NamedNbt, Nbt};
 pub use rest_buffer::RestBuffer;
 pub use varint::VarInt;

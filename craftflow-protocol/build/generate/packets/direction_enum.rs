@@ -28,8 +28,7 @@ pub fn generate(direction: Direction, all_states: &[&State]) -> String {
 		.collect();
 
 	format!(
-		r#"
-		{enum_code}
+		r#"{enum_code}
 
 		impl crate::PacketWrite for {enum_name} {{
 			fn packet_write(&self, output: &mut Vec<u8>, protocol_version: u32) -> usize {{

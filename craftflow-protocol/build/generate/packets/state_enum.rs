@@ -1,5 +1,5 @@
 use crate::{
-	gen_enum::{gen_enum, Variant}, packets_toml::{Direction, PacketName, State, Version}, shared::versions_pattern, DEFAULT_IMPORTS_FOR_IMPLS
+	gen_enum::{gen_enum, Variant}, packets_toml::{Direction, PacketName, State, Version}, shared::versions_pattern
 };
 use std::collections::HashMap;
 
@@ -24,12 +24,14 @@ pub fn generate(
 		.collect::<Vec<_>>();
 	let enum_code = gen_enum(&enum_name, &enum_variants, true);
 
-	let all_supported_versions = all_packets
+	let mut all_supported_versions = all_packets
 		.values()
 		.flat_map(|version_groups| version_groups.values().flat_map(|pkt_ids| pkt_ids.values()))
 		.flatten()
 		.map(ToString::to_string)
 		.collect::<Vec<_>>();
+	all_supported_versions.sort_unstable();
+	all_supported_versions.dedup();
 	let all_supported_versions_list: String = all_supported_versions.join(", ");
 	let all_supported_versions_pattern: String = all_supported_versions.join("|");
 
@@ -64,8 +66,7 @@ pub fn generate(
 	).collect();
 
 	format!(
-		r#"{DEFAULT_IMPORTS_FOR_IMPLS}
-		{enum_code}
+		r#"{enum_code}
 
 		impl crate::PacketWrite for {enum_name} {{
 			fn packet_write(&self, output: &mut Vec<u8>, protocol_version: u32) -> usize {{

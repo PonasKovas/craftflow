@@ -1,4 +1,6 @@
-use crate::{PACKETS_DIR, packets_toml::PacketsToml, shared::package_dir};
+use crate::{
+	DEFAULT_IMPORTS_FOR_IMPLS, PACKETS_DIR, packets_toml::PacketsToml, shared::package_dir,
+};
 
 mod direction_enum;
 mod packet_builder;
@@ -45,11 +47,17 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 			}
 			direction_code += &state_enum::generate(direction, state, &all_packets);
 
-			direction_code += &format!("pub mod {} {{ {state_code} }}", state.mod_name());
+			direction_code += &format!(
+				"pub mod {} {{ {DEFAULT_IMPORTS_FOR_IMPLS} {state_code} }}",
+				state.mod_name()
+			);
 		}
 		code += &direction_enum::generate(direction, &all_states.keys().collect::<Vec<_>>());
 
-		code += &format!("pub mod {} {{ {direction_code} }}", direction.mod_name());
+		code += &format!(
+			"pub mod {} {{ {DEFAULT_IMPORTS_FOR_IMPLS} {direction_code} }}",
+			direction.mod_name()
+		);
 	}
 
 	code
