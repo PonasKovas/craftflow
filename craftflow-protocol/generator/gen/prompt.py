@@ -29,8 +29,10 @@ Quick cheatsheet:
 No need to specify MAX or LEN if default is ok. If different LEN needed, just pick a sane MAX - a million might be a good starter.
 - Buffer<const MAX: usize = DEFAULT_LIMIT, LEN = VarInt> - is an array of bytes. Similar to Array, MAX is max number of bytes,
 and LEN is the type as which to serialize the length. No need to specify if not explicitly needed.
+- Both of these LEN types default to VarInt so there is no need to specify VarInt.
 - Optional fields which presence is determined by a bool before them can be modeled using Option<T> directly.
 - Length bounded strings can be written as BString<const MAX: usize>, otherwise use normal String.
+
 
 
 Here is the packet specification:

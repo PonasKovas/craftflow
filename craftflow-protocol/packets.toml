@@ -15,6 +15,46 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 # <packet id> = [<versions that use that packet id>]
 1 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
 
+[c2s.login.login_start.5]
+# <packet id> = [<versions that use that packet id>]
+0 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758]
+
+[c2s.login.login_start.759]
+# <packet id> = [<versions that use that packet id>]
+0 = [759]
+
+[c2s.login.login_start.760]
+# <packet id> = [<versions that use that packet id>]
+0 = [760]
+
+[c2s.login.login_start.761]
+# <packet id> = [<versions that use that packet id>]
+0 = [761, 762, 763]
+
+[c2s.login.login_start.764]
+# <packet id> = [<versions that use that packet id>]
+0 = [764, 765, 766, 767, 768, 769]
+
+[c2s.login.encryption_begin.5]
+# <packet id> = [<versions that use that packet id>]
+1 = [5]
+
+[c2s.login.encryption_begin.47]
+# <packet id> = [<versions that use that packet id>]
+1 = [47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+
+[c2s.login.encryption_begin.759]
+# <packet id> = [<versions that use that packet id>]
+1 = [759, 760]
+
+[c2s.login.login_plugin_response.393]
+# <packet id> = [<versions that use that packet id>]
+2 = [393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+
+[c2s.login.login_acknowledged.764]
+# <packet id> = [<versions that use that packet id>]
+3 = [764, 765, 766, 767, 768, 769]
+
 [s2c.status.server_info.5]
 # <packet id> = [<versions that use that packet id>]
 0 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]

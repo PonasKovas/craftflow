@@ -126,6 +126,53 @@
           "type": "varint"
         }
       ]
+    },
+    {
+        "name": "hasVerifyToken",
+        "type": "bool"
+    },
+    {
+        "name": "crypto",
+        "type": [
+            "switch",
+            {
+                "compareTo": "hasVerifyToken",
+                "fields": {
+                    "true": [
+                        "container",
+                        [
+                            {
+                                "name": "verifyToken",
+                                "type": [
+                                    "buffer",
+                                    {
+                                        "countType": "varint"
+                                    }
+                                ]
+                            }
+                        ]
+                    ],
+                    "false": [
+                        "container",
+                        [
+                            {
+                                "name": "salt",
+                                "type": "i64"
+                            },
+                            {
+                                "name": "messageSignature",
+                                "type": [
+                                    "buffer",
+                                    {
+                                        "countType": "varint"
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            }
+        ]
     }
   ]
 ]
