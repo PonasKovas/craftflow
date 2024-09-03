@@ -1,0 +1,15 @@
+[package]
+name = "craftflow"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+craftflow-protocol = { path = "../craftflow-protocol" }
+slab = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+aes = { workspace = true }
+cfb8 = { workspace = true }
+rand = { workspace = true }
+flate2 = { workspace = true }

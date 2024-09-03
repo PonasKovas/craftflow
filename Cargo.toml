@@ -1,0 +1,17 @@
+[workspace]
+members = ["craftflow", "craftflow-protocol", "example"]
+resolver = "2"
+
+[workspace.dependencies]
+anyhow = "1.0.86"
+byteorder = "1.5.0"
+slab = "0.4.9"
+tokio = { version = "1.40.0", features = ["full"] }
+tracing = "0.1.40"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+aes = "0.8.4"
+cfb8 = "0.8.1"
+rand = "0.8.5"
+flate2 = "1.0.33"
+tracing-subscriber = "0.3.18"
