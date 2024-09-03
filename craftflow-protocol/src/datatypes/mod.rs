@@ -3,9 +3,9 @@ mod byte_array;
 mod integers;
 mod option;
 mod string;
-mod text;
+pub mod text;
 mod varint;
 mod vec;
 
-pub use text::TextJSON;
+pub use text::Text;
 pub use varint::VarInt;

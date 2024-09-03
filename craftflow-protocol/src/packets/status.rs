@@ -1,4 +1,4 @@
-use crate::{datatypes::TextJSON, MCPWritable};
+use crate::{datatypes::Text, MCPWritable};
 use serde::{Deserialize, Serialize};
 
 impl_mcp_traits! {
@@ -24,7 +24,7 @@ pub struct StatusResponseJSON {
 	pub version: Version,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub players: Option<Players>,
-	pub description: TextJSON,
+	pub description: Text,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub favicon: Option<String>,
 	#[serde(rename = "enforcesSecureChat")]

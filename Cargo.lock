@@ -177,10 +177,9 @@ name = "example"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64",
  "craftflow",
  "craftflow-protocol",
- "serde_json",
+ "simple-ping",
  "tokio",
  "tracing-subscriber",
 ]
@@ -505,6 +504,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "simple-ping"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "craftflow",
+ "craftflow-protocol",
 ]
 
 [[package]]

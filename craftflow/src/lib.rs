@@ -1,11 +1,12 @@
 mod connection_handle;
 mod listener;
+pub mod modules;
 mod packet_events;
 pub mod reactor;
-mod read_varint;
 
 use connection_handle::ConnectionHandle;
 use listener::listener_task;
+use modules::Modules;
 use packet_events::trigger_packet_event;
 use reactor::Reactor;
 use slab::Slab;
@@ -21,8 +22,10 @@ pub struct CraftFlow {
 	pub reactor: Reactor<CFState>,
 }
 
+/// The state of the CraftFlow server, accessible in the packet and base events
 pub struct CFState {
 	pub connections: Slab<ConnectionHandle>,
+	pub modules: Modules,
 }
 
 impl CraftFlow {
@@ -30,6 +33,7 @@ impl CraftFlow {
 		Self {
 			state: CFState {
 				connections: Slab::new(),
+				modules: Modules::new(),
 			},
 			reactor: Reactor::new(),
 		}

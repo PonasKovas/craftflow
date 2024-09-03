@@ -1,47 +1,64 @@
-use std::io::Read;
+mod macros;
 
 use crate::{MCPReadable, MCPWritable};
 use serde::{Deserialize, Serialize};
+use std::{
+	io::Read,
+	ops::{Add, AddAssign},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum TextJSON {
+pub enum Text {
 	String(String),
-	Array(Vec<TextJSON>),
-	Object(Box<TextObjectJSON>),
+	Array(Vec<Text>),
+	Object(Box<TextObject>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
-pub struct TextObjectJSON {
+pub struct TextObject {
 	#[serde(flatten)]
-	content: TextContentJSON,
+	pub content: TextContent,
+	#[serde(default)]
+	#[serde(skip_serializing_if = "Vec::is_empty")]
+	pub extra: Vec<Text>,
 	/// The text color, which may be a color name or a #-prefixed hexadecimal RGB specification
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	color: Option<String>,
+	pub color: Option<String>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	bold: Option<bool>,
+	pub bold: Option<bool>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	italic: Option<bool>,
+	pub italic: Option<bool>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	underlined: Option<bool>,
+	pub underlined: Option<bool>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	strikethrough: Option<bool>,
+	pub strikethrough: Option<bool>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	obfuscated: Option<bool>,
+	pub obfuscated: Option<bool>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	font: Option<String>,
+	pub font: Option<String>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	insertion: Option<String>,
+	pub insertion: Option<String>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	click_event: Option<ClickEventJSON>,
+	pub click_event: Option<ClickEvent>,
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	hover_event: Option<HoverEventJSON>,
+	pub hover_event: Option<HoverEvent>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum TextContentJSON {
+pub enum TextContent {
 	Text {
 		/// Set as the content directly, with no additional processing.
 		text: String,
@@ -51,8 +68,9 @@ pub enum TextContentJSON {
 		/// becomes the component's content after processing.
 		translate: String,
 		/// Replacements for placeholders in the translation text.
+		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		with: Option<Vec<TextJSON>>,
+		with: Option<Vec<Text>>,
 	},
 	Keybind {
 		/// The name of a keybinding. The client's current setting for the specified keybinding becomes the component's content.
@@ -61,14 +79,15 @@ pub enum TextContentJSON {
 		keybind: String,
 	},
 	Score {
-		score: ScoreJSON,
+		score: Score,
 	},
 	Selector {
 		/// An entity selector.
 		selector: String,
 		/// Separator to place between results. If omitted, defaults to {"color":"gray","text":", "}
+		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		separator: Option<TextJSON>,
+		separator: Option<Text>,
 	},
 	Nbt {
 		/// NBT path to be queried.
@@ -78,15 +97,16 @@ pub enum TextContentJSON {
 		/// If true, the server will attempt to parse and resolve each result as (an NBT string containing) a text component for display
 		interpret: bool,
 		/// Separator to place between results. If omitted, defaults to {"text":", "}.
+		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		separator: Option<TextJSON>,
-		data_source: TextNbtDataSourceJSON,
+		separator: Option<Text>,
+		data_source: TextNbtDataSource,
 	},
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum TextNbtDataSourceJSON {
+pub enum TextNbtDataSource {
 	Block {
 		/// Location of a block entity to be queried, in the usual space-separated coordinate syntax with support for ~ and ^.
 		block: String,
@@ -102,22 +122,22 @@ pub enum TextNbtDataSourceJSON {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ScoreJSON {
+pub struct Score {
 	/// A player username, player or entity UUID, entity selector (that selects one entity), or * to match the sending player.
-	name: String,
+	pub name: String,
 	/// The name of the objective.
-	objective: String,
+	pub objective: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ClickEventJSON {
-	action: ClickEventActionJSON,
-	value: String,
+pub struct ClickEvent {
+	pub action: ClickEventAction,
+	pub value: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-pub enum ClickEventActionJSON {
+pub enum ClickEventAction {
 	OpenUrl,
 	RunCommand,
 	SuggestCommand,
@@ -126,60 +146,113 @@ pub enum ClickEventActionJSON {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct HoverEventJSON {
-	action: HoverEventActionJSON,
+pub struct HoverEvent {
+	pub action: HoverEventAction,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-pub enum HoverEventActionJSON {
+pub enum HoverEventAction {
 	ShowText {
 		#[serde(flatten)]
-		contents: TextJSON,
+		contents: Text,
 	},
 	ShowItem {
 		#[serde(flatten)]
-		contents: HoverActionShowItemJSON,
+		contents: HoverActionShowItem,
 	},
 	ShowEntity {
 		#[serde(flatten)]
-		contents: HoverActionShowEntityJSON,
+		contents: HoverActionShowEntity,
 	},
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct HoverActionShowItemJSON {
+pub struct HoverActionShowItem {
 	/// The textual identifier of the item's type. If unrecognized, defaults to minecraft:air.
-	id: String,
+	pub id: String,
 	/// The number of items in the item stack.
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	count: Option<i32>,
+	pub count: Option<i32>,
 	/// The item's NBT information as sNBT (as would be used in /give)
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	tag: Option<String>,
+	pub tag: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct HoverActionShowEntityJSON {
+pub struct HoverActionShowEntity {
 	/// The textual identifier of the entity's type. If unrecognized, defaults to minecraft:pig.
 	#[serde(rename = "type")]
-	entity_type: String,
+	pub entity_type: String,
 	/// The entity's UUID (with dashes). Does not need to correspond to an existing entity; only for display.
-	id: String,
+	pub id: String,
 	/// The entity's custom name.
+	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	name: Option<String>,
+	pub name: Option<String>,
 }
 
-impl MCPWritable for TextJSON {
+impl MCPWritable for Text {
 	fn write(&self, to: &mut impl std::io::Write) -> anyhow::Result<usize> {
 		let s = serde_json::to_string(self)?;
 
 		s.write(to)
 	}
 }
-impl MCPReadable for TextJSON {
+impl MCPReadable for Text {
 	fn read(source: &mut impl Read) -> anyhow::Result<Self> {
 		Ok(serde_json::from_str(&String::read(source)?)?)
+	}
+}
+
+impl Add for Text {
+	type Output = Text;
+
+	fn add(self, rhs: Self) -> Self::Output {
+		Text::Array(vec![
+			// the first one counts as the parent of the following ones, so we add an empty one
+			// to not change any styles
+			Text::String("".to_string()),
+			self,
+			rhs,
+		])
+	}
+}
+
+impl Add<&Text> for Text {
+	type Output = Text;
+
+	fn add(self, rhs: &Self) -> Self::Output {
+		Text::Array(vec![
+			// the first one counts as the parent of the following ones, so we add an empty one
+			// to not change any styles
+			Text::String("".to_string()),
+			self,
+			rhs.clone(),
+		])
+	}
+}
+
+impl AddAssign for Text {
+	fn add_assign(&mut self, rhs: Self) {
+		// will the compiler optimize this clone?
+		// 🤷
+		*self = self.clone() + rhs;
+	}
+}
+
+impl AddAssign<&Text> for Text {
+	fn add_assign(&mut self, rhs: &Self) {
+		*self = self.clone() + rhs.clone();
+	}
+}
+
+impl Default for TextContent {
+	fn default() -> Self {
+		TextContent::Text {
+			text: "".to_string(),
+		}
 	}
 }

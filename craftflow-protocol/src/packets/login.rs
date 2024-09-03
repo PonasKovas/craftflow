@@ -1,4 +1,4 @@
-use crate::datatypes::{TextJSON, VarInt};
+use crate::datatypes::{Text, VarInt};
 
 impl_mcp_traits! {
 	C2S: LoginC2S;
@@ -25,7 +25,7 @@ impl_mcp_traits! {
 impl_mcp_traits! {
 	S2C: LoginS2C;
 	[0] Disconnect {
-		reason: TextJSON,
+		reason: Text,
 	}
 	[1] EncryptionRequest {
 		server_id: String,

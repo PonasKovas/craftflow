@@ -3,9 +3,7 @@ use aes::cipher::BlockDecryptMut;
 use anyhow::bail;
 use craftflow_protocol::{
 	datatypes::VarInt,
-	packets::{
-		handshake::HandshakeC2S, login::LoginC2S, status::StatusC2S, IntoPacketC2S, PacketC2S,
-	},
+	packets::{handshake::HandshakeC2S, login::LoginC2S, status::StatusC2S, PacketC2S},
 	MCPReadable,
 };
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};

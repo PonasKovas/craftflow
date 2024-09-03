@@ -1,17 +1,9 @@
 use super::{compression::Compression, encryption::Encryptor, ConnState};
-use aes::cipher::{AsyncStreamCipher, BlockEncryptMut, KeyIvInit};
-use anyhow::bail;
-use craftflow_protocol::{
-	datatypes::VarInt,
-	packets::{login::LoginS2C, IntoPacketS2C, PacketS2C},
-	MCPWritable,
-};
+use aes::cipher::BlockEncryptMut;
+use craftflow_protocol::{datatypes::VarInt, packets::PacketS2C, MCPWritable};
 use flate2::write::ZlibEncoder;
-use std::{
-	io::Cursor,
-	sync::{Arc, Mutex, OnceLock},
-};
-use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf, select, sync::mpsc::UnboundedReceiver};
+use std::io::Cursor;
+use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf};
 
 /// Keeps track of the current state of the connection and allows to write packets easily
 pub(crate) struct PacketWriter {

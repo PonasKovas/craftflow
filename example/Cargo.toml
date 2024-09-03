@@ -9,5 +9,4 @@ craftflow-protocol = { path = "../craftflow-protocol" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing-subscriber = { workspace = true }
-serde_json = { workspace = true }                       # temporary
-base64 = "0.22.1"                                       # temporary
+simple-ping = { path = "../modules/simple-ping" }
