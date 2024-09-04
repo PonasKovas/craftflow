@@ -1,3 +1,5 @@
+#![feature(mapped_lock_guards)]
+
 mod connection_handle;
 mod listener;
 pub mod modules;
@@ -5,17 +7,17 @@ mod packet_events;
 pub mod reactor;
 
 use connection_handle::ConnectionHandle;
-use listener::listener_task;
 use modules::Modules;
-use packet_events::trigger_packet_event;
 use reactor::Reactor;
 use slab::Slab;
-use tokio::{
-	net::TcpListener,
-	spawn,
-	sync::mpsc::{self},
+use std::{
+	ops::Deref,
+	sync::{
+		Arc, MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard,
+		RwLockWriteGuard,
+	},
 };
-use tracing::info;
+use tokio::net::TcpListener;
 
 pub struct CraftFlow {
 	pub state: CFState,
@@ -24,64 +26,59 @@ pub struct CraftFlow {
 
 /// The state of the CraftFlow server, accessible in the packet and base events
 pub struct CFState {
-	pub connections: Slab<ConnectionHandle>,
+	pub connections: Connections,
 	pub modules: Modules,
+}
+
+/// All currently connected clients
+pub struct Connections {
+	inner: RwLock<Slab<ConnectionHandle>>,
 }
 
 impl CraftFlow {
 	pub fn new() -> Self {
 		Self {
 			state: CFState {
-				connections: Slab::new(),
+				connections: Connections {
+					inner: RwLock::new(Slab::new()),
+				},
 				modules: Modules::new(),
 			},
 			reactor: Reactor::new(),
 		}
 	}
 
-	pub async fn run(mut self) -> anyhow::Result<()> {
+	/// Runs the CraftFlow server
+	pub async fn run(self) -> anyhow::Result<()> {
+		let craftflow = Arc::new(self);
+
+		// Start accepting connections in this task
 		let listener = TcpListener::bind("0.0.0.0:25565").await?;
-		let (new_conn_sender, mut new_conn_recv) = mpsc::channel(32);
 
-		// spawn a task for accepting new connections
-		spawn(listener_task(listener, new_conn_sender));
-
-		// main loop
 		loop {
-			// add new connections
-			for _ in 0..new_conn_recv.len() {
-				let stream = new_conn_recv.try_recv().unwrap();
-				let id = self.state.connections.insert(ConnectionHandle::new(stream));
-				info!("new connection: {}", id);
-			}
+			let (stream, _) = listener.accept().await?;
 
-			// handle packets from all connections
-			let ids: Vec<usize> = self.state.connections.iter().map(|(id, _)| id).collect();
-			for conn_id in ids {
-				'packets: loop {
-					let conn = match self.state.connections.get_mut(conn_id) {
-						Some(conn) => conn,
-						None => continue, // connection might have been removed by some event handler
-					};
-
-					let packet = match conn.packet_receiver.try_recv() {
-						Ok(packet) => packet,
-						Err(_) => break 'packets,
-					};
-
-					trigger_packet_event(&mut self.reactor, &mut self.state, conn_id, packet);
-				}
-			}
-
-			// remove disconnected connections
-			self.state.connections.retain(|id, conn| {
-				if conn.packet_receiver.is_closed() || conn.packet_sender.is_closed() {
-					info!("connection {} disconnected", id);
-					false
-				} else {
-					true
-				}
-			});
+			ConnectionHandle::add(&craftflow, stream);
 		}
+	}
+}
+
+impl Connections {
+	/// Accesses the connection handle of the given connection ID
+	pub fn get<'a>(&'a self, conn_id: usize) -> MappedRwLockReadGuard<'a, ConnectionHandle> {
+		RwLockReadGuard::map(self.inner.read().unwrap(), |inner| &inner[conn_id])
+	}
+	/// Disconnects the client with the given connection ID
+	/// Panics if there is no client with the given connection ID
+	pub fn disconnect(&self, conn_id: usize) {
+		self.inner.write().unwrap().remove(conn_id);
+	}
+}
+
+impl Deref for Connections {
+	type Target = RwLock<Slab<ConnectionHandle>>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.inner
 	}
 }

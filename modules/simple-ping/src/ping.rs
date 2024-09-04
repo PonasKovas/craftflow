@@ -2,10 +2,13 @@ use craftflow::CFState;
 use craftflow_protocol::packets::status::{Ping, Pong};
 use std::ops::ControlFlow;
 
-pub fn ping(cfstate: &mut CFState, (conn_id, request): &mut (usize, Ping)) -> ControlFlow<()> {
-	cfstate.connections[*conn_id].send(Pong {
+pub fn ping(
+	cfstate: &CFState,
+	(conn_id, request): (usize, Ping),
+) -> ControlFlow<(), (usize, Ping)> {
+	cfstate.connections.get(conn_id).send(Pong {
 		payload: request.payload,
 	});
 
-	ControlFlow::Continue(())
+	ControlFlow::Continue((conn_id, request))
 }

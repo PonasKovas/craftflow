@@ -7,21 +7,21 @@ use craftflow_protocol::{
 use std::ops::ControlFlow;
 
 pub fn legacy_ping(
-	cfstate: &mut CFState,
-	(conn_id, _request): &mut (usize, LegacyPing),
-) -> ControlFlow<()> {
+	cfstate: &CFState,
+	(conn_id, request): (usize, LegacyPing),
+) -> ControlFlow<(), (usize, LegacyPing)> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway
-	let online_players = cfstate.connections.len() as i32; // more or less
+	let online_players = cfstate.connections.read().unwrap().len() as i32; // more or less
 	let max_players = 1000; // todo after implementing max connections
 	let description = &cfstate.modules.get::<SimplePing>().server_description;
 
-	cfstate.connections[*conn_id].send(
+	cfstate.connections.get(conn_id).send(
 		LegacyPingResponse::new(protocol_version, online_players, max_players)
 			.set_version(format!("§f§lCraftFlow"))
 			.set_description(text_to_legacy(description)),
 	);
 
-	ControlFlow::Continue(())
+	ControlFlow::Continue((conn_id, request))
 }
 
 /// Converts a `Text` to a simple string that can be understood by legacy clients

@@ -1,6 +1,10 @@
-use super::{compression::Compression, encryption::Encryptor, ConnState};
+use super::{compression::CompressionGetter, encryption::Encryptor, ConnState};
 use aes::cipher::BlockEncryptMut;
-use craftflow_protocol::{datatypes::VarInt, packets::PacketS2C, MCPWritable};
+use craftflow_protocol::{
+	datatypes::VarInt,
+	packets::{IntoPacketS2C, PacketS2C},
+	MCPWritable,
+};
 use flate2::write::ZlibEncoder;
 use std::io::Cursor;
 use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf};
@@ -11,7 +15,7 @@ pub(crate) struct PacketWriter {
 	pub(crate) buffer: Cursor<Vec<u8>>,
 	pub(crate) state: ConnState,
 	pub(crate) encryptor: Encryptor,
-	pub(crate) compression: Compression,
+	pub(crate) compression: CompressionGetter,
 }
 
 impl PacketWriter {
@@ -61,7 +65,7 @@ impl PacketWriter {
 					// so write again now without compression
 					self.buffer.get_mut().drain(10..);
 					self.buffer.set_position(10);
-					let len = packet.write(&mut self.buffer)?;
+					packet.write(&mut self.buffer)?;
 
 					// write 0 for the uncompressed data length to indicate no compression
 					uncompressed_len = 0;

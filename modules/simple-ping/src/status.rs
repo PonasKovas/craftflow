@@ -6,16 +6,16 @@ use craftflow_protocol::packets::status::{
 use std::ops::ControlFlow;
 
 pub fn status(
-	cfstate: &mut CFState,
-	(conn_id, _request): &mut (usize, StatusRequest),
-) -> ControlFlow<()> {
-	let protocol_version = cfstate.connections[*conn_id].protocol_version(); // TODO send real protocol version i guess
-	let online_players = cfstate.connections.len() as i32; // more or less
+	cfstate: &CFState,
+	(conn_id, request): (usize, StatusRequest),
+) -> ControlFlow<(), (usize, StatusRequest)> {
+	let protocol_version = cfstate.connections.get(conn_id).protocol_version(); // TODO send real protocol version i guess
+	let online_players = cfstate.connections.read().unwrap().len() as i32; // more or less
 	let max_players = 1000; // todo after implementing max connections
 	let description = &cfstate.modules.get::<SimplePing>().server_description;
 	let favicon = &cfstate.modules.get::<SimplePing>().favicon;
 
-	cfstate.connections[*conn_id].send(StatusResponse {
+	cfstate.connections.get(conn_id).send(StatusResponse {
 		response: StatusResponseJSON {
 			version: Version {
 				name: format!("§f§lCraftFlow"),
@@ -32,5 +32,5 @@ pub fn status(
 		},
 	});
 
-	ControlFlow::Continue(())
+	ControlFlow::Continue((conn_id, request))
 }

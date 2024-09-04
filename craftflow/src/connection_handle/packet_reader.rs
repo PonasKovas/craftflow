@@ -1,4 +1,4 @@
-use super::{compression::Compression, encryption::Decryptor, ConnState};
+use super::{compression::CompressionGetter, encryption::Decryptor, ConnState};
 use aes::cipher::BlockDecryptMut;
 use anyhow::bail;
 use craftflow_protocol::{
@@ -15,7 +15,7 @@ pub(crate) struct PacketReader {
 	pub(crate) buffer: Vec<u8>,
 	pub(crate) state: ConnState,
 	pub(crate) decryptor: Decryptor,
-	pub(crate) compression: Compression,
+	pub(crate) compression: CompressionGetter,
 }
 
 impl PacketReader {

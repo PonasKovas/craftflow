@@ -25,21 +25,21 @@ macro_rules! impl_mcp_traits {
 			)*
 		}
 
-		impl ::std::convert::Into<crate::packets::PacketS2C> for $group {
-			fn into(self) -> crate::packets::PacketS2C {
-				crate::packets::PacketS2C::$group(self)
+		impl ::std::convert::Into<$crate::packets::PacketS2C> for $group {
+			fn into(self) -> $crate::packets::PacketS2C {
+				$crate::packets::PacketS2C::$group(self)
 			}
 		}
 
-		impl crate::MCPWritable for $group {
+		impl $crate::MCPWritable for $group {
 			fn write(&self, to: &mut impl ::std::io::Write) -> ::anyhow::Result<usize> {
 				let mut written = 0;
 
 				match self {
 					$(
 						Self::$packet_name(packet) => {
-							written += crate::MCPWritable::write(&crate::datatypes::VarInt($id), to)?;
-							written += crate::MCPWritable::write(packet, to)?;
+							written += $crate::MCPWritable::write(&crate::datatypes::VarInt($id), to)?;
+							written += $crate::MCPWritable::write(packet, to)?;
 						}
 					)*
 				}
@@ -56,21 +56,23 @@ macro_rules! impl_mcp_traits {
 				)*
 			}
 
-			impl crate::MCPWritable for $packet_name {
+			impl $crate::MCPWritable for $packet_name {
 				fn write(&self, to: &mut impl ::std::io::Write) -> ::anyhow::Result<usize> {
 					let mut written = 0;
 					$(
-						written += crate::MCPWritable::write(&self.$field, to)?;
+						written += $crate::MCPWritable::write(&self.$field, to)?;
 					)*
 					Ok(written)
 				}
 			}
 
-			impl crate::packets::IntoPacketS2C for $packet_name {
-				fn into_packet(self) -> crate::packets::PacketS2C {
-					crate::packets::PacketS2C::$group($group::$packet_name(self))
+			impl $crate::packets::IntoPacketS2C for $packet_name {
+				fn into_packet(self) -> $crate::packets::PacketS2C {
+					$crate::packets::PacketS2C::$group($group::$packet_name(self))
 				}
 			}
+
+			impl $crate::packets::IsPacket for $packet_name {}
 		)*
 	};
 	(C2S: $group:ident; $([$id:literal] $packet_name:ident { $( $field:ident : $field_type:ty ),* $(,)? } )*) => {
@@ -82,20 +84,20 @@ macro_rules! impl_mcp_traits {
 			)*
 		}
 
-		impl ::std::convert::Into<crate::packets::PacketC2S> for $group {
-			fn into(self) -> crate::packets::PacketC2S {
-				crate::packets::PacketC2S::$group(self)
+		impl ::std::convert::Into<$crate::packets::PacketC2S> for $group {
+			fn into(self) -> $crate::packets::PacketC2S {
+				$crate::packets::PacketC2S::$group(self)
 			}
 		}
 
-		impl crate::MCPReadable for $group {
+		impl $crate::MCPReadable for $group {
 			fn read(source: &mut impl ::std::io::Read) -> ::anyhow::Result<Self> {
-				let packet_id = <crate::datatypes::VarInt as crate::MCPReadable>::read(source)?.0 as u32;
+				let packet_id = <$crate::datatypes::VarInt as $crate::MCPReadable>::read(source)?.0 as u32;
 				match packet_id {
 					$(
 						$id => Ok(Self::$packet_name(
 							::anyhow::Context::with_context(
-								<$packet_name as crate::MCPReadable>::read(source), || format!("packed id {}", packet_id)
+								<$packet_name as $crate::MCPReadable>::read(source), || format!("packed id {}", packet_id)
 							)?
 						)),
 					)*
@@ -112,23 +114,25 @@ macro_rules! impl_mcp_traits {
 				)*
 			}
 
-			impl crate::MCPReadable for $packet_name {
+			impl $crate::MCPReadable for $packet_name {
 				fn read(#[allow(unused)] source: &mut impl ::std::io::Read) -> ::anyhow::Result<Self> {
 					Ok(
 						Self {
 							$(
-								$field: <$field_type as crate::MCPReadable>::read(source)?,
+								$field: <$field_type as $crate::MCPReadable>::read(source)?,
 							)*
 						}
 					)
 				}
 			}
 
-			impl crate::packets::IntoPacketC2S for $packet_name {
-				fn into_packet(self) -> crate::packets::PacketC2S {
-					crate::packets::PacketC2S::$group($group::$packet_name(self))
+			impl $crate::packets::IntoPacketC2S for $packet_name {
+				fn into_packet(self) -> $crate::packets::PacketC2S {
+					$crate::packets::PacketC2S::$group($group::$packet_name(self))
 				}
 			}
+
+			impl $crate::packets::IsPacket for $packet_name {}
 		)*
 	};
 }

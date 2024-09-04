@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use craftflow::CraftFlow;
 use craftflow_protocol::text;
 use simple_ping::SimplePing;
@@ -12,9 +14,9 @@ async fn main() -> anyhow::Result<()> {
 
 	let mut simple_ping = SimplePing::new();
 	simple_ping.set_description(
-		text!("This is an example server! ", color = "#4287f5")
-			+ text!("CONNECT ", bold, color = "#37ed43")
-			+ text!("NOW!", bold, color = "#e88438"),
+		text!("This is an example server! ", color = "gold")
+			+ text!("CONNECT ", bold, color = "aqua")
+			+ text!("NOW!", bold, color = "green"),
 	);
 	simple_ping.register(&mut craftflow);
 

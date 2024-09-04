@@ -1,4 +1,4 @@
-use super::{IntoPacketC2S, IntoPacketS2C};
+use super::{IntoPacketC2S, IntoPacketS2C, IsPacket};
 
 // This is a special packet with a different format sent by old clients
 #[derive(Debug)]
@@ -26,6 +26,9 @@ impl IntoPacketS2C for LegacyPingResponse {
 		super::PacketS2C::Legacy(self)
 	}
 }
+
+impl IsPacket for LegacyPing {}
+impl IsPacket for LegacyPingResponse {}
 
 impl LegacyPingResponse {
 	const MAX_VALID_LENGTH: usize = 248;

@@ -10,6 +10,9 @@ pub mod status;
 
 pub const PROTOCOL_VERSION: i32 = 767;
 
+/// Marker trait for packets
+pub trait IsPacket {}
+
 /// Convenience trait for converting a packet from any state into a general packet enum
 pub trait IntoPacketC2S {
 	fn into_packet(self) -> PacketC2S;
