@@ -1,5 +1,6 @@
 use super::{compression::CompressionGetter, encryption::Encryptor, ConnState};
-use aes::cipher::BlockEncryptMut;
+use aes::cipher::{generic_array::GenericArray, BlockEncryptMut};
+use anyhow::bail;
 use craftflow_protocol::{datatypes::VarInt, packets::PacketS2C, MCPWritable};
 use flate2::write::ZlibEncoder;
 use std::io::Cursor;
@@ -16,18 +17,19 @@ pub(crate) struct PacketWriter {
 
 impl PacketWriter {
 	/// Sends a packet to the client, automatically checking if the packet is valid for the current state
-	pub(crate) async fn send(&mut self, packet: PacketS2C) -> anyhow::Result<()> {
+	pub(crate) async fn send(&mut self, packet: &PacketS2C) -> anyhow::Result<()> {
 		match packet {
 			PacketS2C::StatusS2C(p) if self.state == ConnState::Status => {
-				self.write_unchecked(&p).await?;
+				self.write_unchecked(p).await?;
 			}
 			PacketS2C::LoginS2C(p) if self.state == ConnState::Login => {
-				self.write_unchecked(&p).await?;
+				self.write_unchecked(p).await?;
 			}
 			_ => {
-				panic!(
+				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",
-					self.state, packet
+					self.state,
+					packet
 				);
 			}
 		}
@@ -96,7 +98,9 @@ impl PacketWriter {
 		// encrypt the packet if encryption is enabled
 		self.encryptor.if_enabled(|enc| {
 			for i in 0..bytes.len() {
-				enc.encrypt_block_mut(&mut [bytes[i]].into()); // stupid ass cryptography crate with outdated ass generics
+				enc.encrypt_block_mut(GenericArray::from_mut_slice(&mut bytes[i..(i + 1)])); // stupid ass cryptography crate with outdated ass generics
+				                                                             // FUCK GENERIC ARRAY
+				                                                             // hopefully mr compiler will optimize 🥺
 			}
 		});
 

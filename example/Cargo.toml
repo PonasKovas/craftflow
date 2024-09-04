@@ -9,4 +9,6 @@ craftflow-protocol = { path = "../craftflow-protocol" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing-subscriber = { workspace = true }
+tracing = { workspace = true }
 simple-ping = { path = "../modules/simple-ping" }
+login = { path = "../modules/login" }

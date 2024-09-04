@@ -1,0 +1,12 @@
+[package]
+name = "login"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+craftflow = { path = "../../craftflow/" }
+craftflow-protocol = { path = "../../craftflow-protocol/" }
+rsa = "0.9.6"
+rand = "0.8.5"
+rsa-der = "0.3.0"
+tracing = { workspace = true }

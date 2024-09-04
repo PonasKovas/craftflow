@@ -1,5 +1,5 @@
 use super::{compression::CompressionGetter, encryption::Decryptor, ConnState};
-use aes::cipher::BlockDecryptMut;
+use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
 use anyhow::bail;
 use craftflow_protocol::{
 	datatypes::VarInt,
@@ -53,15 +53,7 @@ impl PacketReader {
 			}
 
 			// otherwise read more
-			let start = self.buffer.len();
-			let read = self.read().await?;
-
-			// decrypt if encryption enabled
-			self.decryptor.if_enabled(|dec| {
-				for i in start..(start + read) {
-					dec.decrypt_block_mut(&mut [self.buffer[i]].into());
-				}
-			});
+			self.read().await?;
 		};
 
 		// if the packet was compressed wrap the bytes in a zlib decompressor
@@ -119,15 +111,7 @@ impl PacketReader {
 					}
 
 					// Read more bytes
-					let start = self.buffer.len();
-					let read = self.read().await?;
-
-					// Instantly decrypt the bytes we just read if encryption is enabled
-					self.decryptor.if_enabled(|dec| {
-						for i in start..(start + read) {
-							dec.decrypt_block_mut(&mut [self.buffer[i]].into()); // stupid ass cryptography crate with outdated ass generics
-						}
-					});
+					self.read().await?;
 				}
 			}
 		}
@@ -142,6 +126,15 @@ impl PacketReader {
 		if n == 0 {
 			return Err(std::io::ErrorKind::UnexpectedEof.into());
 		}
+
+		// Instantly decrypt the bytes we just read if encryption is enabled
+		self.decryptor.if_enabled(|dec| {
+			for i in 0..n {
+				dec.decrypt_block_mut(GenericArray::from_mut_slice(&mut temp[i..(i + 1)])); // stupid ass cryptography crate with outdated ass generics
+				                                                            // FUCK GENERIC ARRAY
+				                                                            // hopefully mr compiler will optimize 🥺
+			}
+		});
 
 		self.buffer.extend_from_slice(&temp[..n]);
 

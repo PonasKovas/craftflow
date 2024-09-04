@@ -35,22 +35,24 @@ impl SimplePing {
 		}
 	}
 	/// Sets the description for the server.
-	pub fn set_description(&mut self, description: Text) {
+	pub fn set_description(mut self, description: Text) -> Self {
 		self.server_description = description;
+		self
 	}
 	/// Sets the favicon for the server.
 	/// The favicon should be the raw PNG image (exactly 64x64 pixels).
-	pub fn set_favicon(&mut self, favicon: Option<&[u8]>) {
+	pub fn set_favicon(mut self, favicon: Option<&[u8]>) -> Self {
 		self.favicon = favicon.map(|bytes| {
 			format!(
 				"data:image/png;base64,{}",
 				base64::prelude::BASE64_STANDARD.encode(bytes)
 			)
 		});
+		self
 	}
 	/// Adds the module to a CraftFlow instance.
 	pub fn register(self, craftflow: &mut CraftFlow) {
-		craftflow.state.modules.register(self);
+		craftflow.modules.register(self);
 
 		craftflow.reactor.add_handler::<LegacyPing, _>(legacy_ping);
 		craftflow

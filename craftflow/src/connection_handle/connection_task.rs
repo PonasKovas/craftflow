@@ -5,7 +5,7 @@ use super::{
 	ConnState,
 };
 use crate::{
-	packet_events::{trigger_c2s, trigger_s2c},
+	packet_events::{trigger_c2s, trigger_s2c_post, trigger_s2c_pre},
 	CraftFlow,
 };
 use anyhow::{bail, Context};
@@ -37,7 +37,7 @@ pub(super) async fn connection_task(
 		// Trigger the legacy ping event
 		if let ControlFlow::Break(()) = craftflow
 			.reactor
-			.event::<LegacyPing>(&craftflow.state, (conn_id, LegacyPing))
+			.event::<LegacyPing>(&craftflow, (conn_id, LegacyPing))
 		{
 			return Ok(());
 		}
@@ -94,14 +94,14 @@ pub(super) async fn connection_task(
 	};
 
 	// set the client protocol version
-	client_protocol_version
-		.set(handshake.protocol_version.0)
-		.expect("client protocol version already set");
+	if let Err(_) = client_protocol_version.set(handshake.protocol_version.0) {
+		bail!("client protocol version already set")
+	}
 
 	// trigger the handshake event
 	let _ = craftflow
 		.reactor
-		.event::<Handshake>(&craftflow.state, (conn_id, handshake.clone()));
+		.event::<Handshake>(&craftflow, (conn_id, handshake.clone()));
 
 	// update the state of the reader and writer
 	let state = match handshake.next_state {
@@ -156,9 +156,10 @@ pub(super) async fn writer_task(
 				};
 
 				// trigger the packet event, and actually send it if it was not cancelled
-				match trigger_s2c(&craftflow, conn_id, packet) {
+				match trigger_s2c_pre(&craftflow, conn_id, packet) {
 					ControlFlow::Continue(packet) => {
-						writer.send(packet).await?;
+						writer.send(&packet).await?;
+						let _ = trigger_s2c_post(&craftflow, conn_id, packet);
 					}
 					ControlFlow::Break(()) => {}
 				}
@@ -171,9 +172,10 @@ pub(super) async fn writer_task(
 
 				for packet in batch {
 					// trigger the packet event, and actually send it if it was not cancelled
-					match trigger_s2c(&craftflow, conn_id, packet) {
+					match trigger_s2c_pre(&craftflow, conn_id, packet) {
 						ControlFlow::Continue(packet) => {
-							writer.send(packet).await?;
+							writer.send(&packet).await?;
+							let _ = trigger_s2c_post(&craftflow, conn_id, packet);
 						}
 						ControlFlow::Break(()) => {}
 					}

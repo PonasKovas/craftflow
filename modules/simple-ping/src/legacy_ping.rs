@@ -1,5 +1,5 @@
 use crate::SimplePing;
-use craftflow::CFState;
+use craftflow::CraftFlow;
 use craftflow_protocol::{
 	datatypes::{text::TextContent, Text},
 	packets::legacy::{LegacyPing, LegacyPingResponse},
@@ -7,15 +7,15 @@ use craftflow_protocol::{
 use std::ops::ControlFlow;
 
 pub fn legacy_ping(
-	cfstate: &CFState,
+	cf: &CraftFlow,
 	(conn_id, request): (usize, LegacyPing),
 ) -> ControlFlow<(), (usize, LegacyPing)> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway
-	let online_players = cfstate.connections.read().unwrap().len() as i32; // more or less
+	let online_players = cf.connections().len() as i32; // more or less
 	let max_players = 1000; // todo after implementing max connections
-	let description = &cfstate.modules.get::<SimplePing>().server_description;
+	let description = &cf.modules.get::<SimplePing>().server_description;
 
-	cfstate.connections.get(conn_id).send(
+	cf.get(conn_id).send(
 		LegacyPingResponse::new(protocol_version, online_players, max_players)
 			.set_version(format!("§f§lCraftFlow"))
 			.set_description(text_to_legacy(description)),

@@ -11,5 +11,5 @@ tracing = { workspace = true }
 anyhow = { workspace = true }
 aes = { workspace = true }
 cfb8 = { workspace = true }
-rand = { workspace = true }
 flate2 = { workspace = true }
+futures = { workspace = true }
