@@ -1,0 +1,15 @@
+// The possible protocol states
+// This is unlikely to change, but it has in the past
+//
+// A state can be locked behind a feature
+// #[feature(my_feature)]
+// state MyState
+//
+// Which will make it only available when the feature is enabled
+
+
+state Handshake
+state Status
+state Login
+#[feature(configuration_state)]
+state Configuration

@@ -1,6 +1,5 @@
 pub mod datatypes;
-#[macro_use]
-mod macros;
+// pub mod legacy;
 pub mod packets;
 
 use anyhow::Result;

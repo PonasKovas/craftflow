@@ -1,0 +1,9 @@
+// feature <feature_name> @[<protocol versions that support it>]
+//
+// Each feature introduces new functionality to the protocol, but in turn
+// reduces the number of protocol versions that will be compatible
+
+feature configuration_state @[711+]
+feature got_removed_later @[720-]
+feature temporary @[730-734]
+feature weird @[740,744,755+]

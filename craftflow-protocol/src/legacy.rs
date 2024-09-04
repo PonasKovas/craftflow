@@ -1,4 +1,4 @@
-use super::{IntoPacketC2S, IntoPacketS2C, IsPacket};
+use crate::packets::IntoPacketC2S;
 
 // This is a special packet with a different format sent by old clients
 #[derive(Debug)]
