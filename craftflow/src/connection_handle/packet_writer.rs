@@ -1,10 +1,6 @@
 use super::{compression::CompressionGetter, encryption::Encryptor, ConnState};
 use aes::cipher::BlockEncryptMut;
-use craftflow_protocol::{
-	datatypes::VarInt,
-	packets::{IntoPacketS2C, PacketS2C},
-	MCPWritable,
-};
+use craftflow_protocol::{datatypes::VarInt, packets::PacketS2C, MCPWritable};
 use flate2::write::ZlibEncoder;
 use std::io::Cursor;
 use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf};

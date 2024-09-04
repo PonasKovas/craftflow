@@ -1,7 +1,6 @@
 #![feature(mapped_lock_guards)]
 
 mod connection_handle;
-mod listener;
 pub mod modules;
 mod packet_events;
 pub mod reactor;
@@ -12,10 +11,7 @@ use reactor::Reactor;
 use slab::Slab;
 use std::{
 	ops::Deref,
-	sync::{
-		Arc, MappedRwLockReadGuard, MappedRwLockWriteGuard, RwLock, RwLockReadGuard,
-		RwLockWriteGuard,
-	},
+	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
 use tokio::net::TcpListener;
 

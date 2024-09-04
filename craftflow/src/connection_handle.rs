@@ -19,10 +19,7 @@ use std::{
 use tokio::{
 	net::TcpStream,
 	spawn,
-	sync::{
-		mpsc::{self, UnboundedSender},
-		SemaphorePermit,
-	},
+	sync::mpsc::{self, UnboundedSender},
 };
 use tracing::error;
 

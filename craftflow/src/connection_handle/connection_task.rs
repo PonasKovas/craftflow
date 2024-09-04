@@ -20,11 +20,7 @@ use std::{
 	sync::{Arc, OnceLock},
 	time::Duration,
 };
-use tokio::{
-	select, spawn,
-	sync::mpsc::UnboundedReceiver,
-	time::{sleep_until, timeout, Instant},
-};
+use tokio::{select, spawn, sync::mpsc::UnboundedReceiver, time::timeout};
 
 /// The task that handles the connection and later splits into two tasks: reader and writer.
 pub(super) async fn connection_task(

@@ -2,10 +2,7 @@
 //! C2S packet events will be emitted after a packet is received from the client
 //! S2C packet events will be emitted before a packet is sent to the client
 
-use crate::{
-	reactor::{Event, Reactor},
-	CFState, CraftFlow,
-};
+use crate::{reactor::Event, CraftFlow};
 use craftflow_protocol::packets::{
 	handshake::{self, HandshakeC2S},
 	legacy::{LegacyPing, LegacyPingResponse},
