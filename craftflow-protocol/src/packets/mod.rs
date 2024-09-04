@@ -1,8 +1,10 @@
+use configuration::{ConfigurationC2S, ConfigurationS2C};
 use handshake::HandshakeC2S;
 use legacy::{LegacyPing, LegacyPingResponse};
 use login::{LoginC2S, LoginS2C};
 use status::{StatusC2S, StatusS2C};
 
+pub mod configuration;
 pub mod handshake;
 pub mod legacy;
 pub mod login;
@@ -28,6 +30,7 @@ pub enum PacketC2S {
 	HandshakeC2S(HandshakeC2S),
 	StatusC2S(StatusC2S),
 	LoginC2S(LoginC2S),
+	ConfigurationC2S(ConfigurationC2S),
 }
 
 #[derive(Debug)]
@@ -35,4 +38,5 @@ pub enum PacketS2C {
 	Legacy(LegacyPingResponse),
 	StatusS2C(StatusS2C),
 	LoginS2C(LoginS2C),
+	ConfigurationS2C(ConfigurationS2C),
 }

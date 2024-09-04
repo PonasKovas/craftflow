@@ -55,6 +55,7 @@ pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: PacketC
 			LoginC2S::LoginAcknowledged(packet) => e!(login::LoginAcknowledged, packet),
 			LoginC2S::CookieResponse(packet) => e!(login::CookieResponse, packet),
 		},
+		PacketC2S::ConfigurationC2S(config) => match config {},
 	}
 }
 
@@ -109,6 +110,7 @@ macro_rules! trigger_s2c_gen {
 				login::LoginS2C::PluginRequest(packet) => $e!(login::PluginRequest, packet),
 				login::LoginS2C::CookieRequest(packet) => $e!(login::CookieRequest, packet),
 			},
+			PacketS2C::ConfigurationS2C(config) => match config {},
 		}
 	};
 }
