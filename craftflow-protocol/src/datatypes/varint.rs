@@ -1,4 +1,4 @@
-use crate::{MCPReadable, MCPWritable};
+use crate::MinecraftProtocol;
 use anyhow::bail;
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Write};
@@ -26,8 +26,8 @@ impl VarInt {
 	}
 }
 
-impl MCPReadable for VarInt {
-	fn read(source: &mut impl Read) -> anyhow::Result<Self> {
+impl MinecraftProtocol for VarInt {
+	fn read(_protocol_version: u32, source: &mut impl Read) -> anyhow::Result<Self> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed
 
@@ -56,10 +56,7 @@ impl MCPReadable for VarInt {
 
 		Ok(Self(result))
 	}
-}
-
-impl MCPWritable for VarInt {
-	fn write(&self, to: &mut impl Write) -> anyhow::Result<usize> {
+	fn write(&self, _protocol_version: u32, to: &mut impl Write) -> anyhow::Result<usize> {
 		let mut i = 0;
 		let mut value = self.0;
 
@@ -109,7 +106,7 @@ mod tests {
 	#[test]
 	fn varint_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			let result = VarInt::read(&mut &case.1[..]).unwrap();
+			let result = VarInt::read(0, &mut &case.1[..]).unwrap();
 			assert_eq!(result.0, case.0, "{i}");
 		}
 	}
@@ -118,7 +115,7 @@ mod tests {
 	fn varint_write() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let mut buf = Vec::new();
-			let result = VarInt(case.0).write(&mut buf).unwrap();
+			let result = VarInt(case.0).write(0, &mut buf).unwrap();
 			assert_eq!(result, case.1.len(), "{i}");
 			assert_eq!(buf, case.1, "{i}");
 		}

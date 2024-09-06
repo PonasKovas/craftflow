@@ -1,6 +1,6 @@
 mod macros;
 
-use crate::{MCPReadable, MCPWritable};
+use crate::MinecraftProtocol;
 use serde::{Deserialize, Serialize};
 use std::{
 	io::Read,
@@ -194,16 +194,17 @@ pub struct HoverActionShowEntity {
 	pub name: Option<String>,
 }
 
-impl MCPWritable for Text {
-	fn write(&self, to: &mut impl std::io::Write) -> anyhow::Result<usize> {
+impl MinecraftProtocol for Text {
+	fn read(protocol_version: u32, source: &mut impl Read) -> anyhow::Result<Self> {
+		Ok(serde_json::from_str(&String::read(
+			protocol_version,
+			source,
+		)?)?)
+	}
+	fn write(&self, protocol_version: u32, to: &mut impl std::io::Write) -> anyhow::Result<usize> {
 		let s = serde_json::to_string(self)?;
 
-		s.write(to)
-	}
-}
-impl MCPReadable for Text {
-	fn read(source: &mut impl Read) -> anyhow::Result<Self> {
-		Ok(serde_json::from_str(&String::read(source)?)?)
+		s.write(protocol_version, to)
 	}
 }
 

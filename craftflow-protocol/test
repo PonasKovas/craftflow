@@ -1,1 +1,0 @@
-[State { name: "Handshake", feature_gate: None }, State { name: "Status", feature_gate: None }, State { name: "Login", feature_gate: None }, State { name: "Configuration", feature_gate: Some("configuration_state") }]

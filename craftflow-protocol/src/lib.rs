@@ -1,19 +1,26 @@
+#![feature(doc_cfg)]
+
 pub mod datatypes;
-// pub mod legacy;
-pub mod packets;
+pub mod handshake;
+pub mod legacy;
+pub mod protocol;
 
 use anyhow::Result;
 use std::io::{Read, Write};
 
-/// For types that can be read from a byte slice in the Minecraft Protocol format
-pub trait MCPReadable {
-	fn read(source: &mut impl Read) -> Result<Self>
+/// Types that can be (de)serialized in the Minecraft network protocol format
+pub trait MinecraftProtocol {
+	fn read(protocol_version: u32, source: &mut impl Read) -> Result<Self>
 	where
 		Self: Sized;
+
+	/// Writes the data and returns the number of bytes written
+	fn write(&self, protocol_version: u32, to: &mut impl Write) -> Result<usize>;
 }
 
-/// For types that can be written into a byte slice in the Minecraft Protocol format
-pub trait MCPWritable {
-	/// Writes the data and returns the number of bytes written
-	fn write(&self, to: &mut impl Write) -> Result<usize>;
+/// Types that are packets
+pub trait Packet {
+	type Direction;
+
+	fn into_packet_enum(self) -> Self::Direction;
 }

@@ -1,0 +1,39 @@
+(
+	items: {
+		"StatusRequest": packet(
+			// feature: "another_packet_feature",
+			data: {
+				"protocol_version": "i32",
+				"server_address": "String",
+				"extra": (
+					feature: "extra_field_feature",
+					type: "bool",
+					default: "true"
+				),
+			},
+			// id: {
+			// 	["701-"]: 0x01,
+			// 	["702+"]: 0x07,
+			// },
+			id: 0,
+			format: {
+				["708+"]: [
+					( field: "protocol_version", read_as: "i64", read: "protocol_version as i32", write: "protocol_version as i64" ),
+					( field: "server_address" ),
+					( field: "extra", ),
+				],
+				["*"]: [
+					( field: "protocol_version" ),
+					( field: "server_address" ),
+					( field: "extra", ),
+				],
+			}
+		),
+		"Ping": packet(
+			id: 0x01,
+			data: {
+				"payload": "u64",
+			},
+		),
+	}
+)

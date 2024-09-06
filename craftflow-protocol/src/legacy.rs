@@ -1,9 +1,3 @@
-use crate::packets::IntoPacketC2S;
-
-// This is a special packet with a different format sent by old clients
-#[derive(Debug)]
-pub struct LegacyPing;
-
 /// This is a special packet with a different format that is sent in response to a legacy ping
 /// Do not edit the fields directly, use the builder methods instead, otherwise might end up with an invalid packet
 #[derive(Debug)]
@@ -14,21 +8,6 @@ pub struct LegacyPingResponse {
 	pub max_players: i32,
 	pub description: String,
 }
-
-impl IntoPacketC2S for LegacyPing {
-	fn into_packet(self) -> super::PacketC2S {
-		super::PacketC2S::Legacy(self)
-	}
-}
-
-impl IntoPacketS2C for LegacyPingResponse {
-	fn into_packet(self) -> super::PacketS2C {
-		super::PacketS2C::Legacy(self)
-	}
-}
-
-impl IsPacket for LegacyPing {}
-impl IsPacket for LegacyPingResponse {}
 
 impl LegacyPingResponse {
 	const MAX_VALID_LENGTH: usize = 248;
