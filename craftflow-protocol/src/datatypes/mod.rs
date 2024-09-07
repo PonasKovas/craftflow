@@ -1,3 +1,6 @@
+//! Common datatypes found all throughout the network protocol.
+//!
+
 mod bool;
 mod byte_array;
 mod integers;

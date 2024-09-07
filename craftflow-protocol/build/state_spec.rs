@@ -1,8 +1,8 @@
+use super::{gen::state_module::fields::Fields, version_bounds::Bounds, AsIdent, AsTokenStream};
 use indexmap::IndexMap;
+use proc_macro2::TokenStream;
 use ron::extensions::Extensions;
 use serde::Deserialize;
-
-use super::{gen::state_module::fields::Fields, version_bounds::Bounds};
 use std::{collections::BTreeMap, error::Error, fs, path::PathBuf};
 
 // parses the state specification
@@ -53,6 +53,7 @@ pub struct EnumSpec {
 	/// If needs a feature to be enabled
 	pub feature: Option<String>,
 	pub variants: BTreeMap<String, EnumVariant>,
+	/// Default tag_format is VarInt
 	pub tag_format: Option<VersionDependent<TagFormat>>,
 }
 
@@ -61,7 +62,7 @@ pub struct EnumVariant {
 	/// If needs a feature to be enabled
 	pub feature: Option<String>,
 	pub tag: VersionDependent<String>,
-	pub data: IndexMap<String, Data>,
+	pub data: Option<IndexMap<String, Data>>,
 	pub format: Option<VersionDependent<Vec<FieldFormat>>>,
 }
 
@@ -144,10 +145,32 @@ impl StructSpec {
 	}
 }
 impl EnumVariant {
-	pub fn fields(&self) -> Fields {
-		Fields {
-			data: &self.data,
-			format: &self.format,
+	pub fn fields(&self) -> Option<Fields> {
+		match &self.data {
+			Some(data) => Some(Fields {
+				data,
+				format: &self.format,
+			}),
+			None => {
+				if self.format.is_some() {
+					panic!("Enum variant must not have `format` if doesn't have `data`");
+				} else {
+					None
+				}
+			}
+		}
+	}
+}
+
+impl Data {
+	pub fn datatype(&self) -> TokenStream {
+		match self {
+			Data::Normal(t) => t.as_tokenstream(),
+			Data::RequiresFeature {
+				feature: _,
+				data_type: t,
+				default: _,
+			} => t.as_tokenstream(),
 		}
 	}
 }

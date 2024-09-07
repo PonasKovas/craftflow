@@ -1,3 +1,5 @@
+//! The special case of the Minecraft legacy server list ping, which is different from the rest of the protocol
+
 /// This is a special packet with a different format that is sent in response to a legacy ping
 /// Do not edit the fields directly, use the builder methods instead, otherwise might end up with an invalid packet
 #[derive(Debug)]
@@ -24,7 +26,7 @@ impl LegacyPingResponse {
 
 		len
 	}
-	/// Constructs a new basic [`ServerListLegacyPingResponse`].
+	/// Constructs a new basic [`LegacyPingResponse`].
 	///
 	/// See [`description`][Self::description] and [`version`][Self::version].
 	pub fn new(protocol_version: i32, online_players: i32, max_players: i32) -> Self {

@@ -4,11 +4,11 @@
 			// feature: "another_packet_feature",
 			data: {
 				"protocol_version": "i32",
-				"server_address": "String",
+				"server_address": "Option<String>",
 				"extra": (
 					feature: "extra_field_feature",
-					type: "bool",
-					default: "true"
+					type: "Option<bool>",
+					default: "Some(true)"
 				),
 			},
 			// id: {
@@ -18,14 +18,13 @@
 			id: 0,
 			format: {
 				["708+"]: [
-					( field: "protocol_version", read_as: "i64", read: "protocol_version as i32", write: "protocol_version as i64" ),
+					( field: "protocol_version", read_as: "Option<bool>", read: "15", write: "Some(false)" ),
 					( field: "server_address" ),
 					( field: "extra", ),
 				],
 				["*"]: [
 					( field: "protocol_version" ),
 					( field: "server_address" ),
-					( field: "extra", ),
 				],
 			}
 		),
@@ -33,6 +32,55 @@
 			id: 0x01,
 			data: {
 				"payload": "u64",
+			},
+		),
+		"NoFormat": packet(
+			id: 0x01,
+			data: {
+				"server_address": "String",
+				"extra": (
+					feature: "extra_field_feature",
+					type: "Option<bool>",
+					default: "Some(false)"
+				)
+			},
+		),
+		"SomeData": struct(
+			data: {
+				"i_love_this_field": "Option<String>",
+			},
+		),
+		"MyFavoriteEnum": enum(
+			feature: "extra_field_feature",
+			variants: {
+				"MyVariant": ( tag: "0" ),
+				"WorstVariant": (
+					tag: "1",
+					data: {
+						"my_field": "Option<String>",
+						"other": (
+							type: "bool",
+							feature: "extra_field_feature",
+							default: "false"
+						)
+					},
+					feature: "extra_field_feature"
+				),
+			},
+		),
+		"MyLeastFavoriteEnum": enum(
+			tag_format: {
+				["708+"]: ( read_as: "u16", read: "VarInt(tag as i32)", write: "tag.0 as u16" ),
+				["*"]: ( read_as: "VarInt", read: "VarInt(tag.0 * 2)", write: "VarInt(tag.0 / 2)" ),
+			},
+			variants: {
+				"MyVariant": ( tag: "VarInt(0)" ),
+				"WorstVariant": (
+					tag: "VarInt(1)",
+					data: {
+						"my_field": "Option<String>",
+					},
+				),
 			},
 		),
 	}

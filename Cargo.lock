@@ -41,7 +41,6 @@ dependencies = [
  "ron",
  "serde",
  "serde_json",
- "syn",
 ]
 
 [[package]]

@@ -1,5 +1,3 @@
-use super::gen::feature_cfg::gen_feature_cfg;
-use super::version_bounds::parse_bounds;
 use super::version_bounds::Bounds;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -26,20 +24,17 @@ pub fn parse_info_file(path: &str) -> Result<Info, Box<dyn Error>> {
 
 impl Info {
 	/// Calculates all unsupported protocol versions with the current feature configuration
-	/// And formats them as a bunch of patterns for a match statement with the given tokenstream
-	// on the right size of each pattern
-	pub fn unsupported_versions_patterns(&self, right_side: TokenStream) -> TokenStream {
+	/// And returns a list of patterns for them
+	pub fn unsupported_versions_patterns(&self) -> Vec<TokenStream> {
 		let all_supported = self.all_supported();
 		let minimum = all_supported.iter().min().unwrap() - 1;
 		let maximum = all_supported.iter().max().unwrap() + 1;
 
-		let mut result = quote! {
-			// two arms that match the whole -INF... ...INF versions
-			#[allow(unreachable_patterns)]
-			..=#minimum => #right_side,
-			#[allow(unreachable_patterns)]
-			#maximum.. => #right_side,
-		};
+		let mut result = Vec::new();
+
+		// two arms that match the whole -INF... ...INF versions
+		result.push(quote! { #[allow(unreachable_patterns)] ..=#minimum });
+		result.push(quote! { #[allow(unreachable_patterns)] #maximum.. });
 
 		for version in all_supported {
 			let mut features = Vec::new();
@@ -52,10 +47,10 @@ impl Info {
 				}
 			}
 
-			result.extend(quote! {
+			result.push(quote! {
 				#[cfg(any( #( feature = #features ),* ))]
 				#[allow(unreachable_patterns)]
-				#version => #right_side,
+				#version
 			});
 		}
 

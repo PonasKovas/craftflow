@@ -3,8 +3,7 @@ mod info_file;
 mod state_spec;
 mod version_bounds;
 
-pub use info_file::{parse_info_file, Info};
-
+use info_file::{parse_info_file, Info};
 use proc_macro2::TokenStream;
 use state_spec::parse_state_spec;
 use std::{
@@ -15,6 +14,22 @@ use std::{
 	process::{Command, Stdio},
 	str::FromStr,
 };
+
+pub fn main() {
+	println!("cargo::rerun-if-changed=packets/");
+	println!("cargo::rerun-if-changed=protocol.toml");
+
+	// First handle the main protocol info file which includes
+	// * The list of all supported protocol versions
+	// * All protocol features and what protocol versions support them
+	let info = match parse_info_file("protocol.ron") {
+		Ok(info) => info,
+		Err(e) => panic!("Error while parsing protocol.ron: {e}",),
+	};
+
+	// And then parse the packet specifications and generate rust code for them
+	generate_packets(info);
+}
 
 /// Parses the packet specifications and generates rust code for them
 pub fn generate_packets(info: Info) {
@@ -79,20 +94,37 @@ fn to_pascal_case(s: &str) -> String {
 	s.split('_').map(|word| capitalize(word)).collect()
 }
 
-// Writes formatted stream to the given path
+// Writes (formatted if env RUSTFMT_GENERATED set) stream to the given path
 fn write(stream: &TokenStream, path: impl AsRef<Path>) {
-	let mut rustfmt = Command::new("rustfmt")
-		.stdin(Stdio::piped())
-		.stdout(Stdio::piped())
-		.spawn()
-		.unwrap();
+	let text = if env::var("RUSTFMT_GENERATED").is_ok() {
+		let mut rustfmt = Command::new("rustfmt")
+			.arg("--edition")
+			.arg("2021")
+			.arg("--config")
+			.arg("max_width=1000")
+			.stdin(Stdio::piped())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()
+			.unwrap();
 
-	{
-		let stdin = rustfmt.stdin.as_mut().unwrap();
-		stdin.write_all(format!("{stream}").as_bytes()).unwrap();
-	}
+		{
+			let stdin = rustfmt.stdin.as_mut().unwrap();
+			stdin.write_all(format!("{stream}").as_bytes()).unwrap();
+		}
 
-	let output = rustfmt.wait_with_output().unwrap();
+		let output = rustfmt.wait_with_output().unwrap();
 
-	fs::write(path, String::from_utf8(output.stdout).unwrap()).unwrap();
+		if !output.status.success() {
+			let stderr = String::from_utf8_lossy(&output.stderr);
+			eprintln!("rustfmt failed:\n{}", stderr);
+			panic!("rustfmt encountered an error");
+		}
+
+		String::from_utf8(output.stdout).unwrap()
+	} else {
+		format!("{stream}")
+	};
+
+	fs::write(path, text).unwrap();
 }

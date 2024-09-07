@@ -25,7 +25,12 @@ mod gen_struct;
 //     pub struct Another { ... }
 //     ...
 // }
-pub fn gen_state_module(info: &Info, state_name: &str, state_spec: &StateSpec) -> TokenStream {
+pub fn gen_state_module(
+	info: &Info,
+	direction: &str,
+	state_name: &str,
+	state_spec: &StateSpec,
+) -> TokenStream {
 	let module_name = state_name.to_lowercase().as_ident();
 	let enum_name = state_enum_name(state_name).as_ident();
 
@@ -33,36 +38,42 @@ pub fn gen_state_module(info: &Info, state_name: &str, state_spec: &StateSpec) -
 	for (item_name, item) in state_spec.items.iter() {
 		if let SpecItem::Packet(packet) = item {
 			let item_name = item_name.as_ident();
-			let feature = gen_feature_cfg(&packet.feature);
+			let feature_cfg = packet.feature.as_ref().map(|f| gen_feature_cfg(f, true));
 
 			variants.push(quote! {
-				#feature #item_name(#item_name),
+				#feature_cfg #item_name(#item_name),
 			});
 		}
 	}
 
 	let mut generated = TokenStream::new();
 	for (name, item) in &state_spec.items {
-		let feature = gen_feature_cfg(item.feature());
+		let feature_cfg = item.feature().as_ref().map(|f| gen_feature_cfg(f, true));
 
 		let item_gen = match item {
-			SpecItem::Packet(item) => gen_packet(info, name, item),
-			SpecItem::Struct(item) => gen_struct(info, name, item),
+			SpecItem::Packet(item) => gen_packet(info, direction, state_name, name, item),
+			SpecItem::Struct(item) => gen_struct(info, name, item.fields()),
 			SpecItem::Enum(item) => gen_enum(info, name, item),
 		};
 
 		generated.extend(quote! {
 			#(
-				#feature
+				#feature_cfg
 				#item_gen
 			)*
 		});
 	}
 
-	let feature = gen_feature_cfg(&state_spec.feature);
+	let feature_cfg = state_spec
+		.feature
+		.as_ref()
+		.map(|f| gen_feature_cfg(f, true));
 	quote! {
-		#feature
+		#feature_cfg
 		pub mod #module_name {
+			use std::borrow::Borrow;
+			use crate::datatypes::*;
+
 			pub enum #enum_name {
 				#(
 					#variants

@@ -1,4 +1,4 @@
-//! The implementation is similar to Vec<u8> but doesn't have the length prefix
+//! The implementation is similar to `Vec<u8>` but doesn't have the length prefix
 //! instead it reads to the end of the buffer
 
 use crate::MinecraftProtocol;

@@ -1,4 +1,4 @@
-//! The implementation for Vec<T> just adds a VarInt length prefix and then
+//! The implementation for `Vec<T>` just adds a `VarInt` length prefix and then
 //! writes each element sequentially
 
 use super::VarInt;
