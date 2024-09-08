@@ -1,7 +1,7 @@
 (
 	items: {
 		"StatusRequest": packet(
-			// feature: "another_packet_feature",
+			// feature: "extra_field_feature",
 			data: {
 				"protocol_version": "i32",
 				"server_address": "Option<String>",
@@ -28,13 +28,13 @@
 			}
 		),
 		"Ping": packet(
-			id: 0x01,
+			id: 0x02,
 			data: {
 				"payload": "u64",
 			},
 		),
 		"NoFormat": packet(
-			id: 0x01,
+			id: 0x03,
 			data: {
 				"server_address": "String",
 				"extra": (

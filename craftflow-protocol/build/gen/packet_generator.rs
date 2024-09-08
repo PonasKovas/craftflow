@@ -1,5 +1,8 @@
 use super::struct_generator::StructGenerator;
-use crate::build::util::{Direction, StateName};
+use crate::build::{
+	info_file::Info,
+	util::{Direction, StateName},
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -12,8 +15,8 @@ pub struct PacketGenerator {
 
 impl PacketGenerator {
 	/// Generates a struct definition, MinecraftProtocol implementation and Packet implementation
-	pub fn gen(&self) -> TokenStream {
-		let mut result = self.inner.gen();
+	pub fn gen(&self, info: &Info) -> TokenStream {
+		let mut result = self.inner.gen(info);
 
 		let struct_name = &self.inner.name;
 		let direction_enum_name = self.direction.enum_name();
@@ -27,9 +30,9 @@ impl PacketGenerator {
 
 				fn into_packet_enum(self) -> Self::Direction {
 					crate::protocol::#direction_enum_name::#direction_enum_variant(
-						super::#state_enum_name::#struct_name(
-							self
-						)
+						super::#state_enum_name::#struct_name{
+							packet: self
+						}
 					)
 				}
 			}

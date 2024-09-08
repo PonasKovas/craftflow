@@ -1,6 +1,7 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
+#[derive(Clone)]
 pub struct Feature {
 	pub feature: String,
 }

@@ -1,11 +1,11 @@
-use crate::build::{
-	gen::feature::FeatureCfgOptions,
-	util::{to_pascal_case, StateName},
-};
-
 use super::{
 	enum_generator::EnumGenerator, feature::Feature, packet_generator::PacketGenerator,
 	struct_generator::StructGenerator,
+};
+use crate::build::{
+	gen::feature::FeatureCfgOptions,
+	info_file::Info,
+	util::{to_pascal_case, StateName},
 };
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
@@ -23,7 +23,7 @@ pub struct StateGenerator {
 impl StateGenerator {
 	/// Generates an enum with a variant for each possible packet and
 	/// a module containing all packets, structs and enums of this state
-	pub fn gen(&self) -> TokenStream {
+	pub fn gen(&self, info: &Info) -> TokenStream {
 		let feature_cfg = self.feature.as_ref().map(|f| {
 			f.gen_cfg(FeatureCfgOptions {
 				negative: false,
@@ -32,31 +32,33 @@ impl StateGenerator {
 		});
 		let module_name = self.name.module();
 
-		let main_enum = self.main_enum.gen();
+		let main_enum = self.main_enum.gen(info);
 
 		let packets = self.packets.iter().fold(Vec::new(), |mut v, p| {
-			v.push(p.gen());
+			v.push(p.gen(info));
 			v
 		});
 		let structs = self.structs.iter().fold(Vec::new(), |mut v, s| {
-			v.push(s.gen());
+			v.push(s.gen(info));
 			v
 		});
 		let enums = self.enums.iter().fold(Vec::new(), |mut v, e| {
-			v.push(e.gen());
+			v.push(e.gen(info));
 			v
 		});
 
 		let main_enum_comment = format!(
-			"Enum containing all possible packets of the {} state.",
+			"Enum containing all possible packets of the `{}` state.",
 			to_pascal_case(&self.name.name)
 		);
 		let module_comment = format!(
-			"Module containing all packets, structs and enums of the {} state.",
+			"Module containing all packets, structs and enums of the `{}` state.",
 			to_pascal_case(&self.name.name)
 		);
 
 		quote! {
+			use #module_name::*;
+
 			#feature_cfg
 			#[doc = #main_enum_comment]
 			#main_enum

@@ -18,6 +18,7 @@ pub mod fields_container;
 pub mod packet_generator;
 pub mod state_generator;
 pub mod struct_generator;
+pub mod version_dependent;
 
 pub fn generate_code(
 	info: &Info,
@@ -27,11 +28,11 @@ pub fn generate_code(
 	let c2s_enum_variants = gen_state_enum_variants(Direction::C2S, &c2s_states);
 	let s2c_enum_variants = gen_state_enum_variants(Direction::S2C, &s2c_states);
 
-	let c2s_generator = spec_to_generator(Direction::C2S, info, c2s_states);
-	let s2c_generator = spec_to_generator(Direction::S2C, info, s2c_states);
+	let c2s_generator = spec_to_generator(Direction::C2S, c2s_states);
+	let s2c_generator = spec_to_generator(Direction::S2C, s2c_states);
 
-	let c2s_module = c2s_generator.gen();
-	let s2c_module = s2c_generator.gen();
+	let c2s_module = c2s_generator.gen(info);
+	let s2c_module = s2c_generator.gen(info);
 
 	quote! {
 		#[doc = "All possible Client -> Server packets."]
@@ -47,10 +48,20 @@ pub fn generate_code(
 
 		#[doc = "Contains Client -> Server packets."]
 		pub mod c2s {
+			#[allow(unused_imports)]
+			use crate::datatypes::*;
+			#[allow(unused_imports)]
+			use std::borrow::Borrow;
+
 			#c2s_module
 		}
 		#[doc = "Contains Server -> Client packets."]
 		pub mod s2c {
+			#[allow(unused_imports)]
+			use crate::datatypes::*;
+			#[allow(unused_imports)]
+			use std::borrow::Borrow;
+
 			#s2c_module
 		}
 	}

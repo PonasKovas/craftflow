@@ -5,6 +5,7 @@ use super::{
 };
 use crate::build::{
 	gen::{feature::FeatureCfgOptions, field::FieldGenOptions},
+	info_file::Info,
 	version_bounds::{Bounds, BoundsMethods},
 };
 use indexmap::IndexMap;
@@ -19,7 +20,7 @@ pub struct StructGenerator {
 
 impl StructGenerator {
 	/// Generates a struct definition and a MinecraftProtocol implementation
-	pub fn gen(&self) -> TokenStream {
+	pub fn gen(&self, info: &Info) -> TokenStream {
 		let feature_cfg = self.feature.as_ref().map(|f| {
 			f.gen_cfg(FeatureCfgOptions {
 				negative: false,
@@ -28,10 +29,10 @@ impl StructGenerator {
 		});
 		let struct_name = &self.name;
 
-		let fields = self.fields.gen_definition();
+		let fields = self.fields.gen_definition(true);
 
-		let read_impl = self.gen_read_impl();
-		let write_impl = self.gen_write_impl();
+		let read_impl = self.gen_read_impl(info);
+		let write_impl = self.gen_write_impl(info);
 
 		quote! {
 			#feature_cfg
@@ -56,12 +57,12 @@ impl StructGenerator {
 			}
 		}
 	}
-	fn gen_read_impl(&self) -> TokenStream {
+	fn gen_read_impl(&self, info: &Info) -> TokenStream {
 		let mut result = TokenStream::new();
 
 		// This creates a variable for every field
 		// reading from the input
-		result.extend(self.fields.gen_read_impl());
+		result.extend(self.fields.gen_read_impl(info));
 
 		// So now all that's left is to construct the struct
 		// with those variables
@@ -72,7 +73,7 @@ impl StructGenerator {
 
 		result
 	}
-	fn gen_write_impl(&self) -> TokenStream {
+	fn gen_write_impl(&self, info: &Info) -> TokenStream {
 		// start with the written bytes variable
 		let mut result = quote! {
 			#[allow(non_snake_case)]
@@ -112,7 +113,7 @@ impl StructGenerator {
 		}
 
 		// Write all the fields
-		result.extend(self.fields.gen_write_impl());
+		result.extend(self.fields.gen_write_impl(info));
 
 		// Return the written bytes
 		result.extend(quote! {

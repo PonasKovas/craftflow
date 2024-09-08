@@ -23,7 +23,6 @@ use std::collections::BTreeMap;
 // Converts a single direction spec to a direction generator
 pub fn spec_to_generator(
 	direction: Direction,
-	info: &Info,
 	specs: BTreeMap<StateName, StateSpec>,
 ) -> DirectionGenerator {
 	let mut states = Vec::new();
@@ -39,15 +38,18 @@ pub fn spec_to_generator(
 					// PACKET
 					////////////
 					let packet_name = item_name.as_ident();
+					let feature = item.feature.map(|feature| Feature { feature });
 
 					main_enum_variants.push(Variant {
 						name: packet_name.clone(),
+						feature: feature.clone(),
 						tags: item
 							.id
 							.expand_shortcut()
 							.into_iter()
-							.map(|(bounds, id)| (bounds, quote! { #id }))
-							.collect(),
+							.map(|(bounds, id)| (bounds, quote! { crate::datatypes::VarInt(#id) }))
+							.collect::<IndexMap<_, _>>()
+							.into(),
 						fields: FieldsContainer {
 							fields: vec![Field {
 								name: "packet".as_ident(),
@@ -60,14 +62,15 @@ pub fn spec_to_generator(
 									field: Some("packet".as_ident()),
 									format: CustomFormat::default(),
 								}],
-							)]),
+							)])
+							.into(),
 						},
 					});
 
 					packets.push(PacketGenerator {
 						inner: StructGenerator {
 							name: packet_name,
-							feature: item.feature.map(|feature| Feature { feature }),
+							feature,
 							fields: FieldsContainer::from_spec(item.data, item.format),
 						},
 						direction,
@@ -91,12 +94,14 @@ pub fn spec_to_generator(
 					for (variant_name, variant) in item.variants {
 						variants.push(Variant {
 							name: variant_name.as_ident(),
+							feature: variant.feature.map(|feature| Feature { feature }),
 							tags: variant
 								.tag
 								.expand_shortcut()
 								.into_iter()
 								.map(|(bounds, id)| (bounds, id.as_tokenstream()))
-								.collect(),
+								.collect::<IndexMap<_, _>>()
+								.into(),
 							fields: FieldsContainer::from_spec(
 								variant.data.unwrap_or(IndexMap::new()),
 								variant.format,
@@ -109,14 +114,16 @@ pub fn spec_to_generator(
 						feature: item.feature.map(|feature| Feature { feature }),
 						variants,
 						tag_format: match item.tag_format {
-							None => IndexMap::from([(vec![Bounds::All], CustomFormat::default())]),
+							None => IndexMap::from([(vec![Bounds::All], CustomFormat::default())])
+								.into(),
 							Some(format) => format
 								.expand_shortcut()
 								.into_iter()
 								.map(|(bounds, format)| {
 									(bounds, CustomFormat::from_tag_format(&format))
 								})
-								.collect(),
+								.collect::<IndexMap<_, _>>()
+								.into(),
 						},
 					});
 				}
@@ -132,7 +139,8 @@ pub fn spec_to_generator(
 				// This custom format will default to VarInt
 				// which is exactly what we need for the packet IDs
 				CustomFormat::default(),
-			)]),
+			)])
+			.into(),
 		};
 
 		states.push(StateGenerator {
@@ -145,5 +153,5 @@ pub fn spec_to_generator(
 		});
 	}
 
-	DirectionGenerator { direction, states }
+	DirectionGenerator { states }
 }

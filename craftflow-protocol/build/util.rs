@@ -43,20 +43,20 @@ impl StateName {
 }
 
 pub trait AsIdent {
-	fn as_ident(&self) -> proc_macro2::Ident;
+	fn as_ident(&self) -> Ident;
 }
 impl AsIdent for str {
-	fn as_ident(&self) -> proc_macro2::Ident {
-		proc_macro2::Ident::new(self, proc_macro2::Span::call_site())
+	fn as_ident(&self) -> Ident {
+		Ident::new(self, proc_macro2::Span::call_site())
 	}
 }
 
 pub trait AsTokenStream {
-	fn as_tokenstream(&self) -> proc_macro2::TokenStream;
+	fn as_tokenstream(&self) -> TokenStream;
 }
 impl AsTokenStream for str {
-	fn as_tokenstream(&self) -> proc_macro2::TokenStream {
-		proc_macro2::TokenStream::from_str(self).unwrap()
+	fn as_tokenstream(&self) -> TokenStream {
+		TokenStream::from_str(self).unwrap()
 	}
 }
 

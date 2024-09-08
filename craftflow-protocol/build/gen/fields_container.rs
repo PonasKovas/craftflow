@@ -2,10 +2,12 @@ use super::{
 	custom_format::CustomFormat,
 	feature::Feature,
 	field::{Field, FieldFeatureReq, FieldFormat},
+	version_dependent::VersionDependent,
 };
 use crate::build::{
 	gen::field::FieldGenOptions,
-	state_spec::{self, Data, VersionDependent},
+	info_file::Info,
+	state_spec::{self, Data},
 	util::{AsIdent, AsTokenStream},
 	version_bounds::{Bounds, BoundsMethods},
 };
@@ -15,13 +17,13 @@ use quote::quote;
 
 pub struct FieldsContainer {
 	pub fields: Vec<Field>,
-	pub format: IndexMap<Vec<Bounds>, Vec<FieldFormat>>,
+	pub format: VersionDependent<Vec<FieldFormat>>,
 }
 
 impl FieldsContainer {
 	pub fn from_spec(
 		data: IndexMap<String, Data>,
-		format: Option<VersionDependent<Vec<state_spec::FieldFormat>>>,
+		format: Option<state_spec::VersionDependent<Vec<state_spec::FieldFormat>>>,
 	) -> Self {
 		let mut fields = Vec::new();
 		for (field_name, field) in data {
@@ -77,11 +79,14 @@ impl FieldsContainer {
 			)]),
 		};
 
-		FieldsContainer { fields, format }
+		FieldsContainer {
+			fields,
+			format: format.into(),
+		}
 	}
 
 	/// Generates `pub field: Type, ...`
-	pub fn gen_definition(&self) -> TokenStream {
+	pub fn gen_definition(&self, with_pub: bool) -> TokenStream {
 		if self.fields.is_empty() {
 			return quote! {};
 		}
@@ -89,7 +94,7 @@ impl FieldsContainer {
 		let fields = self.fields.iter().map(|f| {
 			f.gen(FieldGenOptions {
 				with_type: true,
-				with_pub: true,
+				with_pub,
 				with_feature_cfg: true,
 				with_default_value: false,
 				with_feature_doc_note: true,
@@ -123,7 +128,7 @@ impl FieldsContainer {
 	}
 	/// Generates code that reads all fields into their respective variables
 	/// In a MinecraftProtocol implementation
-	pub fn gen_read_impl(&self) -> TokenStream {
+	pub fn gen_read_impl(&self, info: &Info) -> TokenStream {
 		let mut result = TokenStream::new();
 
 		// First we create a variable for each field that is about to be read,
@@ -142,11 +147,9 @@ impl FieldsContainer {
 		}
 
 		// Now match the protocol version and read the fields according to the format
-		let mut arms = Vec::new();
-		for (bounds, format) in &self.format {
-			let pattern = bounds.as_match_pattern();
+		result.extend(self.format.gen_protocol_version_match(info, |format| {
+			let mut field_reads = TokenStream::new();
 
-			let mut field_reads = Vec::new();
 			for f in format {
 				let read = match (&f.format.custom_read, f.field.is_some()) {
 					(None, true) => {
@@ -172,7 +175,7 @@ impl FieldsContainer {
 					}
 				};
 
-				field_reads.push(match &f.field {
+				field_reads.extend(match &f.field {
 					Some(field_name) => {
 						// if this field requires a feature, add a cfg to allow unused_assignments when that feature is not enabled
 						let cfg_attr = self
@@ -193,18 +196,8 @@ impl FieldsContainer {
 				});
 			}
 
-			arms.push(quote! {
-				#pattern => {
-					#( #field_reads )*
-				},
-			});
-		}
-
-		result.extend(quote! {
-			match ___PROTOCOL_VERSION___ {
-				#( #arms )*
-			}
-		});
+			field_reads
+		}));
 
 		result
 	}
@@ -213,15 +206,13 @@ impl FieldsContainer {
 	///
 	/// all fields must already be prepared as normal variables
 	/// destructure your structure before generating this
-	pub fn gen_write_impl(&self) -> TokenStream {
+	pub fn gen_write_impl(&self, info: &Info) -> TokenStream {
 		let mut result = TokenStream::new();
 
 		// Now match the protocol version and write the fields according to the format
-		let mut arms = Vec::new();
-		for (bounds, format) in &self.format {
-			let pattern = bounds.as_match_pattern();
+		result.extend(self.format.gen_protocol_version_match(info, |format| {
+			let mut field_writes = TokenStream::new();
 
-			let mut field_writes = Vec::new();
 			for f in format {
 				let write = match (&f.format.custom_write, &f.field) {
 					(None, Some(field_name)) => {
@@ -258,21 +249,11 @@ impl FieldsContainer {
 					}
 				};
 
-				field_writes.push(quote! { #write });
+				field_writes.extend(quote! { #write });
 			}
 
-			arms.push(quote! {
-				#pattern => {
-					#( #field_writes )*
-				},
-			});
-		}
-
-		result.extend(quote! {
-			match ___PROTOCOL_VERSION___ {
-				#( #arms )*
-			}
-		});
+			field_writes
+		}));
 
 		result
 	}
