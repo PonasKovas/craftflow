@@ -1,4 +1,4 @@
-use super::version_bounds::Bounds;
+use super::version_bounds::{Bounds, BoundsMethods};
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde::Deserialize;
@@ -42,7 +42,7 @@ impl Info {
 			for (feature, bounds) in &self.features {
 				// if the bounds dont contain this version
 				// that means this version is not supported if the feature is enabled
-				if !Bounds::contain(bounds, version) {
+				if !bounds.contain(version) {
 					features.push(quote! { #feature });
 				}
 			}

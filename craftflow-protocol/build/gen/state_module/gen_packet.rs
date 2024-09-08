@@ -1,5 +1,10 @@
 use super::gen_struct::gen_struct;
-use crate::build::{gen::state_enum_name, state_spec::PacketSpec, to_pascal_case, AsIdent, Info};
+use crate::build::{
+	gen::state_enum_name,
+	state_spec::PacketSpec,
+	util::{to_pascal_case, AsIdent},
+	Info,
+};
 use proc_macro2::TokenStream;
 use quote::quote;
 

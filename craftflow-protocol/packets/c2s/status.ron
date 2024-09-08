@@ -11,11 +11,10 @@
 					default: "Some(true)"
 				),
 			},
-			// id: {
-			// 	["701-"]: 0x01,
-			// 	["702+"]: 0x07,
-			// },
-			id: 0,
+			id: {
+				["701-"]: 0x01,
+				["702+"]: 0x07,
+			},
 			format: {
 				["708+"]: [
 					( field: "protocol_version", read_as: "Option<bool>", read: "15", write: "Some(false)" ),
@@ -50,38 +49,38 @@
 				"i_love_this_field": "Option<String>",
 			},
 		),
-		"MyFavoriteEnum": enum(
-			feature: "extra_field_feature",
-			variants: {
-				"MyVariant": ( tag: "0" ),
-				"WorstVariant": (
-					tag: "1",
-					data: {
-						"my_field": "Option<String>",
-						"other": (
-							type: "bool",
-							feature: "extra_field_feature",
-							default: "false"
-						)
-					},
-					feature: "extra_field_feature"
-				),
-			},
-		),
-		"MyLeastFavoriteEnum": enum(
-			tag_format: {
-				["708+"]: ( read_as: "u16", read: "VarInt(tag as i32)", write: "tag.0 as u16" ),
-				["*"]: ( read_as: "VarInt", read: "VarInt(tag.0 * 2)", write: "VarInt(tag.0 / 2)" ),
-			},
-			variants: {
-				"MyVariant": ( tag: "VarInt(0)" ),
-				"WorstVariant": (
-					tag: "VarInt(1)",
-					data: {
-						"my_field": "Option<String>",
-					},
-				),
-			},
-		),
+		// "MyFavoriteEnum": enum(
+		// 	feature: "extra_field_feature",
+		// 	variants: {
+		// 		"MyVariant": ( tag: "0" ),
+		// 		"WorstVariant": (
+		// 			tag: "1",
+		// 			data: {
+		// 				"my_field": "Option<String>",
+		// 				"other": (
+		// 					type: "bool",
+		// 					feature: "extra_field_feature",
+		// 					default: "false"
+		// 				)
+		// 			},
+		// 			feature: "extra_field_feature"
+		// 		),
+		// 	},
+		// ),
+		// "MyLeastFavoriteEnum": enum(
+		// 	tag_format: {
+		// 		["708+"]: ( read_as: "u16", read: "VarInt(THIS as i32)", write: "THIS.0 as u16" ),
+		// 		["*"]: ( read_as: "VarInt", read: "VarInt(THIS.0 * 2)", write: "VarInt(THIS.0 / 2)" ),
+		// 	},
+		// 	variants: {
+		// 		"MyVariant": ( tag: "VarInt(0)" ),
+		// 		"WorstVariant": (
+		// 			tag: "VarInt(1)",
+		// 			data: {
+		// 				"my_field": "Option<String>",
+		// 			},
+		// 		),
+		// 	},
+		// ),
 	}
 )

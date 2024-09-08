@@ -1,12 +1,13 @@
 use crate::build::{
 	gen::{feature_cfg::gen_feature_cfg, state_enum_name},
 	state_spec::{SpecItem, StateSpec},
-	AsIdent, Info,
+	util::AsIdent,
+	Info,
 };
 use gen_enum::gen_enum;
 use gen_packet::gen_packet;
 use gen_struct::gen_struct;
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
 pub mod fields;
@@ -64,6 +65,9 @@ pub fn gen_state_module(
 		});
 	}
 
+	let minecraftprotocol_impl_for_state_enum =
+		gen_state_enum_minecraftprotocol_impl(&enum_name, state_spec);
+
 	let feature_cfg = state_spec
 		.feature
 		.as_ref()
@@ -80,7 +84,45 @@ pub fn gen_state_module(
 				)*
 			}
 
+			#minecraftprotocol_impl_for_state_enum
+
 			#generated
+		}
+	}
+}
+
+fn gen_state_enum_minecraftprotocol_impl(enum_name: &Ident, state_spec: &StateSpec) -> TokenStream {
+	let mut read_match_arms = Vec::new();
+	let mut write_match_arms = Vec::new();
+	for (name, item) in &state_spec.items {
+		if let SpecItem::Packet(packet) = item {
+			for (bounds, packet_id) in packet.id.expand_shortcut() {}
+
+			read_match_arms.push(quote! {});
+		}
+	}
+
+	quote! {
+		impl crate::MinecraftProtocol for #enum_name {
+			fn read(#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32, #[allow(non_snake_case)] ___INPUT___: &mut impl std::io::Read) -> anyhow::Result<Self> {
+				let tag: crate::datatypes::VarInt = crate::MinecraftProtocol::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+
+				Ok(match tag.0 {
+					#( #read_match_arms )*
+					other => anyhow::bail!("unexpected id for #enum_name: {other}"),
+				})
+			}
+
+			fn write(&self, #[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32, #[allow(non_snake_case)] ___OUTPUT___: &mut impl std::io::Write) -> anyhow::Result<usize> {
+				#[allow(non_snake_case)]
+				let mut ___WRITTEN_BYTES___: usize = 0;
+
+				match self {
+					#( #write_match_arms )*
+				}
+
+				Ok(___WRITTEN_BYTES___)
+			}
 		}
 	}
 }

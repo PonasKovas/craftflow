@@ -3,8 +3,9 @@ use std::collections::BTreeMap;
 use crate::build::{
 	gen::feature_cfg::{gen_feature_cfg, gen_not_feature_cfg},
 	state_spec::{Data, EnumSpec},
-	version_bounds::Bounds,
-	AsIdent, AsTokenStream, Info,
+	util::{AsIdent, AsTokenStream},
+	version_bounds::{Bounds, BoundsMethods},
+	Info,
 };
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -80,7 +81,7 @@ pub fn gen_enum(info: &Info, name: &str, spec: &EnumSpec) -> Vec<TokenStream> {
 			let mut match_arms = Vec::new();
 
 			for (bounds, format) in format.expand_shortcut() {
-				let protocol_pattern = Bounds::as_match_pattern(&bounds);
+				let protocol_pattern = bounds.as_match_pattern();
 
 				let right_side = match (format.read_as, format.read) {
 					(None, Some(_)) | (Some(_), None) => {
@@ -161,7 +162,7 @@ pub fn gen_enum(info: &Info, name: &str, spec: &EnumSpec) -> Vec<TokenStream> {
 		};
 
 		for (tag, bounds) in tags_to_version_bounds {
-			let protocol_pattern = Bounds::as_match_pattern(&bounds);
+			let protocol_pattern = bounds.as_match_pattern();
 			let tag = tag.as_tokenstream();
 
 			let unsupported_versions_arms = info.unsupported_versions_patterns();
@@ -185,7 +186,7 @@ pub fn gen_enum(info: &Info, name: &str, spec: &EnumSpec) -> Vec<TokenStream> {
 
 		let mut tag_arms = Vec::new();
 		for (bounds, tag) in variant.tag.expand_shortcut() {
-			let protocol_pattern = Bounds::as_match_pattern(&bounds);
+			let protocol_pattern = bounds.as_match_pattern();
 			let tag = tag.as_tokenstream();
 
 			tag_arms.push(quote! {
@@ -200,7 +201,7 @@ pub fn gen_enum(info: &Info, name: &str, spec: &EnumSpec) -> Vec<TokenStream> {
 			Some(format) => {
 				let mut protocol_arms = Vec::new();
 				for (bounds, tag) in format.expand_shortcut() {
-					let protocol_pattern = Bounds::as_match_pattern(&bounds);
+					let protocol_pattern = bounds.as_match_pattern();
 
 					let write = match &tag.write {
 						None => {

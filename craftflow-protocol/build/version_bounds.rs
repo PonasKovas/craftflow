@@ -1,9 +1,9 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde::{de::Visitor, Deserialize};
-use std::{error::Error, str::FromStr};
+use std::error::Error;
 
-use super::AsTokenStream;
+use super::util::AsTokenStream;
 
 /// The bounds for protocol versions
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
@@ -65,11 +65,17 @@ impl<'de> Visitor<'de> for BoundsVisitor {
     }
 }
 
-impl Bounds {
-    pub fn as_match_pattern(this: &[Bounds]) -> TokenStream {
+pub trait BoundsMethods {
+    fn as_match_pattern(&self) -> TokenStream;
+    /// Checks if a version matches the bounds
+    fn contain(&self, version: u32) -> bool;
+}
+
+impl BoundsMethods for  [Bounds] {
+    fn as_match_pattern(&self) -> TokenStream {
         let mut items = Vec::new();
 
-        for bound in this {
+        for bound in self {
             items.push(match bound {
                 Bounds::All => format!("_"),
                 Bounds::From(from) => format!("{from}.."),
@@ -85,9 +91,9 @@ impl Bounds {
 
         TokenStream::from_iter(items)
     }
-    /// Checks if a version matches the bounds
-    pub fn contain(this: &[Bounds], version: u32) -> bool {
-        for bounds in this {
+
+    fn contain(&self, version: u32) -> bool {
+        for bounds in self {
             match *bounds {
                 Bounds::All => return true,
                 Bounds::From(x) => if version >= x { return true },

@@ -1,6 +1,8 @@
 mod gen;
 mod info_file;
+mod spec_to_generator;
 mod state_spec;
+mod util;
 mod version_bounds;
 
 use info_file::{parse_info_file, Info};
@@ -12,8 +14,8 @@ use std::{
 	io::Write,
 	path::Path,
 	process::{Command, Stdio},
-	str::FromStr,
 };
+use util::StateName;
 
 pub fn main() {
 	println!("cargo::rerun-if-changed=packets/");
@@ -34,7 +36,7 @@ pub fn main() {
 /// Parses the packet specifications and generates rust code for them
 pub fn generate_packets(info: Info) {
 	// Parse the state specs
-	let mut states = [BTreeMap::new(), BTreeMap::new()];
+	let mut directions = [BTreeMap::new(), BTreeMap::new()];
 
 	for (i, direction) in ["c2s", "s2c"].into_iter().enumerate() {
 		for state in fs::read_dir(format!("packets/{direction}/")).unwrap() {
@@ -50,48 +52,24 @@ pub fn generate_packets(info: Info) {
 				),
 			};
 
-			states[i].insert(state_name.to_owned(), state_spec);
+			directions[i].insert(
+				StateName {
+					name: state_name.to_owned(),
+				},
+				state_spec,
+			);
 		}
 	}
 
 	// generate the code
-	let generated = gen::generate_code(&info, &states[0], &states[1]);
+	let [c2s, s2c] = directions;
+	let generated = gen::generate_code(&info, c2s, s2c);
 
 	write(&generated, "generated.rs");
 	write(
 		&generated,
 		Path::new(&env::var("OUT_DIR").unwrap()).join("generated_packets.rs"),
 	);
-}
-
-trait AsIdent {
-	fn as_ident(&self) -> proc_macro2::Ident;
-}
-impl AsIdent for str {
-	fn as_ident(&self) -> proc_macro2::Ident {
-		proc_macro2::Ident::new(self, proc_macro2::Span::call_site())
-	}
-}
-
-trait AsTokenStream {
-	fn as_tokenstream(&self) -> proc_macro2::TokenStream;
-}
-impl AsTokenStream for str {
-	fn as_tokenstream(&self) -> proc_macro2::TokenStream {
-		proc_macro2::TokenStream::from_str(self).unwrap()
-	}
-}
-
-fn to_pascal_case(s: &str) -> String {
-	fn capitalize(s: &str) -> String {
-		let mut c = s.chars();
-		match c.next() {
-			None => String::new(),
-			Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-		}
-	}
-
-	s.split('_').map(|word| capitalize(word)).collect()
 }
 
 // Writes (formatted if env RUSTFMT_GENERATED set) stream to the given path

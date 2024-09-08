@@ -1,8 +1,9 @@
 use crate::build::{
-	gen::feature_cfg::{gen_feature_cfg, gen_not_feature_cfg},
+	gen::feature_cfg::gen_feature_cfg,
 	state_spec::{Data, FieldFormat, VersionDependent},
-	version_bounds::Bounds,
-	AsIdent, AsTokenStream, Info,
+	util::{AsIdent, AsTokenStream},
+	version_bounds::BoundsMethods,
+	Info,
 };
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;
@@ -101,7 +102,7 @@ impl<'a> Fields<'a> {
 							// Only read the field if the protocol version matches the feature
 							// otherwise leave default
 							let feature_bounds = &info.features[feature];
-							let protocol_pattern = Bounds::as_match_pattern(feature_bounds);
+							let protocol_pattern = feature_bounds.as_match_pattern();
 
 							quote! {
 								if let #protocol_pattern = ___PROTOCOL_VERSION___ {
@@ -119,7 +120,7 @@ impl<'a> Fields<'a> {
 				let mut match_arms = Vec::new();
 
 				for (bounds, format) in format.expand_shortcut() {
-					let protocol_pattern = Bounds::as_match_pattern(&bounds);
+					let protocol_pattern = bounds.as_match_pattern();
 
 					let mut reads = Vec::new();
 					for field in format {
@@ -206,7 +207,7 @@ impl<'a> Fields<'a> {
 							default: _,
 						} => {
 							let feature_bounds = &info.features[feature];
-							let protocol_pattern = Bounds::as_match_pattern(feature_bounds);
+							let protocol_pattern = feature_bounds.as_match_pattern();
 
 							quote! {
 								if let #protocol_pattern = ___PROTOCOL_VERSION___ {
@@ -222,7 +223,7 @@ impl<'a> Fields<'a> {
 				let mut match_arms = Vec::new();
 
 				for (bounds, format) in format.expand_shortcut() {
-					let protocol_pattern = Bounds::as_match_pattern(&bounds);
+					let protocol_pattern = bounds.as_match_pattern();
 
 					let mut writes = Vec::new();
 					for field in format {

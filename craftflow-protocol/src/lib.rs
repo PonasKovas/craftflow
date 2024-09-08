@@ -1,7 +1,7 @@
 #![feature(doc_cfg)]
 
 pub mod datatypes;
-pub mod handshake;
+// pub mod handshake;
 pub mod legacy;
 pub mod protocol;
 

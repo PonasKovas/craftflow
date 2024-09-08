@@ -1,4 +1,4 @@
-use super::{gen::state_module::fields::Fields, version_bounds::Bounds, AsIdent, AsTokenStream};
+use super::{util::AsTokenStream, version_bounds::Bounds};
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;
 use ron::extensions::Extensions;
@@ -91,7 +91,7 @@ pub enum Data {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct FieldFormat {
-	pub field: String,
+	pub field: Option<String>,
 	pub read_as: Option<String>,
 	pub read: Option<String>,
 	pub write: Option<String>,
@@ -102,16 +102,6 @@ pub struct TagFormat {
 	pub read_as: Option<String>,
 	pub read: Option<String>,
 	pub write: Option<String>,
-}
-
-impl SpecItem {
-	pub fn feature(&self) -> &Option<String> {
-		match self {
-			SpecItem::Packet(item) => &item.feature,
-			SpecItem::Struct(item) => &item.feature,
-			SpecItem::Enum(item) => &item.feature,
-		}
-	}
 }
 
 impl<T: Clone> VersionDependent<T> {
@@ -128,49 +118,59 @@ impl<T: Clone> VersionDependent<T> {
 	}
 }
 
-impl PacketSpec {
-	pub fn fields(&self) -> Fields {
-		Fields {
-			data: &self.data,
-			format: &self.format,
-		}
-	}
-}
-impl StructSpec {
-	pub fn fields(&self) -> Fields {
-		Fields {
-			data: &self.data,
-			format: &self.format,
-		}
-	}
-}
-impl EnumVariant {
-	pub fn fields(&self) -> Option<Fields> {
-		match &self.data {
-			Some(data) => Some(Fields {
-				data,
-				format: &self.format,
-			}),
-			None => {
-				if self.format.is_some() {
-					panic!("Enum variant must not have `format` if doesn't have `data`");
-				} else {
-					None
-				}
-			}
-		}
-	}
-}
+// impl SpecItem {
+// 	pub fn feature(&self) -> &Option<String> {
+// 		match self {
+// 			SpecItem::Packet(item) => &item.feature,
+// 			SpecItem::Struct(item) => &item.feature,
+// 			SpecItem::Enum(item) => &item.feature,
+// 		}
+// 	}
+// }
 
-impl Data {
-	pub fn datatype(&self) -> TokenStream {
-		match self {
-			Data::Normal(t) => t.as_tokenstream(),
-			Data::RequiresFeature {
-				feature: _,
-				data_type: t,
-				default: _,
-			} => t.as_tokenstream(),
-		}
-	}
-}
+// impl PacketSpec {
+// 	pub fn fields(&self) -> Fields {
+// 		Fields {
+// 			data: &self.data,
+// 			format: &self.format,
+// 		}
+// 	}
+// }
+// impl StructSpec {
+// 	pub fn fields(&self) -> Fields {
+// 		Fields {
+// 			data: &self.data,
+// 			format: &self.format,
+// 		}
+// 	}
+// }
+// impl EnumVariant {
+// 	pub fn fields(&self) -> Option<Fields> {
+// 		match &self.data {
+// 			Some(data) => Some(Fields {
+// 				data,
+// 				format: &self.format,
+// 			}),
+// 			None => {
+// 				if self.format.is_some() {
+// 					panic!("Enum variant must not have `format` if doesn't have `data`");
+// 				} else {
+// 					None
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
+// impl Data {
+// 	pub fn datatype(&self) -> TokenStream {
+// 		match self {
+// 			Data::Normal(t) => t.as_tokenstream(),
+// 			Data::RequiresFeature {
+// 				feature: _,
+// 				data_type: t,
+// 				default: _,
+// 			} => t.as_tokenstream(),
+// 		}
+// 	}
+// }

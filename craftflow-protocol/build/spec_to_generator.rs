@@ -1,0 +1,149 @@
+use indexmap::IndexMap;
+use quote::quote;
+
+use super::{
+	gen::{
+		custom_format::CustomFormat,
+		direction_generator::DirectionGenerator,
+		enum_generator::{EnumGenerator, Variant},
+		feature::Feature,
+		field::{Field, FieldFormat},
+		fields_container::FieldsContainer,
+		packet_generator::PacketGenerator,
+		state_generator::StateGenerator,
+		struct_generator::StructGenerator,
+	},
+	info_file::Info,
+	state_spec::{SpecItem, StateSpec},
+	util::{AsIdent, AsTokenStream, Direction, StateName},
+	version_bounds::Bounds,
+};
+use std::collections::BTreeMap;
+
+// Converts a single direction spec to a direction generator
+pub fn spec_to_generator(
+	direction: Direction,
+	info: &Info,
+	specs: BTreeMap<StateName, StateSpec>,
+) -> DirectionGenerator {
+	let mut states = Vec::new();
+
+	for (state_name, spec) in specs {
+		let mut packets = Vec::new();
+		let mut structs = Vec::new();
+		let mut enums = Vec::new();
+		let mut main_enum_variants = Vec::new();
+		for (item_name, item) in spec.items {
+			match item {
+				SpecItem::Packet(item) => {
+					// PACKET
+					////////////
+					let packet_name = item_name.as_ident();
+
+					main_enum_variants.push(Variant {
+						name: packet_name.clone(),
+						tags: item
+							.id
+							.expand_shortcut()
+							.into_iter()
+							.map(|(bounds, id)| (bounds, quote! { #id }))
+							.collect(),
+						fields: FieldsContainer {
+							fields: vec![Field {
+								name: "packet".as_ident(),
+								datatype: quote! { #packet_name },
+								feature: None,
+							}],
+							format: IndexMap::from([(
+								vec![Bounds::All],
+								vec![FieldFormat {
+									field: Some("packet".as_ident()),
+									format: CustomFormat::default(),
+								}],
+							)]),
+						},
+					});
+
+					packets.push(PacketGenerator {
+						inner: StructGenerator {
+							name: packet_name,
+							feature: item.feature.map(|feature| Feature { feature }),
+							fields: FieldsContainer::from_spec(item.data, item.format),
+						},
+						direction,
+						state_name: state_name.clone(),
+					});
+				}
+				SpecItem::Struct(item) => {
+					// STRUCT
+					////////////
+					structs.push(StructGenerator {
+						name: item_name.as_ident(),
+						feature: item.feature.map(|feature| Feature { feature }),
+						fields: FieldsContainer::from_spec(item.data, item.format),
+					});
+				}
+				SpecItem::Enum(item) => {
+					// ENUM
+					////////////
+					let mut variants = Vec::new();
+
+					for (variant_name, variant) in item.variants {
+						variants.push(Variant {
+							name: variant_name.as_ident(),
+							tags: variant
+								.tag
+								.expand_shortcut()
+								.into_iter()
+								.map(|(bounds, id)| (bounds, id.as_tokenstream()))
+								.collect(),
+							fields: FieldsContainer::from_spec(
+								variant.data.unwrap_or(IndexMap::new()),
+								variant.format,
+							),
+						});
+					}
+
+					enums.push(EnumGenerator {
+						name: item_name.as_ident(),
+						feature: item.feature.map(|feature| Feature { feature }),
+						variants,
+						tag_format: match item.tag_format {
+							None => IndexMap::from([(vec![Bounds::All], CustomFormat::default())]),
+							Some(format) => format
+								.expand_shortcut()
+								.into_iter()
+								.map(|(bounds, format)| {
+									(bounds, CustomFormat::from_tag_format(&format))
+								})
+								.collect(),
+						},
+					});
+				}
+			}
+		}
+
+		let main_enum = EnumGenerator {
+			name: state_name.enum_name(),
+			feature: None,
+			variants: main_enum_variants,
+			tag_format: IndexMap::from([(
+				vec![Bounds::All],
+				// This custom format will default to VarInt
+				// which is exactly what we need for the packet IDs
+				CustomFormat::default(),
+			)]),
+		};
+
+		states.push(StateGenerator {
+			name: state_name.clone(),
+			feature: spec.feature.map(|feature| Feature { feature }),
+			main_enum,
+			packets,
+			structs,
+			enums,
+		});
+	}
+
+	DirectionGenerator { direction, states }
+}

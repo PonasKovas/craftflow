@@ -2,7 +2,8 @@ use super::fields::Fields;
 use crate::build::{
 	gen::feature_cfg::{gen_feature_cfg, gen_not_feature_cfg},
 	state_spec::Data,
-	AsIdent, AsTokenStream, Info,
+	util::{AsIdent, AsTokenStream},
+	Info,
 };
 use proc_macro2::TokenStream;
 use quote::quote;
