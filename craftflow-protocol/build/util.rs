@@ -1,8 +1,5 @@
-use super::version_bounds::Bounds;
-use indexmap::IndexMap;
 use proc_macro2::{Ident, TokenStream};
-use quote::quote;
-use std::{hash::Hash, str::FromStr};
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Direction {

@@ -1,15 +1,8 @@
 use super::{
-	custom_format::CustomFormat,
-	feature::Feature,
-	field::{Field, FieldFormat},
-	fields_container::FieldsContainer,
+	custom_format::CustomFormat, feature::Feature, fields_container::FieldsContainer,
 	version_dependent::VersionDependent,
 };
-use crate::build::{
-	gen::{feature::FeatureCfgOptions, field::FieldGenOptions},
-	info_file::Info,
-	version_bounds::{Bounds, BoundsMethods},
-};
+use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info};
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 

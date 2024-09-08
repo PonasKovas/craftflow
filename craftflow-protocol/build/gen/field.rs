@@ -1,12 +1,5 @@
-use super::{
-	custom_format::{CustomFormat, CustomRead},
-	feature::Feature,
-};
-use crate::build::{
-	gen::feature::FeatureCfgOptions,
-	state_spec,
-	util::{AsIdent, AsTokenStream},
-};
+use super::{custom_format::CustomFormat, feature::Feature};
+use crate::build::{gen::feature::FeatureCfgOptions, state_spec, util::AsIdent};
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 

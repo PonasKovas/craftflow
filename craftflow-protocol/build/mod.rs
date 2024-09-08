@@ -65,7 +65,8 @@ pub fn generate_packets(info: Info) {
 	let [c2s, s2c] = directions;
 	let generated = gen::generate_code(&info, c2s, s2c);
 
-	write(&generated, "generated.rs");
+	// for debug purposes
+	// write(&generated, "generated.rs");
 	write(
 		&generated,
 		Path::new(&env::var("OUT_DIR").unwrap()).join("generated_packets.rs"),

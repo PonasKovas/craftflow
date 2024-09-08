@@ -1,11 +1,11 @@
 use super::{
 	state_spec::StateSpec,
-	util::{to_pascal_case, AsIdent, Direction, StateName},
+	util::{Direction, StateName},
 	Info,
 };
 use crate::build::spec_to_generator::spec_to_generator;
 use feature::{Feature, FeatureCfgOptions};
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 use std::collections::BTreeMap;
 

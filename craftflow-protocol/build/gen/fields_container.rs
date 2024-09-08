@@ -9,7 +9,7 @@ use crate::build::{
 	info_file::Info,
 	state_spec::{self, Data},
 	util::{AsIdent, AsTokenStream},
-	version_bounds::{Bounds, BoundsMethods},
+	version_bounds::Bounds,
 };
 use indexmap::IndexMap;
 use proc_macro2::TokenStream;

@@ -1,6 +1,5 @@
-use super::{util::AsTokenStream, version_bounds::Bounds};
+use super::version_bounds::Bounds;
 use indexmap::IndexMap;
-use proc_macro2::TokenStream;
 use ron::extensions::Extensions;
 use serde::Deserialize;
 use std::{collections::BTreeMap, error::Error, fs, path::PathBuf};

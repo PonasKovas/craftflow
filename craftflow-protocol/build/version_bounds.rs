@@ -1,9 +1,8 @@
+use super::util::AsTokenStream;
 use proc_macro2::TokenStream;
 use quote::quote;
 use serde::{de::Visitor, Deserialize};
 use std::error::Error;
-
-use super::util::AsTokenStream;
 
 /// The bounds for protocol versions
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]

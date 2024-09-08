@@ -1,9 +1,8 @@
-use proc_macro2::TokenStream;
-
 use crate::build::{
 	state_spec::{FieldFormat, TagFormat},
 	util::AsTokenStream,
 };
+use proc_macro2::TokenStream;
 
 #[derive(Debug, Default)]
 pub struct CustomFormat {

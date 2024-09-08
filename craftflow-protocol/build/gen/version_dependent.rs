@@ -3,7 +3,7 @@ use crate::build::{
 	version_bounds::{Bounds, BoundsMethods},
 };
 use indexmap::IndexMap;
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 
 pub struct VersionDependent<T> {

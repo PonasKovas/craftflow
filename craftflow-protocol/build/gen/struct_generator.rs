@@ -1,14 +1,5 @@
-use super::{
-	feature::Feature,
-	field::{Field, FieldFormat},
-	fields_container::FieldsContainer,
-};
-use crate::build::{
-	gen::{feature::FeatureCfgOptions, field::FieldGenOptions},
-	info_file::Info,
-	version_bounds::{Bounds, BoundsMethods},
-};
-use indexmap::IndexMap;
+use super::{feature::Feature, fields_container::FieldsContainer};
+use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info};
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 

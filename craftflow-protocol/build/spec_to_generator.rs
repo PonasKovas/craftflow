@@ -13,7 +13,6 @@ use super::{
 		state_generator::StateGenerator,
 		struct_generator::StructGenerator,
 	},
-	info_file::Info,
 	state_spec::{SpecItem, StateSpec},
 	util::{AsIdent, AsTokenStream, Direction, StateName},
 	version_bounds::Bounds,

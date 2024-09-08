@@ -7,7 +7,7 @@ use crate::build::{
 	info_file::Info,
 	util::{to_pascal_case, StateName},
 };
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
 
 pub struct StateGenerator {

@@ -1,7 +1,6 @@
 use super::state_generator::StateGenerator;
-use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info, util::Direction};
-use proc_macro2::{Ident, TokenStream};
-use quote::quote;
+use crate::build::info_file::Info;
+use proc_macro2::TokenStream;
 
 pub struct DirectionGenerator {
 	pub states: Vec<StateGenerator>,
