@@ -1,10 +1,13 @@
+use std::sync::{Arc, OnceLock};
+
 use super::{compression::CompressionGetter, encryption::Decryptor, ConnState};
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
 use anyhow::bail;
 use craftflow_protocol::{
 	datatypes::VarInt,
-	packets::{handshake::HandshakeC2S, login::LoginC2S, status::StatusC2S, PacketC2S},
-	MCPReadable,
+	protocol::{c2s::LoginPacket, C2S},
+	stable_packets::c2s::{handshake::Handshake, StatusPacket},
+	MinecraftProtocol,
 };
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 
@@ -16,11 +19,12 @@ pub(crate) struct PacketReader {
 	pub(crate) state: ConnState,
 	pub(crate) decryptor: Decryptor,
 	pub(crate) compression: CompressionGetter,
+	pub(crate) protocol_version: Arc<OnceLock<u32>>,
 }
 
 impl PacketReader {
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet(&mut self) -> anyhow::Result<PacketC2S> {
+	pub(crate) async fn read_packet(&mut self) -> anyhow::Result<C2S> {
 		// wait for the length of the next packet
 		let packet_len = self.read_varint_at_pos(0).await?;
 
@@ -56,15 +60,17 @@ impl PacketReader {
 			self.read().await?;
 		};
 
+		let protocol_version = self.get_protocol_version();
+
 		// if the packet was compressed wrap the bytes in a zlib decompressor
 		let packet = if self.compression.enabled().is_some() && uncompressed_data_length != 0 {
 			let mut reader = flate2::read::ZlibDecoder::new(&mut packet_bytes);
 
 			// Parse the packet
 			let packet = match self.state {
-				ConnState::Handshake => HandshakeC2S::read(&mut reader)?.into(),
-				ConnState::Status => StatusC2S::read(&mut reader)?.into(),
-				ConnState::Login => LoginC2S::read(&mut reader)?.into(),
+				ConnState::Handshake => Handshake::read(protocol_version, &mut reader)?.into(),
+				ConnState::Status => StatusPacket::read(protocol_version, &mut reader)?.into(),
+				ConnState::Login => LoginPacket::read(protocol_version, &mut reader)?.into(),
 				ConnState::Configuration => todo!(),
 				ConnState::Play => todo!(),
 			};
@@ -82,9 +88,13 @@ impl PacketReader {
 		} else {
 			// Parse the packet
 			let packet = match self.state {
-				ConnState::Handshake => HandshakeC2S::read(&mut packet_bytes)?.into(),
-				ConnState::Status => StatusC2S::read(&mut packet_bytes)?.into(),
-				ConnState::Login => LoginC2S::read(&mut packet_bytes)?.into(),
+				ConnState::Handshake => {
+					Handshake::read(protocol_version, &mut packet_bytes)?.into()
+				}
+				ConnState::Status => {
+					StatusPacket::read(protocol_version, &mut packet_bytes)?.into()
+				}
+				ConnState::Login => LoginPacket::read(protocol_version, &mut packet_bytes)?.into(),
 				ConnState::Configuration => todo!(),
 				ConnState::Play => todo!(),
 			};
@@ -100,7 +110,7 @@ impl PacketReader {
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	async fn read_varint_at_pos(&mut self, pos: usize) -> anyhow::Result<VarInt> {
 		loop {
-			match VarInt::read(&mut &self.buffer[pos..]) {
+			match VarInt::read(self.get_protocol_version(), &mut &self.buffer[pos..]) {
 				Ok(varint) => break Ok(varint),
 				Err(e) => {
 					// if its not an IO error that means the data is invalid
@@ -131,13 +141,24 @@ impl PacketReader {
 		self.decryptor.if_enabled(|dec| {
 			for i in 0..n {
 				dec.decrypt_block_mut(GenericArray::from_mut_slice(&mut temp[i..(i + 1)])); // stupid ass cryptography crate with outdated ass generics
-				                                                            // FUCK GENERIC ARRAY
-				                                                            // hopefully mr compiler will optimize 🥺
+				                                                                // FUCK GENERIC ARRAY
+				                                                                // hopefully mr compiler will optimize 🥺
 			}
 		});
 
 		self.buffer.extend_from_slice(&temp[..n]);
 
 		Ok(n)
+	}
+	fn get_protocol_version(&self) -> u32 {
+		match self.protocol_version.get() {
+			Some(v) => *v,
+			None => {
+				// if protocol version is not set, we are in the handshake state, before receiving the handshake packet
+				// so in order to read the first packet (which should really be the same for all versions)
+				// we just use whatever version we support
+				craftflow_protocol::protocol::SUPPORTED_PROTOCOL_VERSIONS[0]
+			}
+		}
 	}
 }

@@ -2,13 +2,15 @@ mod encryption_response;
 mod login_start;
 mod set_compression;
 
-use std::{collections::BTreeMap, ops::ControlFlow, sync::RwLock};
-
 use craftflow::{packet_events::Post, various_events::Disconnect, CraftFlow};
-use craftflow_protocol::packets::login::{EncryptionResponse, LoginStart, SetCompression};
+use craftflow_protocol::protocol::{
+	c2s::login::{EncryptionResponse, LoginStart},
+	s2c::login::SetCompression,
+};
 use encryption_response::encryption_response;
 use login_start::login_start;
 use rsa::RsaPrivateKey;
+use std::{collections::BTreeMap, ops::ControlFlow, sync::RwLock};
 
 /// A module that handles the login phase of the minecraft protocol
 /// This includes:

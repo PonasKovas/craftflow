@@ -5,12 +5,13 @@ use super::{
 use crate::build::{
 	gen::feature::FeatureCfgOptions,
 	info_file::Info,
-	util::{to_pascal_case, StateName},
+	util::{to_pascal_case, Direction, StateName},
 };
 use proc_macro2::TokenStream;
 use quote::quote;
 
 pub struct StateGenerator {
+	pub direction: Direction,
 	pub name: StateName,
 	pub feature: Option<Feature>,
 	/// The enum that contains all packets of this state
@@ -56,6 +57,10 @@ impl StateGenerator {
 			to_pascal_case(&self.name.name)
 		);
 
+		let direction_enum = self.direction.enum_name();
+		let main_enum_name = self.name.enum_name();
+		let direction_enum_variant = self.name.direction_enum_variant();
+
 		quote! {
 			#feature_cfg
 			use #module_name::*;
@@ -73,6 +78,12 @@ impl StateGenerator {
 				#( #packets )*
 				#( #structs )*
 				#( #enums )*
+			}
+
+			impl Into<crate::protocol::#direction_enum> for #main_enum_name {
+				fn into(self) -> crate::protocol::#direction_enum {
+					crate::protocol::#direction_enum::#direction_enum_variant(self)
+				}
 			}
 		}
 	}

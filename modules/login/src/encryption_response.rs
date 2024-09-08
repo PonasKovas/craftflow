@@ -1,6 +1,6 @@
 use crate::{Login, VERIFY_TOKEN};
 use craftflow::CraftFlow;
-use craftflow_protocol::packets::login::{EncryptionResponse, LoginSuccess};
+use craftflow_protocol::protocol::{c2s::login::EncryptionResponse, s2c::login::LoginSuccess};
 use rsa::Pkcs1v15Encrypt;
 use std::ops::ControlFlow;
 use tracing::error;

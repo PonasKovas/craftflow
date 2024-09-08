@@ -2,7 +2,10 @@ use crate::{Login, VERIFY_TOKEN};
 use craftflow::CraftFlow;
 use craftflow_protocol::{
 	datatypes::VarInt,
-	packets::login::{EncryptionRequest, LoginStart, SetCompression},
+	protocol::{
+		c2s::login::LoginStart,
+		s2c::login::{EncryptionRequest, SetCompression},
+	},
 };
 use rsa::traits::PublicKeyParts;
 use std::ops::ControlFlow;
@@ -16,7 +19,7 @@ pub fn login_start(
 		.player_names_uuids
 		.write()
 		.unwrap()
-		.insert(conn_id, (request.name.clone(), request.uuid));
+		.insert(conn_id, (request.username.clone(), request.uuid));
 
 	if let &Some(threshold) = &cf.modules.get::<Login>().compression_threshold {
 		// Send the packet to enable compression

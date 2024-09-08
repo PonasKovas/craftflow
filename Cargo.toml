@@ -1,6 +1,5 @@
 [workspace]
-# members = ["craftflow", "craftflow-protocol", "example", "modules/*"]
-members = ["craftflow-protocol"]
+members = ["craftflow", "craftflow-protocol", "example", "modules/*"]
 resolver = "2"
 
 [workspace.dependencies]

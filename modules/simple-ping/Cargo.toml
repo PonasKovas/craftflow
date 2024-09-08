@@ -7,3 +7,4 @@ edition = "2021"
 craftflow = { path = "../../craftflow/" }
 craftflow-protocol = { path = "../../craftflow-protocol/" }
 base64 = { workspace = true }
+serde_json = { workspace = true }

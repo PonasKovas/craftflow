@@ -1,0 +1,36 @@
+(	
+	items: {
+		"LoginStart": packet(
+			id: 0x00,
+			data: {
+				"username": "String",
+				"uuid": "u128",
+			},
+		),
+		"EncryptionResponse": packet(
+			id: 0x01,
+			data: {
+				"shared_secret": "Vec<u8>",
+				"verify_token": "Vec<u8>",
+			},
+		),
+		"PluginResponse": packet(
+			id: 0x02,
+			data: {
+				"message_id": "VarInt",
+				"data": "Option<Box<[u8]>>",
+			},
+		),
+		"LoginAcknowledged": packet(
+			id: 0x03,
+			data: {},
+		),
+		"CookieResponse": packet(
+			id: 0x04,
+			data: {
+				"key": "String",
+				"payload": "Option<Vec<u8>>",
+			},
+		),
+	}
+)

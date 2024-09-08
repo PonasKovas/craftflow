@@ -3,7 +3,7 @@ use super::{
 	util::{Direction, StateName},
 	Info,
 };
-use crate::build::spec_to_generator::spec_to_generator;
+use crate::build::{spec_to_generator::spec_to_generator, version_bounds::BoundsMethods};
 use feature::{Feature, FeatureCfgOptions};
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -34,15 +34,22 @@ pub fn generate_code(
 	let c2s_module = c2s_generator.gen(info);
 	let s2c_module = s2c_generator.gen(info);
 
+	let supported_versions = gen_supported_versions_list(info);
+
 	quote! {
 		#[doc = "All possible Client -> Server packets."]
+		#[derive(Debug, Clone, PartialEq)]
 		pub enum C2S {
-			LegacyPing,
+			LegacyPing(crate::stable_packets::c2s::legacy::LegacyPing),
+			Handshake(crate::stable_packets::c2s::handshake::Handshake),
+			Status(crate::stable_packets::c2s::StatusPacket),
 			#( #c2s_enum_variants )*
 		}
 		#[doc = "All possible Server -> Client packets."]
+		#[derive(Debug, Clone, PartialEq)]
 		pub enum S2C {
-			LegacyPingResponse(crate::legacy::LegacyPingResponse),
+			LegacyPingResponse(crate::stable_packets::s2c::legacy::LegacyPingResponse),
+			Status(crate::stable_packets::s2c::StatusPacket),
 			#( #s2c_enum_variants )*
 		}
 
@@ -54,6 +61,11 @@ pub fn generate_code(
 		pub mod s2c {
 			#s2c_module
 		}
+
+		#[doc = "A list of all supported protocol versions with currently enabled features."]
+		pub const SUPPORTED_PROTOCOL_VERSIONS: &[u32] = &[
+			#( #supported_versions )*
+		];
 	}
 }
 
@@ -81,4 +93,27 @@ fn gen_state_enum_variants(
 	}
 
 	variants
+}
+
+fn gen_supported_versions_list(info: &Info) -> Vec<TokenStream> {
+	let all_supported = info.all_supported();
+
+	all_supported
+		.iter()
+		.map(|&version| {
+			// calculate a list of features that would block this version
+			let blocking_features = info.features.iter().filter_map(|(feature_name, bounds)| {
+				if bounds.contain(version) {
+					None
+				} else {
+					Some(feature_name)
+				}
+			});
+
+			quote! {
+				#[cfg(not(any( #( feature = #blocking_features ),* )))]
+				#version,
+			}
+		})
+		.collect()
 }

@@ -7,7 +7,7 @@ use std::{
 	ops::{Add, AddAssign},
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum Text {
 	String(String),
@@ -15,7 +15,7 @@ pub enum Text {
 	Object(Box<TextObject>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TextObject {
 	#[serde(flatten)]
@@ -56,7 +56,7 @@ pub struct TextObject {
 	pub hover_event: Option<HoverEvent>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum TextContent {
 	Text {
@@ -104,7 +104,7 @@ pub enum TextContent {
 	},
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
 pub enum TextNbtDataSource {
 	Block {
@@ -121,7 +121,7 @@ pub enum TextNbtDataSource {
 	},
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Score {
 	/// A player username, player or entity UUID, entity selector (that selects one entity), or * to match the sending player.
 	pub name: String,
@@ -129,13 +129,13 @@ pub struct Score {
 	pub objective: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ClickEvent {
 	pub action: ClickEventAction,
 	pub value: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ClickEventAction {
 	OpenUrl,
@@ -145,12 +145,12 @@ pub enum ClickEventAction {
 	CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct HoverEvent {
 	pub action: HoverEventAction,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum HoverEventAction {
 	ShowText {
@@ -167,7 +167,7 @@ pub enum HoverEventAction {
 	},
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct HoverActionShowItem {
 	/// The textual identifier of the item's type. If unrecognized, defaults to minecraft:air.
 	pub id: String,
@@ -181,7 +181,7 @@ pub struct HoverActionShowItem {
 	pub tag: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct HoverActionShowEntity {
 	/// The textual identifier of the entity's type. If unrecognized, defaults to minecraft:pig.
 	#[serde(rename = "type")]

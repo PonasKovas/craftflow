@@ -1,8 +1,8 @@
-//! The special case of the Minecraft legacy server list ping, which is different from the rest of the protocol
+use crate::{protocol::S2C, Packet};
 
 /// This is a special packet with a different format that is sent in response to a legacy ping
 /// Do not edit the fields directly, use the builder methods instead, otherwise might end up with an invalid packet
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LegacyPingResponse {
 	pub protocol_version: i32,
 	pub version: String,
@@ -106,5 +106,13 @@ fn int_len(num: i32) -> usize {
 		(num_abs.log10() + 2.0) as usize // because minus sign
 	} else {
 		(num_abs.log10() + 1.0) as usize
+	}
+}
+
+impl Packet for LegacyPingResponse {
+	type Direction = S2C;
+
+	fn into_packet_enum(self) -> Self::Direction {
+		S2C::LegacyPingResponse(self)
 	}
 }

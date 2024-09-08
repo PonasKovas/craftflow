@@ -144,6 +144,7 @@ pub fn spec_to_generator(
 		};
 
 		states.push(StateGenerator {
+			direction,
 			name: state_name.clone(),
 			feature: state_feature,
 			main_enum,

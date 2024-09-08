@@ -68,14 +68,3 @@ pub fn to_pascal_case(s: &str) -> String {
 
 	s.split('_').map(|word| capitalize(word)).collect()
 }
-
-// pub fn inverse_version_dependent<T: Eq + Hash>(
-// 	map: IndexMap<Vec<Bounds>, T>,
-// ) -> IndexMap<T, Vec<Bounds>> {
-// 	let mut inversed = IndexMap::new();
-// 	for (bounds, item) in map {
-// 		inversed.entry(item).or_insert(Vec::new()).extend(bounds);
-// 	}
-
-// 	inversed
-// }

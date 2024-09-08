@@ -27,6 +27,7 @@ impl StructGenerator {
 
 		quote! {
 			#feature_cfg
+			#[derive(Debug, Clone, PartialEq)]
 			pub struct #struct_name {
 				#fields
 			}

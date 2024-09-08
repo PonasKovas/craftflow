@@ -57,7 +57,7 @@ impl Info {
 		result
 	}
 	/// Returns a list of all supported versions (not taking features into account)
-	fn all_supported(&self) -> Vec<u32> {
+	pub fn all_supported(&self) -> Vec<u32> {
 		let mut result = BTreeSet::new();
 		for bounds in &self.supported_protocols {
 			match *bounds {

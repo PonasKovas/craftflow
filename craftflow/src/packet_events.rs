@@ -1,36 +1,36 @@
 //! Implementation of Event for all packets
 //! C2S packet events will be emitted after a packet is received from the client
 //! S2C packet events will be emitted before a packet is sent to the client
-//! Post<S2C> events will be emitted AFTER a packet is sent to the client
+//! `Post<S2C>` events will be emitted AFTER a packet is sent to the client
 
 use crate::{reactor::Event, CraftFlow};
-use craftflow_protocol::packets::{
-	handshake::{self, HandshakeC2S},
-	legacy::{LegacyPing, LegacyPingResponse},
-	login::{self, LoginC2S},
-	status::{self, StatusC2S},
-	IsPacket, PacketC2S, PacketS2C,
+use craftflow_protocol::{
+	protocol::{c2s, s2c, C2S, S2C},
+	stable_packets::{self, c2s::legacy::LegacyPing, s2c::legacy::LegacyPingResponse},
+	Packet,
 };
-use craftflow_protocol::packets::{status::StatusS2C, IntoPacketS2C};
 use std::{marker::PhantomData, ops::ControlFlow};
 
-impl<P: IsPacket + 'static> Event for P {
+impl<P: Packet + 'static> Event for P {
 	/// The arguments for this event are the connection ID and the packet
 	type Args = (usize, P);
 	/// In the case of S2C packets, if the event is stopped, the packet will not be sent
 	type Return = ();
 }
 
-pub struct Post<P: IntoPacketS2C> {
+/// `Post<Packet>` events are emitted after a packet is sent to the client
+/// Contrary to the normal Packet events, which are emitted before the packet is sent
+/// and can modify or stop the packet from being sent
+pub struct Post<P: Packet<Direction = S2C>> {
 	_phantom: PhantomData<P>,
 }
 
-impl<P: IntoPacketS2C + 'static> Event for Post<P> {
+impl<P: Packet<Direction = S2C> + 'static> Event for Post<P> {
 	type Args = (usize, P);
 	type Return = ();
 }
 
-pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: PacketC2S) {
+pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: C2S) {
 	macro_rules! e {
 		($packet_type:path, $inner_packet:ident) => {{
 			let _ = craftflow
@@ -40,22 +40,29 @@ pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: PacketC
 	}
 
 	match packet {
-		PacketC2S::Legacy(packet) => e!(LegacyPing, packet),
-		PacketC2S::HandshakeC2S(handshake) => match handshake {
-			HandshakeC2S::Handshake(packet) => e!(handshake::Handshake, packet),
+		C2S::LegacyPing(packet) => e!(LegacyPing, packet),
+		C2S::Handshake(handshake) => e!(stable_packets::c2s::handshake::Handshake, handshake),
+		C2S::Status(status) => match status {
+			stable_packets::c2s::StatusPacket::StatusRequest { packet } => {
+				e!(stable_packets::c2s::status::StatusRequest, packet)
+			}
+			stable_packets::c2s::StatusPacket::Ping { packet } => {
+				e!(stable_packets::c2s::status::Ping, packet)
+			}
 		},
-		PacketC2S::StatusC2S(status) => match status {
-			StatusC2S::StatusRequest(packet) => e!(status::StatusRequest, packet),
-			StatusC2S::Ping(packet) => e!(status::Ping, packet),
+		C2S::Login(login) => match login {
+			c2s::LoginPacket::LoginStart { packet } => e!(c2s::login::LoginStart, packet),
+			c2s::LoginPacket::EncryptionResponse { packet } => {
+				e!(c2s::login::EncryptionResponse, packet)
+			}
+			c2s::LoginPacket::PluginResponse { packet } => e!(c2s::login::PluginResponse, packet),
+			c2s::LoginPacket::LoginAcknowledged { packet } => {
+				e!(c2s::login::LoginAcknowledged, packet)
+			}
+			c2s::LoginPacket::CookieResponse { packet } => e!(c2s::login::CookieResponse, packet),
+			c2s::LoginPacket::_Unsupported => unreachable!(),
 		},
-		PacketC2S::LoginC2S(login) => match login {
-			LoginC2S::LoginStart(packet) => e!(login::LoginStart, packet),
-			LoginC2S::EncryptionResponse(packet) => e!(login::EncryptionResponse, packet),
-			LoginC2S::PluginResponse(packet) => e!(login::PluginResponse, packet),
-			LoginC2S::LoginAcknowledged(packet) => e!(login::LoginAcknowledged, packet),
-			LoginC2S::CookieResponse(packet) => e!(login::CookieResponse, packet),
-		},
-		PacketC2S::ConfigurationC2S(config) => match config {},
+		// C2S::ConfigurationC2S(config) => match config {},
 	}
 }
 
@@ -69,7 +76,7 @@ macro_rules! trigger_s2c_gen {
 					.event::<Post<$packet_type>>(&$craftflow, ($conn_id, $inner_packet))
 				{
 					ControlFlow::Continue((_conn_id, packet)) => {
-						ControlFlow::Continue(packet.into_packet())
+						ControlFlow::Continue(packet.into_packet_enum())
 					}
 					ControlFlow::Break(()) => ControlFlow::Break(()),
 				}
@@ -86,7 +93,7 @@ macro_rules! trigger_s2c_gen {
 					.event::<$packet_type>(&$craftflow, ($conn_id, $inner_packet))
 				{
 					ControlFlow::Continue((_conn_id, packet)) => {
-						ControlFlow::Continue(packet.into_packet())
+						ControlFlow::Continue(packet.into_packet_enum())
 					}
 					ControlFlow::Break(()) => ControlFlow::Break(()),
 				}
@@ -97,20 +104,37 @@ macro_rules! trigger_s2c_gen {
 	}};
 	($e:ident, $craftflow:ident, $conn_id:ident, $packet:ident) => {
 		match $packet {
-			PacketS2C::Legacy(packet) => $e!(LegacyPingResponse, packet),
-			PacketS2C::StatusS2C(status) => match status {
-				StatusS2C::StatusResponse(packet) => $e!(status::StatusResponse, packet),
-				StatusS2C::Pong(packet) => $e!(status::Pong, packet),
+			S2C::LegacyPingResponse(packet) => $e!(LegacyPingResponse, packet),
+			S2C::Status(status) => match status {
+				stable_packets::s2c::StatusPacket::StatusResponse { packet } => {
+					$e!(stable_packets::s2c::status::StatusResponse, packet)
+				}
+				stable_packets::s2c::StatusPacket::Pong { packet } => {
+					$e!(stable_packets::s2c::status::Pong, packet)
+				}
 			},
-			PacketS2C::LoginS2C(login) => match login {
-				login::LoginS2C::Disconnect(packet) => $e!(login::Disconnect, packet),
-				login::LoginS2C::EncryptionRequest(packet) => $e!(login::EncryptionRequest, packet),
-				login::LoginS2C::LoginSuccess(packet) => $e!(login::LoginSuccess, packet),
-				login::LoginS2C::SetCompression(packet) => $e!(login::SetCompression, packet),
-				login::LoginS2C::PluginRequest(packet) => $e!(login::PluginRequest, packet),
-				login::LoginS2C::CookieRequest(packet) => $e!(login::CookieRequest, packet),
+			S2C::Login(login) => match login {
+				s2c::LoginPacket::Disconnect { packet } => {
+					$e!(s2c::login::Disconnect, packet)
+				}
+				s2c::LoginPacket::EncryptionRequest { packet } => {
+					$e!(s2c::login::EncryptionRequest, packet)
+				}
+				s2c::LoginPacket::LoginSuccess { packet } => {
+					$e!(s2c::login::LoginSuccess, packet)
+				}
+				s2c::LoginPacket::SetCompression { packet } => {
+					$e!(s2c::login::SetCompression, packet)
+				}
+				s2c::LoginPacket::PluginRequest { packet } => {
+					$e!(s2c::login::PluginRequest, packet)
+				}
+				s2c::LoginPacket::CookieRequest { packet } => {
+					$e!(s2c::login::CookieRequest, packet)
+				}
+				s2c::LoginPacket::_Unsupported => unreachable!(),
 			},
-			PacketS2C::ConfigurationS2C(config) => match config {},
+			// S2C::Configuration(config) => match config {},
 		}
 	};
 }
@@ -118,14 +142,14 @@ macro_rules! trigger_s2c_gen {
 pub(super) fn trigger_s2c_pre(
 	craftflow: &CraftFlow,
 	conn_id: usize,
-	packet: PacketS2C,
-) -> ControlFlow<(), PacketS2C> {
+	packet: S2C,
+) -> ControlFlow<(), S2C> {
 	trigger_s2c_gen!(@PRE, craftflow, conn_id, packet)
 }
 pub(super) fn trigger_s2c_post(
 	craftflow: &CraftFlow,
 	conn_id: usize,
-	packet: PacketS2C,
-) -> ControlFlow<(), PacketS2C> {
+	packet: S2C,
+) -> ControlFlow<(), S2C> {
 	trigger_s2c_gen!(@POST, craftflow, conn_id, packet)
 }

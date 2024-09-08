@@ -9,11 +9,15 @@ use crate::{
 	CraftFlow,
 };
 use anyhow::{bail, Context};
-use craftflow_protocol::packets::{
-	handshake::{Handshake, HandshakeC2S, NextState},
-	legacy::LegacyPing,
-	login::LoginC2S,
-	PacketC2S, PacketS2C,
+use craftflow_protocol::{
+	protocol::{
+		c2s::{self},
+		C2S, S2C,
+	},
+	stable_packets::c2s::{
+		handshake::{Handshake, NextState},
+		legacy::LegacyPing,
+	},
 };
 use std::{
 	ops::ControlFlow,
@@ -28,9 +32,9 @@ pub(super) async fn connection_task(
 	conn_id: usize,
 	mut reader: PacketReader,
 	mut writer: PacketWriter,
-	mut packet_sender: UnboundedReceiver<PacketS2C>,
-	mut packet_batch_sender: UnboundedReceiver<Vec<PacketS2C>>,
-	client_protocol_version: Arc<OnceLock<i32>>,
+	mut packet_sender: UnboundedReceiver<S2C>,
+	mut packet_batch_sender: UnboundedReceiver<Vec<S2C>>,
+	client_protocol_version: Arc<OnceLock<u32>>,
 ) -> anyhow::Result<()> {
 	// First things first check if this is a legacy ping
 	if let Some(legacy_ping_format) = detect_legacy_ping(&mut reader.stream).await? {
@@ -42,13 +46,13 @@ pub(super) async fn connection_task(
 			return Ok(());
 		}
 
-		// now if anyone did anything with the legacy ping event, they would have sent a response by now
+		// now if anyone did anything with the legacy ping event, they would have sent a response
 		// so check both packet receivers
 		let response = 'response: {
 			// check normal channel
 			loop {
 				match packet_sender.try_recv() {
-					Ok(PacketS2C::Legacy(packet)) => {
+					Ok(S2C::LegacyPingResponse(packet)) => {
 						break 'response packet;
 					}
 					Ok(_) => continue,
@@ -61,7 +65,7 @@ pub(super) async fn connection_task(
 					Ok(batch) => {
 						for packet in batch {
 							match packet {
-								PacketS2C::Legacy(packet) => break 'response packet,
+								S2C::LegacyPingResponse(packet) => break 'response packet,
 								_ => continue,
 							}
 						}
@@ -89,14 +93,21 @@ pub(super) async fn connection_task(
 	};
 
 	let handshake = match handshake {
-		PacketC2S::HandshakeC2S(HandshakeC2S::Handshake(handshake)) => handshake,
+		C2S::Handshake(packet) => packet,
 		_ => unreachable!(), // the packet reader was in the handshake state so only handshake packets can be read
 	};
 
-	// set the client protocol version
-	if let Err(_) = client_protocol_version.set(handshake.protocol_version.0) {
-		bail!("client protocol version already set")
+	// check and set the client protocol version
+	let protocol_version = handshake.protocol_version.0 as u32;
+	// unless the next_state is status, the protocol version must be supported
+	if !craftflow_protocol::protocol::SUPPORTED_PROTOCOL_VERSIONS.contains(&protocol_version)
+		&& handshake.next_state != NextState::Status
+	{
+		bail!("unsupported protocol version");
 	}
+	client_protocol_version
+		.set(protocol_version)
+		.expect("client protocol version already set");
 
 	// trigger the handshake event
 	let _ = craftflow
@@ -128,7 +139,7 @@ pub(super) async fn connection_task(
 
 		// match certain special packets that change the state
 		match &packet {
-			PacketC2S::LoginC2S(LoginC2S::LoginAcknowledged(_)) => {
+			C2S::Login(c2s::LoginPacket::LoginAcknowledged { packet: _ }) => {
 				reader.state = ConnState::Configuration;
 			}
 			_ => {}
@@ -144,8 +155,8 @@ pub(super) async fn writer_task(
 	craftflow: Arc<CraftFlow>,
 	conn_id: usize,
 	mut writer: PacketWriter,
-	mut packet_sender: UnboundedReceiver<PacketS2C>,
-	mut packet_batch_sender: UnboundedReceiver<Vec<PacketS2C>>,
+	mut packet_sender: UnboundedReceiver<S2C>,
+	mut packet_batch_sender: UnboundedReceiver<Vec<S2C>>,
 ) -> anyhow::Result<()> {
 	loop {
 		select! {

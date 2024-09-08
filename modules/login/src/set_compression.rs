@@ -1,6 +1,6 @@
 use crate::Login;
 use craftflow::CraftFlow;
-use craftflow_protocol::packets::login::SetCompression;
+use craftflow_protocol::protocol::s2c::login::SetCompression;
 use std::ops::ControlFlow;
 
 pub fn set_compression(

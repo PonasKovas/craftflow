@@ -1,8 +1,8 @@
 #![feature(doc_cfg)]
 
 pub mod datatypes;
-pub mod legacy;
 pub mod protocol;
+pub mod stable_packets;
 
 use anyhow::Result;
 use std::io::{Read, Write};

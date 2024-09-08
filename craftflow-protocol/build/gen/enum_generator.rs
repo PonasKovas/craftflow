@@ -63,6 +63,7 @@ impl EnumGenerator {
 		let write_impl = self.gen_write_impl(info);
 
 		quote! {
+			#[derive(Debug, Clone, PartialEq)]
 			#feature_cfg
 			pub enum #enum_name {
 				#variants
