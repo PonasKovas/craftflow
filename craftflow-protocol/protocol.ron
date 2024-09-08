@@ -1,6 +1,4 @@
 (
-	supported_protocols: ["700-710"],
-	features: {
-		"extra_field_feature": ["705+"],
-	},
+	supported_protocols: ["767"],
+	features: {},
 )

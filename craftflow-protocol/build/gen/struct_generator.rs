@@ -97,7 +97,7 @@ impl StructGenerator {
 
 						#not_feature_cfg
 						#[allow(unused_variables)]
-						let #field_name = { #default }.borrow();
+						let #field_name = { #default };
 					}
 				}
 			});

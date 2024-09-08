@@ -57,6 +57,7 @@ impl StateGenerator {
 		);
 
 		quote! {
+			#feature_cfg
 			use #module_name::*;
 
 			#feature_cfg
@@ -68,8 +69,6 @@ impl StateGenerator {
 			pub mod #module_name {
 				#[allow(unused_imports)]
 				use crate::datatypes::*;
-				#[allow(unused_imports)]
-				use std::borrow::Borrow;
 
 				#( #packets )*
 				#( #structs )*

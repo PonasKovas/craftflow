@@ -17,4 +17,3 @@ quote = { workspace = true }
 indexmap = { workspace = true }
 
 [features]
-extra_field_feature = []

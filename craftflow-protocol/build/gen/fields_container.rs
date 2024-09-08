@@ -234,14 +234,18 @@ impl FieldsContainer {
 							___WRITTEN_BYTES___ += {
 								#[allow(non_snake_case, unused_variables)]
 								let THIS = &#field_name;
-								crate::MinecraftProtocol::write({ #custom_write }.borrow(), ___PROTOCOL_VERSION___, ___OUTPUT___)?
+								crate::MinecraftProtocol::write(
+									#[allow(unused_braces)] { #custom_write },
+									___PROTOCOL_VERSION___,
+									___OUTPUT___
+								)?
 							};
 						}
 					}
 					(Some(custom_write), None) => {
 						quote! {
 							___WRITTEN_BYTES___ += crate::MinecraftProtocol::write(
-								{ #custom_write }.borrow(),
+								#[allow(unused_braces)] { #custom_write },
 								___PROTOCOL_VERSION___,
 								___OUTPUT___
 							)?;

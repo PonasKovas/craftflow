@@ -48,20 +48,10 @@ pub fn generate_code(
 
 		#[doc = "Contains Client -> Server packets."]
 		pub mod c2s {
-			#[allow(unused_imports)]
-			use crate::datatypes::*;
-			#[allow(unused_imports)]
-			use std::borrow::Borrow;
-
 			#c2s_module
 		}
 		#[doc = "Contains Server -> Client packets."]
 		pub mod s2c {
-			#[allow(unused_imports)]
-			use crate::datatypes::*;
-			#[allow(unused_imports)]
-			use std::borrow::Borrow;
-
 			#s2c_module
 		}
 	}

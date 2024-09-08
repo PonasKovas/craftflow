@@ -1,6 +1,3 @@
-use indexmap::IndexMap;
-use quote::quote;
-
 use super::{
 	gen::{
 		custom_format::CustomFormat,
@@ -17,6 +14,8 @@ use super::{
 	util::{AsIdent, AsTokenStream, Direction, StateName},
 	version_bounds::Bounds,
 };
+use indexmap::IndexMap;
+use quote::quote;
 use std::collections::BTreeMap;
 
 // Converts a single direction spec to a direction generator
@@ -46,7 +45,7 @@ pub fn spec_to_generator(
 							.id
 							.expand_shortcut()
 							.into_iter()
-							.map(|(bounds, id)| (bounds, quote! { crate::datatypes::VarInt(#id) }))
+							.map(|(bounds, id)| (bounds, quote! { #id }))
 							.collect::<IndexMap<_, _>>()
 							.into(),
 						fields: FieldsContainer {
@@ -129,9 +128,11 @@ pub fn spec_to_generator(
 			}
 		}
 
+		let state_feature = spec.feature.map(|feature| Feature { feature });
+
 		let main_enum = EnumGenerator {
 			name: state_name.enum_name(),
-			feature: None,
+			feature: state_feature.clone(),
 			variants: main_enum_variants,
 			tag_format: IndexMap::from([(
 				vec![Bounds::All],
@@ -144,7 +145,7 @@ pub fn spec_to_generator(
 
 		states.push(StateGenerator {
 			name: state_name.clone(),
-			feature: spec.feature.map(|feature| Feature { feature }),
+			feature: state_feature,
 			main_enum,
 			packets,
 			structs,

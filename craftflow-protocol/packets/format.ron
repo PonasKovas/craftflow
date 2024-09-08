@@ -1,0 +1,97 @@
+///////////////////////////////////////////////////////////////////
+// Format of the protocol state specifications in this directory //
+///////////////////////////////////////////////////////////////////
+
+
+
+(
+	// Optional: if set, makes the whole state available only if the given feature is enabled
+	feature: "my_feature_name",
+
+	// All items (packets, structs and enums) of this state.
+	items: {
+		"ExamplePacket": packet(
+			// Optional 
+			feature: "optional_feature",
+
+			// The ID of the packet, if it's the same for all protocol versions
+			id: 0x17,
+			// The ID of the packet, depending on the protocol version
+			id: {
+				["701-"]: 0x01,
+				["702-710", "712"]: 0x07,
+				["711", "713+"]: 0x06,
+			},
+
+			// The data that is carried in this packet
+			data: {
+				// A normal data field
+				"first_field": "i32",
+				// A field that is only available with a specific feature enabled
+				// And by default will be written/read only on the protocol versions that the feature supports
+				"new_field": (
+					type: "Option<String>",
+					feature: "feature_that_enables_this_field",
+					// Must give a default value for when the user doesn't have the feature enabled
+					default: "None",
+				),
+			},
+
+			// Optional: if set, allows to specify a specific format of the packet for specific protocol versions
+			format: {
+				["708+"]: [
+					// The fields will be read/written in the order they are defined here
+					// You can skip fields
+					( field: "first_field", read_as: "i64", read: "THIS as i32", write: "&(*THIS as i64)" ),
+					// You can even simply read/write static data, not associating it with any field
+					( read_as: "i64", read: "",  ),
+					( write: "",  ),
+					// `read_as` and `read` must always come together, you can't have one without the other
+				],
+				["*"]: [
+					( field: "first_field" ),
+					( field: "new_field" ),
+				],
+			}
+		),
+		// A struct is basically the same as a packet but it will be added to the enum of packets
+		// and will not implement the Packet trait.
+		"ExampleStruct": struct(
+			// It has all the same fields as packet, except for ID.
+			feature: "optional_feature",
+			data: {
+				"first_field": "i32",
+				"new_field": (
+					type: "Option<String>",
+					feature: "feature_that_enables_this_field",
+					default: "None",
+				),
+			},
+		),
+		"MyFavoriteEnum": enum(
+			feature: "optional_feature",
+			// Enums have variants
+			variants: {
+				// Each variant only has to have a tag
+				"MyVariant": ( tag: "0" ),
+				// But it can also associated data
+				// and special format depending on protocol version, just like structs and packets
+				"WorstVariant": (
+					tag: "1",
+					data: {
+						"my_field": "Option<String>",
+					},
+					format: {
+						["*"]: [
+							( field: "my_field", read_as: "String", read: "Some(THIS)" )
+						],
+					}
+				),
+			},
+			// Additionally with this you can specify special tag formatting depending on protocol versions
+			// And if the format is the same for all protocol versions, you can just write this
+			// as a shortcut for { ["*"]: ( read_as: "u8", read: "THIS" ) }
+			tag_format: ( read_as: "u8", read: "THIS"),
+		),
+	}
+)

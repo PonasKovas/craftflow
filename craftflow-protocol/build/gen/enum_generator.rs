@@ -68,6 +68,7 @@ impl EnumGenerator {
 				#variants
 			}
 
+			#feature_cfg
 			impl crate::MinecraftProtocol for #enum_name {
 				fn read(
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
@@ -104,9 +105,9 @@ impl EnumGenerator {
 					}
 				}
 				None => {
-					// default read is as VarInt
+					// default read as varint
 					quote! {
-						<crate::datatypes::VarInt as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?
+						<crate::datatypes::VarInt as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?.0
 					}
 				}
 			}
@@ -171,7 +172,7 @@ impl EnumGenerator {
 				.gen_protocol_version_match(info, |tag_format| match &tag_format.custom_write {
 					None => quote! {
 						___WRITTEN_BYTES___ += crate::MinecraftProtocol::write(
-							___TAG___.borrow(),
+							&crate::datatypes::VarInt(___TAG___),
 							___PROTOCOL_VERSION___,
 							___OUTPUT___
 						)?;
@@ -180,7 +181,11 @@ impl EnumGenerator {
 						___WRITTEN_BYTES___ += {
 							#[allow(non_snake_case, unused_variables)]
 							let THIS = ___TAG___;
-							crate::MinecraftProtocol::write({ #custom_write }.borrow(), ___PROTOCOL_VERSION___, ___OUTPUT___)?
+							crate::MinecraftProtocol::write(
+								#[allow(unused_braces)] { #custom_write },
+								___PROTOCOL_VERSION___,
+								___OUTPUT___
+							)?
 						};
 					},
 				});
