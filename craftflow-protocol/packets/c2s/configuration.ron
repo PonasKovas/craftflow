@@ -1,0 +1,92 @@
+(
+	items: {
+		"ClientInformation": packet(
+			id: 0x00,
+			data: {
+				"locale": "String",
+				"view_distance": "u8",
+				"chat_mode": "ChatMode",
+				"chat_colors": "bool",
+				"displayed_skin_parts": "u8",
+				"main_hand": "MainHand",
+				"text_filtering": "bool",
+				"allow_server_listings": "bool",
+			},
+		),
+		"ChatMode": enum(
+			variants: {
+				"Enabled": (tag: "0"),
+				"CommandsOnly": (tag: "1"),
+				"Hidden": (tag: "2"),
+			},
+		),
+		"MainHand": enum(
+			variants: {
+				"Left": (tag: "0"),
+				"Right": (tag: "1"),
+			},
+		),
+		"CookieResponse": packet(
+			id: 0x01,
+			data: {
+				"key": "String",
+				"payload": "Option<Vec<u8>>",
+			},
+		),
+		"PluginMessage": packet(
+			id: 0x02,
+			data: {
+				"channel": "String",
+				"data": "Box<[u8]>",
+			},
+		),
+		"AcknowledgeFinishConfiguration": packet(
+			id: 0x03,
+			data: {},
+		),
+		"KeepAlive": packet(
+			id: 0x04,
+			data: {
+				"id": "u64",
+			},
+		),
+		"Pong": packet(
+			id: 0x05,
+			data: {
+				"id": "u32",
+			},
+		),
+		"ResourcePackResponse": packet(
+			id: 0x06,
+			data: {
+				"uuid": "u128",
+				"result": "ResourcePackResult",
+			},
+		),
+		"ResourcePackResult": enum(
+			variants: {
+				"SuccessfullyDownloaded": (tag: "0"),
+				"Declined": (tag: "1"),
+				"FailedToDownload": (tag: "2"),
+				"Accepted": (tag: "3"),
+				"Downloaded": (tag: "4"),
+				"InvalidURL": (tag: "5"),
+				"FailedToReload": (tag: "6"),
+				"Discarded": (tag: "7"),
+			},
+		),
+		"KnownPacks": packet(
+			id: 0x07,
+			data: {
+				"known_packs": "Vec<KnownPack>",
+			},
+		),
+		"KnownPack": struct(
+			data: {
+				"namespace": "String",
+				"id": "String",
+				"version": "String",
+			},
+		),
+	}
+)

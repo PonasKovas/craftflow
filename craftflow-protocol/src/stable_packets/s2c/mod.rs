@@ -1,10 +1,13 @@
+use crate::{datatypes::VarInt, protocol::S2C, MinecraftProtocol};
 use anyhow::{bail, Result};
 use status::{Pong, StatusResponse};
 use std::io::{Read, Write};
 
-use crate::{datatypes::VarInt, protocol::S2C, MinecraftProtocol};
-
+/// Module for the Legacy server list ping
+/// This state is stable and can be used with any protocol version
 pub mod legacy;
+/// Module containing all packets, structs and enums of the `Status` state.
+/// This state is stable and can be used with any protocol version
 pub mod status;
 
 #[derive(Debug, Clone, PartialEq)]

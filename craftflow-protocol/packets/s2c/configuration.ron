@@ -1,0 +1,178 @@
+(
+	items: {
+		"CookieRequest": packet(
+			id: 0x00,
+			data: {
+				"key": "String",
+			},
+		),
+		"PluginMessage": packet(
+			id: 0x01,
+			data: {
+				"channel": "String",
+				"data": "Box<[u8]>",
+			},
+		),
+		"Disconnect": packet(
+			id: 0x02,
+			data: {
+				"reason": "Text",
+			},
+		),
+		"FinishConfiguration": packet(
+			id: 0x03,
+			data: {},
+		),
+		"KeepAlive": packet(
+			id: 0x04,
+			data: {
+				"id": "u64",
+			},
+		),
+		"Ping": packet(
+			id: 0x05,
+			data: {
+				"id": "u32",
+			},
+		),
+		"ResetChat": packet(
+			id: 0x06,
+			data: {},
+		),
+		"RegistryData": packet(
+			id: 0x07,
+			data: {
+				"registry_id": "String",
+				"entries": "Vec<RegistryEntry>",
+			},
+		),
+		"RegistryEntry": struct(
+			data: {
+				"entry_id": "String",
+				//"data": "Option<Nbt>", TODO uncomment when Nbt added
+			},
+		),
+		"RemoveResourcePack": packet(
+			id: 0x08,
+			data: {
+				"uuid": "Option<u128>",
+			},
+		),
+		"AddResourcePack": packet(
+			id: 0x09,
+			data: {
+				"uuid": "u128",
+				"url": "String",
+				"hash": "String",
+				"forced": "bool",
+				"prompt_message": "Option<Text>",
+			},
+		),
+		"StoreCookie": packet(
+			id: 0x0A,
+			data: {
+				"key": "String",
+				"payload": "Vec<u8>",
+			},
+		),
+		"Transfer": packet(
+			id: 0x0B,
+			data: {
+				"host": "String",
+				"port": "VarInt",
+			},
+		),
+		"FeatureFlags": packet(
+			id: 0x0C,
+			data: {
+				"features": "Vec<String>",
+			},
+		),
+		"UpdateTags": packet(
+			id: 0x0D,
+			data: {
+				"tags": "Vec<RegistryTags>",
+			},
+		),
+		"RegistryTags": struct(
+			data: {
+				"registry": "String",
+				"tags": "Vec<Tag>",
+			},
+		),
+		"Tag": struct(
+			data: {
+				"name": "String",
+				"entries": "Vec<VarInt>",
+			},
+		),
+		"KnownPacks": packet(
+			id: 0x0E,
+			data: {
+				"packs": "Vec<KnownPack>",
+			},
+		),
+		"KnownPack": struct(
+			data: {
+				"namespace": "String",
+				"id": "String",
+				"version": "String",
+			},
+		),
+		"CustomReportDetails": packet(
+			id: 0x0F,
+			data: {
+				"details": "Vec<ReportDetail>",
+			},
+		),
+		"ReportDetail": struct(
+			data: {
+				"title": "String",
+				"description": "String",
+			},
+		),
+		"ServerLinks": packet(
+			id: 0x10,
+			data: {
+				"links": "Vec<ServerLink>",
+			},
+		),
+		"ServerLink": struct(
+			data: {
+				"link_type": "ServerLinkType",
+				"url": "String",
+			},
+		),
+		"ServerLinkType": enum(
+			variants: {
+				"BuiltIn": (
+					tag: "1",
+					data: {
+						"label": "ServerLinkBuiltInLabel",
+					},
+				),
+				"Custom": (
+					tag: "0",
+					data: {
+						"label": "Text",
+					},
+				),
+			},
+		),
+		"ServerLinkBuiltInLabel": enum(
+			variants: {
+				"BugReport": (tag: "0"),
+				"CommunityGuidelines": (tag: "1"),
+				"Support": (tag: "2"),
+				"Status": (tag: "3"),
+				"Feedback": (tag: "4"),
+				"Community": (tag: "5"),
+				"Website": (tag: "6"),
+				"Forums": (tag: "7"),
+				"News": (tag: "8"),
+				"Announcements": (tag: "9"),
+			},
+		),
+
+	}
+)

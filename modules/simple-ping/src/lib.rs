@@ -6,7 +6,7 @@ use base64::Engine;
 use craftflow::CraftFlow;
 use craftflow_protocol::{
 	datatypes::Text,
-	stable_packets::c2s::{
+	protocol::c2s::{
 		legacy::LegacyPing,
 		status::{Ping, StatusRequest},
 	},

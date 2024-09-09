@@ -2,7 +2,7 @@
 
 pub mod datatypes;
 pub mod protocol;
-pub mod stable_packets;
+pub(crate) mod stable_packets;
 
 use anyhow::Result;
 use std::io::{Read, Write};

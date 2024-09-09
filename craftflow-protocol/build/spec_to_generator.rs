@@ -26,6 +26,8 @@ pub fn spec_to_generator(
 	let mut states = Vec::new();
 
 	for (state_name, spec) in specs {
+		let state_module = state_name.module();
+
 		let mut packets = Vec::new();
 		let mut structs = Vec::new();
 		let mut enums = Vec::new();
@@ -51,7 +53,7 @@ pub fn spec_to_generator(
 						fields: FieldsContainer {
 							fields: vec![Field {
 								name: "packet".as_ident(),
-								datatype: quote! { #packet_name },
+								datatype: quote! { #state_module::#packet_name },
 								feature: None,
 							}],
 							format: IndexMap::from([(
@@ -154,5 +156,5 @@ pub fn spec_to_generator(
 		});
 	}
 
-	DirectionGenerator { states }
+	DirectionGenerator { direction, states }
 }

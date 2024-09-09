@@ -5,8 +5,10 @@ use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
 use anyhow::bail;
 use craftflow_protocol::{
 	datatypes::VarInt,
-	protocol::{c2s::LoginPacket, C2S},
-	stable_packets::c2s::{handshake::Handshake, StatusPacket},
+	protocol::{
+		c2s::{handshake::Handshake, LoginPacket, StatusPacket},
+		C2S,
+	},
 	MinecraftProtocol,
 };
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};

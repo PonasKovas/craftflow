@@ -9,15 +9,13 @@ use crate::{
 	CraftFlow,
 };
 use anyhow::{bail, Context};
-use craftflow_protocol::{
-	protocol::{
-		c2s::{self},
-		C2S, S2C,
-	},
-	stable_packets::c2s::{
+use craftflow_protocol::protocol::{
+	c2s::{
+		self,
 		handshake::{Handshake, NextState},
 		legacy::LegacyPing,
 	},
+	C2S, S2C,
 };
 use std::{
 	ops::ControlFlow,

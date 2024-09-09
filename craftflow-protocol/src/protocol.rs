@@ -4,7 +4,7 @@
 //!
 //! # Automatically generated module
 //!
-//! Everything in this module is automatically generated from the specifications in
+//! Most things in this module are automatically generated from the specifications in
 //! `packets/` and `protocol.ron`.
 //!
 

@@ -1,12 +1,15 @@
-//! Implementation of Event for all packets
-//! C2S packet events will be emitted after a packet is received from the client
-//! S2C packet events will be emitted before a packet is sent to the client
+//! Implementation of `Event` for all packets
+//! `C2S` packet events will be emitted after a packet is received from the client
+//! `S2C` packet events will be emitted before a packet is sent to the client
 //! `Post<S2C>` events will be emitted AFTER a packet is sent to the client
 
 use crate::{reactor::Event, CraftFlow};
 use craftflow_protocol::{
-	protocol::{c2s, s2c, C2S, S2C},
-	stable_packets::{self, c2s::legacy::LegacyPing, s2c::legacy::LegacyPingResponse},
+	protocol::{
+		c2s::{self, handshake::Handshake, legacy::LegacyPing},
+		s2c::{self, legacy::LegacyPingResponse},
+		C2S, S2C,
+	},
 	Packet,
 };
 use std::{marker::PhantomData, ops::ControlFlow};
@@ -30,113 +33,83 @@ impl<P: Packet<Direction = S2C> + 'static> Event for Post<P> {
 	type Return = ();
 }
 
-pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: C2S) {
-	macro_rules! e {
-		($packet_type:path, $inner_packet:ident) => {{
-			let _ = craftflow
-				.reactor
-				.event::<$packet_type>(&craftflow, (conn_id, $inner_packet));
-		}};
-	}
+// FUCK RUST MACROS AND FUCK ENUMS AND FUCK DYN NOT SUPPORTING LIFETIMES
+// FUCK YOU
 
+pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: C2S) {
+	fn inner<P: Packet<Direction = C2S> + 'static>(
+		packet: P,
+		(craftflow, conn_id): (&CraftFlow, usize),
+	) {
+		let _ = craftflow.reactor.event::<P>(&craftflow, (conn_id, packet));
+	}
 	match packet {
-		C2S::LegacyPing(packet) => e!(LegacyPing, packet),
-		C2S::Handshake(handshake) => e!(stable_packets::c2s::handshake::Handshake, handshake),
+		C2S::LegacyPing(legacy) => {
+			inner::<LegacyPing>(legacy, (craftflow, conn_id));
+		}
+		C2S::Handshake(handshake) => {
+			inner::<Handshake>(handshake, (craftflow, conn_id));
+		}
 		C2S::Status(status) => match status {
-			stable_packets::c2s::StatusPacket::StatusRequest { packet } => {
-				e!(stable_packets::c2s::status::StatusRequest, packet)
+			c2s::StatusPacket::StatusRequest { packet } => {
+				inner::<c2s::status::StatusRequest>(packet, (craftflow, conn_id));
 			}
-			stable_packets::c2s::StatusPacket::Ping { packet } => {
-				e!(stable_packets::c2s::status::Ping, packet)
+			c2s::StatusPacket::Ping { packet } => {
+				inner::<c2s::status::Ping>(packet, (craftflow, conn_id));
 			}
 		},
-		C2S::Login(login) => match login {
-			c2s::LoginPacket::LoginStart { packet } => e!(c2s::login::LoginStart, packet),
-			c2s::LoginPacket::EncryptionResponse { packet } => {
-				e!(c2s::login::EncryptionResponse, packet)
-			}
-			c2s::LoginPacket::PluginResponse { packet } => e!(c2s::login::PluginResponse, packet),
-			c2s::LoginPacket::LoginAcknowledged { packet } => {
-				e!(c2s::login::LoginAcknowledged, packet)
-			}
-			c2s::LoginPacket::CookieResponse { packet } => e!(c2s::login::CookieResponse, packet),
-			c2s::LoginPacket::_Unsupported => unreachable!(),
-		},
-		// C2S::ConfigurationC2S(config) => match config {},
+		C2S::Login(login) => {
+			craftflow_protocol::destructure_packet_c2s_login!(login, inner, (craftflow, conn_id),);
+		}
+		C2S::Configuration(configuration) => {
+			craftflow_protocol::destructure_packet_c2s_configuration!(
+				configuration,
+				inner,
+				(craftflow, conn_id),
+			);
+		}
 	}
 }
 
-// Oh my God...
-macro_rules! trigger_s2c_gen {
-	(@POST, $craftflow:ident, $conn_id:ident, $packet:ident) => {{
-		macro_rules! e {
-			($packet_type:path, $inner_packet:ident) => {
-				match $craftflow
-					.reactor
-					.event::<Post<$packet_type>>(&$craftflow, ($conn_id, $inner_packet))
-				{
-					ControlFlow::Continue((_conn_id, packet)) => {
-						ControlFlow::Continue(packet.into_packet_enum())
-					}
-					ControlFlow::Break(()) => ControlFlow::Break(()),
+macro_rules! gen_trigger_s2c {
+	($inner:ident, $packet:ident, $craftflow:ident, $conn_id:ident) => {{
+		let r = match $packet {
+			S2C::LegacyPingResponse(legacy) => {
+				Some($inner::<LegacyPingResponse>(legacy, ($craftflow, $conn_id)))
+			}
+			S2C::Status(status) => Some(match status {
+				s2c::StatusPacket::StatusResponse { packet } => {
+					$inner::<s2c::status::StatusResponse>(packet, ($craftflow, $conn_id))
 				}
-			};
-		}
+				s2c::StatusPacket::Pong { packet } => {
+					$inner::<s2c::status::Pong>(packet, ($craftflow, $conn_id))
+				}
+			}),
+			S2C::Login(login) => {
+				craftflow_protocol::destructure_packet_s2c_login!(
+					login,
+					$inner,
+					($craftflow, $conn_id),
+				)
+			}
+			S2C::Configuration(configuration) => {
+				craftflow_protocol::destructure_packet_s2c_configuration!(
+					configuration,
+					$inner,
+					($craftflow, $conn_id),
+				)
+			}
+		};
 
-		trigger_s2c_gen!(e, $craftflow, $conn_id, $packet)
-	}};
-	(@PRE, $craftflow:ident, $conn_id:ident, $packet:ident) => {{
-		macro_rules! e {
-			($packet_type:path, $inner_packet:ident) => {
-				match $craftflow
-					.reactor
-					.event::<$packet_type>(&$craftflow, ($conn_id, $inner_packet))
-				{
-					ControlFlow::Continue((_conn_id, packet)) => {
-						ControlFlow::Continue(packet.into_packet_enum())
-					}
-					ControlFlow::Break(()) => ControlFlow::Break(()),
-				}
-			};
+		match r {
+			Some(r) => r,
+			None => {
+				// this means we got an _Unsupported packet
+				// we are the ones sending the packet so this means this is a retard incident
+				panic!("DO NOT FUCKING SEND _Unsupported PACKETS!!!!");
+			}
 		}
-
-		trigger_s2c_gen!(e, $craftflow, $conn_id, $packet)
 	}};
-	($e:ident, $craftflow:ident, $conn_id:ident, $packet:ident) => {
-		match $packet {
-			S2C::LegacyPingResponse(packet) => $e!(LegacyPingResponse, packet),
-			S2C::Status(status) => match status {
-				stable_packets::s2c::StatusPacket::StatusResponse { packet } => {
-					$e!(stable_packets::s2c::status::StatusResponse, packet)
-				}
-				stable_packets::s2c::StatusPacket::Pong { packet } => {
-					$e!(stable_packets::s2c::status::Pong, packet)
-				}
-			},
-			S2C::Login(login) => match login {
-				s2c::LoginPacket::Disconnect { packet } => {
-					$e!(s2c::login::Disconnect, packet)
-				}
-				s2c::LoginPacket::EncryptionRequest { packet } => {
-					$e!(s2c::login::EncryptionRequest, packet)
-				}
-				s2c::LoginPacket::LoginSuccess { packet } => {
-					$e!(s2c::login::LoginSuccess, packet)
-				}
-				s2c::LoginPacket::SetCompression { packet } => {
-					$e!(s2c::login::SetCompression, packet)
-				}
-				s2c::LoginPacket::PluginRequest { packet } => {
-					$e!(s2c::login::PluginRequest, packet)
-				}
-				s2c::LoginPacket::CookieRequest { packet } => {
-					$e!(s2c::login::CookieRequest, packet)
-				}
-				s2c::LoginPacket::_Unsupported => unreachable!(),
-			},
-			// S2C::Configuration(config) => match config {},
-		}
-	};
 }
 
 pub(super) fn trigger_s2c_pre(
@@ -144,12 +117,40 @@ pub(super) fn trigger_s2c_pre(
 	conn_id: usize,
 	packet: S2C,
 ) -> ControlFlow<(), S2C> {
-	trigger_s2c_gen!(@PRE, craftflow, conn_id, packet)
+	fn inner<P: Packet<Direction = S2C> + 'static>(
+		packet: P,
+		(craftflow, conn_id): (&CraftFlow, usize),
+	) -> ControlFlow<(), S2C> {
+		match craftflow.reactor.event::<P>(&craftflow, (conn_id, packet)) {
+			ControlFlow::Continue((_conn_id, packet)) => {
+				ControlFlow::Continue(packet.into_packet_enum())
+			}
+			ControlFlow::Break(()) => ControlFlow::Break(()),
+		}
+	}
+
+	gen_trigger_s2c!(inner, packet, craftflow, conn_id)
 }
+
 pub(super) fn trigger_s2c_post(
 	craftflow: &CraftFlow,
 	conn_id: usize,
 	packet: S2C,
 ) -> ControlFlow<(), S2C> {
-	trigger_s2c_gen!(@POST, craftflow, conn_id, packet)
+	fn inner<P: Packet<Direction = S2C> + 'static>(
+		packet: P,
+		(craftflow, conn_id): (&CraftFlow, usize),
+	) -> ControlFlow<(), S2C> {
+		match craftflow
+			.reactor
+			.event::<Post<P>>(&craftflow, (conn_id, packet))
+		{
+			ControlFlow::Continue((_conn_id, packet)) => {
+				ControlFlow::Continue(packet.into_packet_enum())
+			}
+			ControlFlow::Break(()) => ControlFlow::Break(()),
+		}
+	}
+
+	gen_trigger_s2c!(inner, packet, craftflow, conn_id)
 }

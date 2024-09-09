@@ -1,5 +1,5 @@
 use anyhow::bail;
-use craftflow_protocol::stable_packets::s2c::legacy::LegacyPingResponse;
+use craftflow_protocol::protocol::s2c::legacy::LegacyPingResponse;
 use std::time::Duration;
 use tokio::{
 	io::AsyncWriteExt,

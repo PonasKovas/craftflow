@@ -95,6 +95,6 @@ mod tests {
 
 		modules.register(abstracted);
 
-		assert_eq!(modules.get::<Box<dyn MyTrait>>().foo(), 42);
+		assert_eq!(modules.get::<Box<dyn MyTrait + Send + Sync>>().foo(), 42);
 	}
 }

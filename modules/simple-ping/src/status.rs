@@ -1,6 +1,6 @@
 use crate::SimplePing;
 use craftflow::CraftFlow;
-use craftflow_protocol::stable_packets::{c2s::status::StatusRequest, s2c::status::StatusResponse};
+use craftflow_protocol::protocol::{c2s::status::StatusRequest, s2c::status::StatusResponse};
 use serde_json::json;
 use std::ops::ControlFlow;
 
@@ -19,7 +19,7 @@ pub fn status(
 	};
 
 	let online_players = cf.connections().len() as i32; // more or less
-	let max_players = 1000; // todo after implementing max connections
+	let max_players = 10000; // todo after implementing max connections
 	let description = &cf.modules.get::<SimplePing>().server_description;
 	let favicon = &cf.modules.get::<SimplePing>().favicon;
 
