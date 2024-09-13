@@ -1,35 +1,35 @@
-(	
+(
 	items: {
-		"LoginStart": packet(
+		"LoginStart<'a>": packet(
 			id: 0x00,
 			data: {
-				"username": "String",
+				"username": "Cow<'a, str>",
 				"uuid": "u128",
 			},
 		),
-		"EncryptionResponse": packet(
+		"EncryptionResponse<'a>": packet(
 			id: 0x01,
 			data: {
-				"shared_secret": "Vec<u8>",
-				"verify_token": "Vec<u8>",
+				"shared_secret": "SeqLen<'a, u8>",
+				"verify_token": "SeqLen<'a, u8>",
 			},
 		),
-		"PluginResponse": packet(
+		"PluginResponse<'a>": packet(
 			id: 0x02,
 			data: {
 				"message_id": "VarInt",
-				"data": "Option<Box<[u8]>>",
+				"data": "Option<Seq<'a, u8>>",
 			},
 		),
 		"LoginAcknowledged": packet(
 			id: 0x03,
 			data: {},
 		),
-		"CookieResponse": packet(
+		"CookieResponse<'a>": packet(
 			id: 0x04,
 			data: {
-				"key": "String",
-				"payload": "Option<Vec<u8>>",
+				"key": "Cow<'a, str>",
+				"payload": "Option<SeqLen<'a, u8>>",
 			},
 		),
 	}

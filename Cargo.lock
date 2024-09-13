@@ -168,7 +168,6 @@ dependencies = [
 name = "craftflow-protocol"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "byteorder",
  "indexmap",
  "proc-macro2",
@@ -176,6 +175,7 @@ dependencies = [
  "ron",
  "serde",
  "serde_json",
+ "thiserror",
 ]
 
 [[package]]

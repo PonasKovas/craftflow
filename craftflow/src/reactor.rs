@@ -5,6 +5,7 @@ use std::{
 	any::{Any, TypeId},
 	collections::BTreeMap,
 	marker::PhantomData,
+	mem::ManuallyDrop,
 	ops::ControlFlow,
 };
 
@@ -17,7 +18,12 @@ use std::{
 /// ```
 /// Return `ControlFlow::Continue(Event::Args)` to continue reacting to the event with the next registered
 /// handler, or `ControlFlow::Break(Event::Return)` to stop the event and return.
-pub trait Event: Any {
+pub trait Event {
+	/// This type must be 'static and will be used to identify the event
+	/// We cannot use the Event type directly because we need it to be able to be not 'static
+	/// and rust won't fucking allow that
+	type IDType: Any;
+
 	/// The type of the arguments that the event will receive
 	type Args;
 	/// The type of the return value of the event
@@ -32,7 +38,8 @@ pub trait Event: Any {
 pub struct Reactor<CTX> {
 	// The `dyn Any` is actually a type erased `Box<dyn Fn(&CTX, Event::Args) -> ControlFlow<Event::Return, Event::Args>>`
 	// But we can't store it directly because Event is different for each event type
-	events: BTreeMap<TypeId, Vec<Box<dyn Any>>>,
+	events: BTreeMap<TypeId, Vec<Box<dyn Any + Send + Sync>>>,
+	// events: BTreeMap<TypeId, Vec<Box<dyn Any + Send + Sync>>>,
 	_phantom: PhantomData<fn(&CTX)>,
 }
 
@@ -41,8 +48,8 @@ pub struct Reactor<CTX> {
 // (downcast is only implemented for dyn Any, not dyn Any + Sync + Send)
 // But in reality we know that all event handlers are Sync + Send, because we have
 // bound checks for it in the add_handler method
-unsafe impl<CTX> Sync for Reactor<CTX> {}
-unsafe impl<CTX> Send for Reactor<CTX> {}
+// unsafe impl<CTX> Sync for Reactor<CTX> {}
+// unsafe impl<CTX> Send for Reactor<CTX> {}
 
 impl<CTX: 'static> Reactor<CTX> {
 	/// Create a new empty reactor
@@ -62,7 +69,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	) {
 		let pos = self
 			.events
-			.get(&TypeId::of::<E>())
+			.get(&TypeId::of::<<E as Event>::IDType>())
 			.map(|handlers| handlers.len())
 			.unwrap_or(0);
 
@@ -78,26 +85,32 @@ impl<CTX: 'static> Reactor<CTX> {
 		pos: usize,
 		handler: F,
 	) {
-		let closure =
-			Box::new(handler) as Box<dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args>>;
+		let closure = Box::new(handler)
+			as Box<
+				dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args> + Send + Sync + 'static,
+			>;
 
-		// Erase the type of the closure so we can store it
-		let type_erased = Box::new(closure) as Box<dyn Any>;
+		// // Erase the type of the closure so we can store it
+		let type_erased = Box::new(closure) as Box<dyn Any + Send + Sync + 'static>;
 
-		let handlers = self.events.entry(TypeId::of::<E>()).or_insert(Vec::new());
+		let handlers = self
+			.events
+			.entry(TypeId::of::<<E as Event>::IDType>())
+			.or_insert(Vec::new());
 
 		// clamp the pos to valid range
 		let pos = pos.min(handlers.len());
 
-		handlers.insert(pos, type_erased);
+		// handlers.insert(pos, type_erased);
 	}
 	/// Trigger an event
 	pub fn event<E: Event>(&self, ctx: &CTX, mut args: E::Args) -> ControlFlow<E::Return, E::Args> {
-		if let Some(handlers) = self.events.get(&TypeId::of::<E>()) {
+		if let Some(handlers) = self.events.get(&TypeId::of::<<E as Event>::IDType>()) {
 			for handler in handlers {
 				// Convert back to the real closure type
-				let closure: &Box<dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args>> =
-					handler.downcast_ref().unwrap();
+				let closure: &Box<
+					dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args> + Send + Sync,
+				> = handler.downcast_ref().unwrap();
 
 				args = closure(ctx, args)?;
 			}
@@ -121,12 +134,14 @@ mod tests {
 	fn test_reactor() {
 		struct MyEvent;
 		impl Event for MyEvent {
+			type IDType = MyEvent;
 			type Args = u32;
 			type Return = ();
 		}
 
 		struct MyEvent2;
 		impl Event for MyEvent2 {
+			type IDType = MyEvent2;
 			type Args = ();
 			type Return = &'static str;
 		}

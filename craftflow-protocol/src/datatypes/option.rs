@@ -1,23 +1,33 @@
 //! Prefixes the inner type with a boolean, indicating whether the value is present or not.
 
 use crate::MinecraftProtocol;
-use std::io::{Read, Write};
+use crate::Result;
+use std::io::Write;
 
-impl<T: MinecraftProtocol> MinecraftProtocol for Option<T> {
-	fn read(protocol_version: u32, source: &mut impl Read) -> anyhow::Result<Self> {
-		if bool::read(protocol_version, source)? {
-			Ok(Some(T::read(protocol_version, source)?))
+impl<'a, T: MinecraftProtocol<'a>> MinecraftProtocol<'a> for Option<T> {
+	fn read(protocol_version: u32, input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+		let (input, tag) = bool::read(protocol_version, input)?;
+
+		if tag {
+			let (input, value) = T::read(protocol_version, input)?;
+			Ok((input, Some(value)))
 		} else {
-			Ok(None)
+			Ok((input, None))
 		}
 	}
-	fn write(&self, protocol_version: u32, to: &mut impl Write) -> anyhow::Result<usize> {
+	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize> {
+		let mut written = 0;
+
 		match self {
 			Some(value) => {
-				bool::write(&true, protocol_version, to)?;
-				value.write(protocol_version, to)
+				written += true.write(protocol_version, output)?;
+				written += value.write(protocol_version, output)?;
 			}
-			None => bool::write(&false, protocol_version, to),
+			None => {
+				written += false.write(protocol_version, output)?;
+			}
 		}
+
+		Ok(written)
 	}
 }

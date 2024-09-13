@@ -1,26 +1,38 @@
 use super::VarInt;
-use crate::MinecraftProtocol;
-use anyhow::bail;
-use std::io::{Read, Write};
+use crate::{Error, MinecraftProtocol, Result};
+use core::str;
+use std::borrow::Cow;
+use std::io::Write;
 
-impl MinecraftProtocol for String {
-	fn read(protocol_version: u32, source: &mut impl Read) -> anyhow::Result<Self> {
-		let len = VarInt::read(protocol_version, source)?.0 as usize;
+impl<'a> MinecraftProtocol<'a> for Cow<'a, str> {
+	fn read(protocol_version: u32, input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+		let (mut input, len) = VarInt::read(protocol_version, input)?;
+		let len = len.0 as usize;
 
 		if len > 1024 * 1024 {
-			bail!("String too long ({} bytes)", len);
+			return Err(Error::InvalidData(format!("String too long {len}")));
 		}
 
-		let mut buf = vec![0u8; len];
-		source.read_exact(&mut buf[..])?;
+		if input.len() < len {
+			return Err(Error::InvalidData(format!(
+				"string too long to fit in packet"
+			)));
+		}
 
-		let s = String::from_utf8(buf)?;
+		let s = match str::from_utf8(&input[..len]) {
+			Ok(s) => s,
+			Err(e) => {
+				return Err(Error::InvalidData(format!("string not valid UTF-8: {e}")));
+			}
+		};
 
-		Ok(s)
+		input = &input[len..];
+
+		Ok((input, Cow::Borrowed(s)))
 	}
-	fn write(&self, protocol_version: u32, to: &mut impl Write) -> anyhow::Result<usize> {
-		let prefix_len = VarInt(self.len() as i32).write(protocol_version, to)?;
-		to.write_all(self.as_bytes())?;
+	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize> {
+		let prefix_len = VarInt(self.len() as i32).write(protocol_version, output)?;
+		output.write_all(self.as_bytes())?;
 
 		Ok(prefix_len + self.len())
 	}

@@ -32,9 +32,9 @@ use tracing::error;
 pub struct ConnectionHandle {
 	id: usize,
 	ip: IpAddr,
-	pub(crate) packet_sender: UnboundedSender<S2C>,
+	pub(crate) packet_sender: UnboundedSender<S2C<'static>>,
 	/// For when you want to send multiple packets at once without anything in between them
-	pub(crate) packet_batch_sender: UnboundedSender<Vec<S2C>>,
+	pub(crate) packet_batch_sender: UnboundedSender<Vec<S2C<'static>>>,
 	encryption: EncryptionSetter,
 	compression: CompressionSetter,
 	// the protocol version of the client
@@ -44,13 +44,13 @@ pub struct ConnectionHandle {
 
 impl ConnectionHandle {
 	/// Send a packet to this client.
-	pub fn send(&self, packet: impl Packet<Direction = S2C>) {
+	pub fn send(&self, packet: impl Packet<Direction = S2C<'static>>) {
 		// dont care if the client is disconnected
 		let _ = self.packet_sender.send(packet.into_packet_enum());
 	}
 
 	/// Send several packets to this client making sure nothing comes in-between
-	pub fn send_batch(&self, packets: Vec<S2C>) {
+	pub fn send_batch(&self, packets: Vec<S2C<'static>>) {
 		// dont care if the client is disconnected
 		let _ = self.packet_batch_sender.send(packets);
 	}
@@ -114,6 +114,7 @@ impl ConnectionHandle {
 		let packet_reader = PacketReader {
 			stream: reader,
 			buffer: Vec::with_capacity(1024 * 1024),
+			decompression_buffer: Vec::with_capacity(1024 * 1024),
 			state: ConnState::Handshake,
 			decryptor,
 			compression: compression_getter1,
@@ -150,7 +151,7 @@ impl ConnectionHandle {
 
 		let craftflow = Arc::clone(craftflow);
 		spawn(async move {
-			// Fuck you and your unwind safety.
+			// Fuck your unwind safety.
 			// i wont be accessing any of the state of this future,
 			// i just need to know if it panicked
 			let r = AssertUnwindSafe(connection_task(

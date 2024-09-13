@@ -1,22 +1,22 @@
 (
 	items: {
-		"CookieRequest": packet(
+		"CookieRequest<'a>": packet(
 			id: 0x00,
 			data: {
-				"key": "String",
+				"key": "Cow<'a, str>",
 			},
 		),
-		"PluginMessage": packet(
+		"PluginMessage<'a>": packet(
 			id: 0x01,
 			data: {
-				"channel": "String",
-				"data": "Box<[u8]>",
+				"channel": "Cow<'a, str>",
+				"data": "Seq<'a, u8>",
 			},
 		),
-		"Disconnect": packet(
+		"Disconnect<'a>": packet(
 			id: 0x02,
 			data: {
-				"reason": "Text",
+				"reason": "Nbt<Text<'a>>",
 			},
 		),
 		"FinishConfiguration": packet(
@@ -39,16 +39,16 @@
 			id: 0x06,
 			data: {},
 		),
-		"RegistryData": packet(
+		"RegistryData<'a>": packet(
 			id: 0x07,
 			data: {
-				"registry_id": "String",
-				"entries": "Vec<RegistryEntry>",
+				"registry_id": "Cow<'a, str>",
+				"entries": "SeqLen<'a, RegistryEntry<'a>>",
 			},
 		),
-		"RegistryEntry": struct(
+		"RegistryEntry<'a>": struct(
 			data: {
-				"entry_id": "String",
+				"entry_id": "Cow<'a, str>",
 				//"data": "Option<Nbt>", TODO uncomment when Nbt added
 			},
 		),
@@ -58,92 +58,92 @@
 				"uuid": "Option<u128>",
 			},
 		),
-		"AddResourcePack": packet(
+		"AddResourcePack<'a>": packet(
 			id: 0x09,
 			data: {
 				"uuid": "u128",
-				"url": "String",
-				"hash": "String",
+				"url": "Cow<'a, str>",
+				"hash": "Cow<'a, str>",
 				"forced": "bool",
-				"prompt_message": "Option<Text>",
+				// "prompt_message": "Option<Text<'a>>", // todo this is NBT
 			},
 		),
-		"StoreCookie": packet(
+		"StoreCookie<'a>": packet(
 			id: 0x0A,
 			data: {
-				"key": "String",
-				"payload": "Vec<u8>",
+				"key": "Cow<'a, str>",
+				"payload": "SeqLen<'a, u8>",
 			},
 		),
-		"Transfer": packet(
+		"Transfer<'a>": packet(
 			id: 0x0B,
 			data: {
-				"host": "String",
+				"host": "Cow<'a, str>",
 				"port": "VarInt",
 			},
 		),
-		"FeatureFlags": packet(
+		"FeatureFlags<'a>": packet(
 			id: 0x0C,
 			data: {
-				"features": "Vec<String>",
+				"features": "SeqLen<'a, Cow<'a, str>>",
 			},
 		),
-		"UpdateTags": packet(
+		"UpdateTags<'a>": packet(
 			id: 0x0D,
 			data: {
-				"tags": "Vec<RegistryTags>",
+				"tags": "SeqLen<'a, RegistryTags<'a>>",
 			},
 		),
-		"RegistryTags": struct(
+		"RegistryTags<'a>": struct(
 			data: {
-				"registry": "String",
-				"tags": "Vec<Tag>",
+				"registry": "Cow<'a, str>",
+				"tags": "SeqLen<'a, Tag<'a>>",
 			},
 		),
-		"Tag": struct(
+		"Tag<'a>": struct(
 			data: {
-				"name": "String",
-				"entries": "Vec<VarInt>",
+				"name": "Cow<'a, str>",
+				"entries": "SeqLen<'a, VarInt>",
 			},
 		),
-		"KnownPacks": packet(
+		"KnownPacks<'a>": packet(
 			id: 0x0E,
 			data: {
-				"packs": "Vec<KnownPack>",
+				"packs": "SeqLen<'a, KnownPack<'a>>",
 			},
 		),
-		"KnownPack": struct(
+		"KnownPack<'a>": struct(
 			data: {
-				"namespace": "String",
-				"id": "String",
-				"version": "String",
+				"namespace": "Cow<'a, str>",
+				"id": "Cow<'a, str>",
+				"version": "Cow<'a, str>",
 			},
 		),
-		"CustomReportDetails": packet(
+		"CustomReportDetails<'a>": packet(
 			id: 0x0F,
 			data: {
-				"details": "Vec<ReportDetail>",
+				"details": "SeqLen<'a, ReportDetail<'a>>",
 			},
 		),
-		"ReportDetail": struct(
+		"ReportDetail<'a>": struct(
 			data: {
-				"title": "String",
-				"description": "String",
+				"title": "Cow<'a, str>",
+				"description": "Cow<'a, str>",
 			},
 		),
-		"ServerLinks": packet(
+		"ServerLinks<'a>": packet(
 			id: 0x10,
 			data: {
-				"links": "Vec<ServerLink>",
+				"links": "SeqLen<'a, ServerLink<'a>>",
 			},
 		),
-		"ServerLink": struct(
+		"ServerLink<'a>": struct(
 			data: {
-				"link_type": "ServerLinkType",
-				"url": "String",
+				"link_type": "ServerLinkType<'a>",
+				"url": "Cow<'a, str>",
 			},
 		),
-		"ServerLinkType": enum(
+		"ServerLinkType<'a>": enum(
 			variants: {
 				"BuiltIn": (
 					tag: "1",
@@ -154,7 +154,7 @@
 				"Custom": (
 					tag: "0",
 					data: {
-						"label": "Text",
+						"label": "Nbt<Text<'a>>",
 					},
 				),
 			},
@@ -173,6 +173,5 @@
 				"Announcements": (tag: "9"),
 			},
 		),
-
 	}
 )

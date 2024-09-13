@@ -21,7 +21,7 @@ pub(crate) struct PacketWriter {
 
 impl PacketWriter {
 	/// Sends a packet to the client, automatically checking if the packet is valid for the current state
-	pub(crate) async fn send(&mut self, packet: &S2C) -> anyhow::Result<()> {
+	pub(crate) async fn send<'a>(&mut self, packet: &S2C<'a>) -> anyhow::Result<()> {
 		match packet {
 			S2C::Status(p) if self.state == ConnState::Status => {
 				self.write_unchecked(p).await?;
@@ -43,9 +43,9 @@ impl PacketWriter {
 
 	/// Writes anything writable as a packet into the stream
 	/// Doesnt check if the packet is valid for the current state
-	pub(crate) async fn write_unchecked(
+	pub(crate) async fn write_unchecked<'a>(
 		&mut self,
-		packet: &impl MinecraftProtocol,
+		packet: &impl MinecraftProtocol<'a>,
 	) -> anyhow::Result<()> {
 		self.buffer.get_mut().clear();
 

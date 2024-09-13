@@ -1,15 +1,16 @@
-use std::sync::{Arc, OnceLock};
-
 use super::{compression::CompressionGetter, encryption::Decryptor, ConnState};
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
-use anyhow::bail;
 use craftflow_protocol::{
 	datatypes::VarInt,
 	protocol::{
-		c2s::{handshake::Handshake, LoginPacket, StatusPacket},
+		c2s::{handshake::Handshake, ConfigurationPacket, LoginPacket, StatusPacket},
 		C2S,
 	},
-	MinecraftProtocol,
+	Error, MinecraftProtocol,
+};
+use std::{
+	io::Write,
+	sync::{Arc, OnceLock},
 };
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 
@@ -18,6 +19,7 @@ use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 pub(crate) struct PacketReader {
 	pub(crate) stream: OwnedReadHalf,
 	pub(crate) buffer: Vec<u8>,
+	pub(crate) decompression_buffer: Vec<u8>,
 	pub(crate) state: ConnState,
 	pub(crate) decryptor: Decryptor,
 	pub(crate) compression: CompressionGetter,
@@ -26,7 +28,10 @@ pub(crate) struct PacketReader {
 
 impl PacketReader {
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet(&mut self) -> anyhow::Result<C2S> {
+	/// WARNING: does NOT remove the packet bytes from the buffer
+	/// so consequent reads will return the same packet
+	/// call pop_packet() manually to move on to next packet!
+	pub(crate) async fn read_packet<'a>(&'a mut self) -> craftflow_protocol::Result<C2S<'a>> {
 		// wait for the length of the next packet
 		let packet_len = self.read_varint_at_pos(0).await?;
 
@@ -35,20 +40,30 @@ impl PacketReader {
 
 		let total_packet_len = packet_len + packet_start; // the length of the packet including the length prefix
 
-		assert!(
-			packet_len as usize <= 2usize.pow(15),
-			"packet len must be less than 32768 bytes"
-		);
+		if packet_len as usize > 2usize.pow(15) {
+			return Err(Error::InvalidData(format!(
+				"packet len must be less than 32768 bytes (got {packet_len} bytes)"
+			)));
+		}
 
-		let uncompressed_data_length = if self.compression.enabled().is_some() {
-			// read the uncompressed data length
-			let uncompressed_data_length = self.read_varint_at_pos(packet_start).await?;
-			packet_start += uncompressed_data_length.len();
+		let should_decompress = match self.compression.enabled() {
+			None => None,
+			Some(threshold) => {
+				// read the uncompressed data length
+				let length = self.read_varint_at_pos(packet_start).await?;
+				packet_start += length.len();
 
-			uncompressed_data_length.0 as usize
-		} else {
-			// compression disabled so the uncompressed data length is the same as the packet length
-			packet_len
+				if length.0 as usize >= threshold {
+					Some(length.0 as usize)
+				} else if length.0 == 0 {
+					None
+				} else {
+					return Err(Error::InvalidData(format!(
+						"Invalid decompressed data length: {}",
+						length.0
+					)));
+				}
+			}
 		};
 
 		// now get the actual packet byte slice without the length prefixes
@@ -64,61 +79,75 @@ impl PacketReader {
 
 		let protocol_version = self.get_protocol_version();
 
-		// if the packet was compressed wrap the bytes in a zlib decompressor
-		let packet = if self.compression.enabled().is_some() && uncompressed_data_length != 0 {
-			let mut reader = flate2::read::ZlibDecoder::new(&mut packet_bytes);
+		if let Some(decompressed_length) = should_decompress {
+			// decompress the packet bytes and make sure the length is correct
+			self.decompression_buffer.clear();
+			let mut writer = flate2::write::ZlibDecoder::new(&mut self.decompression_buffer);
+			writer.write_all(packet_bytes)?;
+			writer.finish()?;
 
-			// Parse the packet
-			let packet = match self.state {
-				ConnState::Handshake => Handshake::read(protocol_version, &mut reader)?.into(),
-				ConnState::Status => StatusPacket::read(protocol_version, &mut reader)?.into(),
-				ConnState::Login => LoginPacket::read(protocol_version, &mut reader)?.into(),
-				ConnState::Configuration => todo!(),
-				ConnState::Play => todo!(),
-			};
-
-			// make sure uncompressed data length is correct
-			if reader.total_out() != uncompressed_data_length as u64 {
-				bail!(
-					"Uncompressed data length mismatch: expected {}, got {}",
-					uncompressed_data_length,
-					reader.total_out()
-				);
+			if self.decompression_buffer.len() != decompressed_length {
+				return Err(Error::InvalidData(format!(
+					"Decompressed data length mismatch: expected {}, got {}",
+					decompressed_length,
+					self.decompression_buffer.len()
+				)));
 			}
 
-			packet
-		} else {
-			// Parse the packet
-			let packet = match self.state {
-				ConnState::Handshake => {
-					Handshake::read(protocol_version, &mut packet_bytes)?.into()
-				}
-				ConnState::Status => {
-					StatusPacket::read(protocol_version, &mut packet_bytes)?.into()
-				}
-				ConnState::Login => LoginPacket::read(protocol_version, &mut packet_bytes)?.into(),
-				ConnState::Configuration => todo!(),
-				ConnState::Play => todo!(),
-			};
+			packet_bytes = &self.decompression_buffer[..];
+		}
 
-			packet
+		// Parse the packet
+		let (remaining, packet) = match self.state {
+			ConnState::Handshake => {
+				let (input, packet) = Handshake::read(protocol_version, packet_bytes)?;
+				(input, packet.into())
+			}
+			ConnState::Status => {
+				let (input, packet) = StatusPacket::read(protocol_version, packet_bytes)?;
+				(input, packet.into())
+			}
+			ConnState::Login => {
+				let (input, packet) = LoginPacket::read(protocol_version, packet_bytes)?;
+				(input, packet.into())
+			}
+			ConnState::Configuration => {
+				let (input, packet) = ConfigurationPacket::read(protocol_version, packet_bytes)?;
+				(input, packet.into())
+			}
+			ConnState::Play => todo!(),
 		};
 
-		// remove the bytes from the buffer
-		self.buffer.drain(..total_packet_len);
+		if remaining.len() != 0 {
+			return Err(Error::InvalidData(format!(
+				"Parsed packet and got {} remaining bytes left",
+				remaining.len()
+			)));
+		}
 
 		Ok(packet)
 	}
+	/// Removes 1 packet from the buffer
+	/// Returns an error if there isn't a full packet there
+	pub fn pop_packet(&mut self) -> craftflow_protocol::Result<()> {
+		let length = VarInt::read(self.get_protocol_version(), &self.buffer[..])?;
+
+		self.buffer
+			.drain(..(length.1.len() + (length.1).0 as usize));
+
+		Ok(())
+	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
-	async fn read_varint_at_pos(&mut self, pos: usize) -> anyhow::Result<VarInt> {
+	/// without removing the bytes from the buffer
+	async fn read_varint_at_pos(&mut self, pos: usize) -> craftflow_protocol::Result<VarInt> {
 		loop {
-			match VarInt::read(self.get_protocol_version(), &mut &self.buffer[pos..]) {
-				Ok(varint) => break Ok(varint),
+			match VarInt::read(self.get_protocol_version(), &self.buffer[pos..]) {
+				Ok((_input, varint)) => break Ok(varint),
 				Err(e) => {
 					// if its not an IO error that means the data is invalid
 					// IO error = not enough bytes need to read more
 					// Keep in mind this is reading from an in-memory buffer, not the stream
-					if !e.is::<std::io::Error>() {
+					if !e.is_io_error() {
 						return Err(e);
 					}
 

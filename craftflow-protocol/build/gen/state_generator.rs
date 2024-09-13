@@ -73,6 +73,8 @@ impl StateGenerator {
 			pub mod #module_name {
 				#[allow(unused_imports)]
 				use crate::datatypes::*;
+				#[allow(unused_imports)]
+				use std::borrow::Cow;
 
 				#( #packets )*
 				#( #structs )*
@@ -81,8 +83,8 @@ impl StateGenerator {
 				#destructure_macro
 			}
 
-			impl Into<crate::protocol::#direction_enum> for #main_enum_name {
-				fn into(self) -> crate::protocol::#direction_enum {
+			impl<'a> Into<crate::protocol::#direction_enum<'a>> for #main_enum_name<'a> {
+				fn into(self) -> crate::protocol::#direction_enum<'a> {
 					crate::protocol::#direction_enum::#direction_enum_variant(self)
 				}
 			}

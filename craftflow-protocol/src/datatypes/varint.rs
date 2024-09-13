@@ -1,7 +1,8 @@
+use crate::Error;
 use crate::MinecraftProtocol;
-use anyhow::bail;
+use crate::Result;
 use byteorder::{ReadBytesExt, WriteBytesExt};
-use std::io::{Read, Write};
+use std::io::Write;
 
 /// A Minecraft Protocol VarInt
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,19 +27,19 @@ impl VarInt {
 	}
 }
 
-impl MinecraftProtocol for VarInt {
-	fn read(_protocol_version: u32, source: &mut impl Read) -> anyhow::Result<Self> {
+impl<'a> MinecraftProtocol<'a> for VarInt {
+	fn read(_protocol_version: u32, mut input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed
 
 		loop {
 			// VarInts are at most 5 bytes long.
 			if num_read == 5 {
-				bail!("VarInt is too big");
+				return Err(Error::InvalidData(format!("VarInt is too big")));
 			}
 
 			// Read a byte
-			let byte = source.read_u8()?;
+			let byte = input.read_u8()?;
 
 			// Extract the 7 lower bits (the data bits) and cast to i32
 			let value = (byte & 0b0111_1111) as i32;
@@ -54,9 +55,9 @@ impl MinecraftProtocol for VarInt {
 			}
 		}
 
-		Ok(Self(result))
+		Ok((input, Self(result)))
 	}
-	fn write(&self, _protocol_version: u32, to: &mut impl Write) -> anyhow::Result<usize> {
+	fn write(&self, _protocol_version: u32, output: &mut impl Write) -> Result<usize> {
 		let mut i = 0;
 		let mut value = self.0;
 
@@ -72,7 +73,7 @@ impl MinecraftProtocol for VarInt {
 				temp |= 0b1000_0000;
 			}
 
-			to.write_u8(temp)?;
+			output.write_u8(temp)?;
 			i += 1;
 
 			// If there is no more data to write, exit the loop
@@ -82,6 +83,21 @@ impl MinecraftProtocol for VarInt {
 		}
 
 		Ok(i)
+	}
+}
+
+impl TryFrom<usize> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_from(value: usize) -> std::result::Result<Self, Self::Error> {
+		Ok(VarInt(value.try_into()?))
+	}
+}
+impl TryInto<usize> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_into(self) -> std::result::Result<usize, Self::Error> {
+		self.0.try_into()
 	}
 }
 
@@ -106,7 +122,7 @@ mod tests {
 	#[test]
 	fn varint_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			let result = VarInt::read(0, &mut &case.1[..]).unwrap();
+			let (_, result) = VarInt::read(0, &mut &case.1[..]).unwrap();
 			assert_eq!(result.0, case.0, "{i}");
 		}
 	}

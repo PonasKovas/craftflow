@@ -1,10 +1,11 @@
-use super::{feature::Feature, fields_container::FieldsContainer};
+use super::{feature::Feature, fields_container::FieldsContainer, generics::Generics};
 use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info};
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
 pub struct StructGenerator {
 	pub name: Ident,
+	pub generics: Generics,
 	pub feature: Option<Feature>,
 	pub fields: FieldsContainer,
 }
@@ -19,6 +20,8 @@ impl StructGenerator {
 			})
 		});
 		let struct_name = &self.name;
+		let struct_generics = self.generics.gen();
+		let impl_generics = self.generics.gen_with_a_lifetime();
 
 		let fields = self.fields.gen_definition(true);
 
@@ -28,22 +31,22 @@ impl StructGenerator {
 		quote! {
 			#feature_cfg
 			#[derive(Debug, Clone, PartialEq)]
-			pub struct #struct_name {
+			pub struct #struct_name #struct_generics {
 				#fields
 			}
 
-			impl crate::MinecraftProtocol for #struct_name {
+			impl #impl_generics crate::MinecraftProtocol<'a> for #struct_name #struct_generics {
 				fn read(
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
-					#[allow(non_snake_case)] ___INPUT___: &mut impl std::io::Read
-				) -> anyhow::Result<Self> {
+					#[allow(non_snake_case)] mut ___INPUT___: &'a [u8]
+				) -> crate::Result<(&'a [u8], Self)> {
 					#read_impl
 				}
 				fn write(
 					&self,
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
 					#[allow(non_snake_case)] ___OUTPUT___: &mut impl std::io::Write
-				) -> anyhow::Result<usize> {
+				) -> crate::Result<usize> {
 					#write_impl
 				}
 			}
@@ -60,7 +63,7 @@ impl StructGenerator {
 		// with those variables
 		let constructor = self.fields.gen_constructor();
 		result.extend(quote! {
-			Ok(Self{#constructor})
+			Ok((___INPUT___, Self{#constructor}))
 		});
 
 		result

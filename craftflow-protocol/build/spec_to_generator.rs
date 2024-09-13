@@ -6,6 +6,7 @@ use super::{
 		feature::Feature,
 		field::{Field, FieldFormat},
 		fields_container::FieldsContainer,
+		generics::Generics,
 		packet_generator::PacketGenerator,
 		state_generator::StateGenerator,
 		struct_generator::StructGenerator,
@@ -33,15 +34,19 @@ pub fn spec_to_generator(
 		let mut enums = Vec::new();
 		let mut main_enum_variants = Vec::new();
 		for (item_name, item) in spec.items {
+			let item_generics = Generics::parse(&item_name);
+			let item_name = item_name.split('<').next().unwrap().as_ident();
+
 			match item {
 				SpecItem::Packet(item) => {
 					// PACKET
 					////////////
-					let packet_name = item_name.as_ident();
 					let feature = item.feature.map(|feature| Feature { feature });
 
+					let packet_generics = item_generics.gen();
+
 					main_enum_variants.push(Variant {
-						name: packet_name.clone(),
+						name: item_name.clone(),
 						feature: feature.clone(),
 						tags: item
 							.id
@@ -53,7 +58,7 @@ pub fn spec_to_generator(
 						fields: FieldsContainer {
 							fields: vec![Field {
 								name: "packet".as_ident(),
-								datatype: quote! { #state_module::#packet_name },
+								datatype: quote! { #state_module::#item_name #packet_generics },
 								feature: None,
 							}],
 							format: IndexMap::from([(
@@ -69,7 +74,8 @@ pub fn spec_to_generator(
 
 					packets.push(PacketGenerator {
 						inner: StructGenerator {
-							name: packet_name,
+							name: item_name,
+							generics: item_generics,
 							feature,
 							fields: FieldsContainer::from_spec(item.data, item.format),
 						},
@@ -81,7 +87,8 @@ pub fn spec_to_generator(
 					// STRUCT
 					////////////
 					structs.push(StructGenerator {
-						name: item_name.as_ident(),
+						name: item_name,
+						generics: item_generics,
 						feature: item.feature.map(|feature| Feature { feature }),
 						fields: FieldsContainer::from_spec(item.data, item.format),
 					});
@@ -110,7 +117,8 @@ pub fn spec_to_generator(
 					}
 
 					enums.push(EnumGenerator {
-						name: item_name.as_ident(),
+						name: item_name,
+						generics: item_generics,
 						feature: item.feature.map(|feature| Feature { feature }),
 						variants,
 						tag_format: match item.tag_format {
@@ -134,6 +142,9 @@ pub fn spec_to_generator(
 
 		let main_enum = EnumGenerator {
 			name: state_name.enum_name(),
+			generics: Generics {
+				generics: vec!["'a".to_string()],
+			},
 			feature: state_feature.clone(),
 			variants: main_enum_variants,
 			tag_format: IndexMap::from([(

@@ -1,34 +1,34 @@
-(	
+(
 	items: {
-		"Disconnect": packet(
+		"Disconnect<'a>": packet(
 			id: 0x00,
 			data: {
-				"reason": "Text",
+				"reason": "Json<Text<'a>>",
 			},
 		),
-		"EncryptionRequest": packet(
+		"EncryptionRequest<'a>": packet(
 			id: 0x01,
 			data: {
-				"server_id": "String",
-				"public_key": "Vec<u8>",
-				"verify_token": "Vec<u8>",
+				"server_id": "Cow<'a, str>",
+				"public_key": "SeqLen<'a, u8>",
+				"verify_token": "SeqLen<'a, u8>",
 				"should_authenticate": "bool",
 			},
 		),
-		"LoginSuccess": packet(
+		"LoginSuccess<'a>": packet(
 			id: 0x02,
 			data: {
 				"uuid": "u128",
-				"username": "String",
-				"properties": "Vec<Property>",
+				"username": "Cow<'a, str>",
+				"properties": "SeqLen<'a, Property<'a>>",
 				"strict_error_handling": "bool",
 			},
 		),
-		"Property": struct(
+		"Property<'a>": struct(
 			data: {
-				"name": "String",
-				"value": "String",
-				"signature": "Option<String>",
+				"name": "Cow<'a, str>",
+				"value": "Cow<'a, str>",
+				"signature": "Option<Cow<'a, str>>",
 			},
 		),
 		"SetCompression": packet(
@@ -37,18 +37,18 @@
 				"threshold": "VarInt",
 			},
 		),
-		"PluginRequest": packet(
+		"PluginRequest<'a>": packet(
 			id: 0x04,
 			data: {
 				"message_id": "VarInt",
-				"channel": "String",
-				"data": "Box<[u8]>",
+				"channel": "Cow<'a, str>",
+				"data": "Seq<'a, u8>",
 			},
 		),
-		"CookieRequest": packet(
+		"CookieRequest<'a>": packet(
 			id: 0x05,
 			data: {
-				"key": "String",
+				"key": "Cow<'a, str>",
 			},
 		),
 	}

@@ -1,6 +1,6 @@
 use super::{
 	custom_format::CustomFormat, feature::Feature, fields_container::FieldsContainer,
-	version_dependent::VersionDependent,
+	generics::Generics, version_dependent::VersionDependent,
 };
 use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info};
 use proc_macro2::{Ident, TokenStream};
@@ -8,6 +8,7 @@ use quote::quote;
 
 pub struct EnumGenerator {
 	pub name: Ident,
+	pub generics: Generics,
 	pub feature: Option<Feature>,
 	pub variants: Vec<Variant>,
 	pub tag_format: VersionDependent<CustomFormat>,
@@ -30,6 +31,9 @@ impl EnumGenerator {
 			})
 		});
 		let enum_name = &self.name;
+
+		let enum_generics = self.generics.gen();
+		let impl_generics = self.generics.gen_with_a_lifetime();
 
 		let mut variants = TokenStream::new();
 		for variant in &self.variants {
@@ -65,23 +69,23 @@ impl EnumGenerator {
 		quote! {
 			#[derive(Debug, Clone, PartialEq)]
 			#feature_cfg
-			pub enum #enum_name {
+			pub enum #enum_name #enum_generics {
 				#variants
 			}
 
 			#feature_cfg
-			impl crate::MinecraftProtocol for #enum_name {
+			impl #impl_generics crate::MinecraftProtocol<'a> for #enum_name #enum_generics {
 				fn read(
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
-					#[allow(non_snake_case)] ___INPUT___: &mut impl std::io::Read
-				) -> anyhow::Result<Self> {
+					#[allow(non_snake_case)] ___INPUT___: &'a [u8]
+				) -> crate::Result<(&'a [u8], Self)> {
 					#read_impl
 				}
 				fn write(
 					&self,
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
 					#[allow(non_snake_case)] ___OUTPUT___: &mut impl std::io::Write
-				) -> anyhow::Result<usize> {
+				) -> crate::Result<usize> {
 					#write_impl
 				}
 			}
@@ -100,22 +104,26 @@ impl EnumGenerator {
 					quote! {
 						{
 							#[allow(non_snake_case)]
-							let THIS = <#read_as as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
-							#read
+							let (___INPUT___, THIS) = <#read_as as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+							(___INPUT___, { #read })
 						}
 					}
 				}
 				None => {
 					// default read as varint
 					quote! {
-						<crate::datatypes::VarInt as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?.0
+						{
+							#[allow(non_snake_case)]
+							let (___INPUT___, THIS) = <crate::datatypes::VarInt as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+							(___INPUT___, THIS.0)
+						}
 					}
 				}
 			}
 		});
 		result.extend(quote! {
 			#[allow(non_snake_case)]
-			let ___TAG___ = #tag_match;
+			let (mut ___INPUT___, ___TAG___) = #tag_match;
 		});
 
 		// now we have to match the tag to find which variant it is
@@ -133,7 +141,7 @@ impl EnumGenerator {
 			// Construct the variant
 			let constructor = variant.fields.gen_constructor();
 			read_variant.extend(quote! {
-				return Ok(Self::#variant_name{#constructor});
+				return Ok((___INPUT___, Self::#variant_name{#constructor}));
 			});
 
 			let variant_match = variant.tags.gen_protocol_version_match(info, |tag| {
@@ -151,7 +159,7 @@ impl EnumGenerator {
 
 		// If couldn't match any variants and made it here
 		result.extend(quote! {
-			anyhow::bail!("couldnt match enum tag: {:?}", ___TAG___);
+			Err(crate::Error::InvalidData(format!("couldnt match enum tag: {:?}", ___TAG___)))
 		});
 
 		result

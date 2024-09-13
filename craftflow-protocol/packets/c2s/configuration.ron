@@ -1,9 +1,9 @@
 (
 	items: {
-		"ClientInformation": packet(
+		"ClientInformation<'a>": packet(
 			id: 0x00,
 			data: {
-				"locale": "String",
+				"locale": "Cow<'a, str>",
 				"view_distance": "u8",
 				"chat_mode": "ChatMode",
 				"chat_colors": "bool",
@@ -26,18 +26,18 @@
 				"Right": (tag: "1"),
 			},
 		),
-		"CookieResponse": packet(
+		"CookieResponse<'a>": packet(
 			id: 0x01,
 			data: {
-				"key": "String",
-				"payload": "Option<Vec<u8>>",
+				"key": "Cow<'a, str>",
+				"payload": "Option<SeqLen<'a, u8>>",
 			},
 		),
-		"PluginMessage": packet(
+		"PluginMessage<'a>": packet(
 			id: 0x02,
 			data: {
-				"channel": "String",
-				"data": "Box<[u8]>",
+				"channel": "Cow<'a, str>",
+				"data": "Seq<'a, u8>",
 			},
 		),
 		"AcknowledgeFinishConfiguration": packet(
@@ -75,17 +75,17 @@
 				"Discarded": (tag: "7"),
 			},
 		),
-		"KnownPacks": packet(
+		"KnownPacks<'a>": packet(
 			id: 0x07,
 			data: {
-				"known_packs": "Vec<KnownPack>",
+				"known_packs": "SeqLen<'a, KnownPack<'a>>",
 			},
 		),
-		"KnownPack": struct(
+		"KnownPack<'a>": struct(
 			data: {
-				"namespace": "String",
-				"id": "String",
-				"version": "String",
+				"namespace": "Cow<'a, str>",
+				"id": "Cow<'a, str>",
+				"version": "Cow<'a, str>",
 			},
 		),
 	}

@@ -1,10 +1,10 @@
-use crate::{datatypes::VarInt, protocol::C2S, MinecraftProtocol, Packet};
-use anyhow::bail;
+use crate::{datatypes::VarInt, protocol::C2S, Error, MinecraftProtocol, Packet, Result};
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Handshake {
+pub struct Handshake<'a> {
 	pub protocol_version: VarInt,
-	pub server_address: String,
+	pub server_address: Cow<'a, str>,
 	pub server_port: u16,
 	pub next_state: NextState,
 }
@@ -16,41 +16,53 @@ pub enum NextState {
 	Transfer = 3,
 }
 
-impl Packet for Handshake {
-	type Direction = C2S;
+impl<'a> Packet for Handshake<'a> {
+	type Direction = C2S<'a>;
+	type StaticSelf = Handshake<'static>;
 
 	fn into_packet_enum(self) -> Self::Direction {
 		C2S::Handshake(self)
 	}
 }
 
-impl MinecraftProtocol for Handshake {
-	fn read(protocol_version: u32, input: &mut impl std::io::Read) -> anyhow::Result<Self>
-	where
-		Self: Sized,
-	{
-		if VarInt::read(protocol_version, input)?.0 != 0x00 {
-			bail!("Invalid packet ID for Handshake");
+impl<'a> MinecraftProtocol<'a> for Handshake<'a> {
+	fn read(protocol_version: u32, input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+		let (input, packet_id) = VarInt::read(protocol_version, input)?;
+
+		if packet_id.0 != 0x00 {
+			return Err(Error::InvalidData(format!(
+				"Invalid packet ID for Handshake: {}",
+				packet_id.0
+			)));
 		}
 
-		Ok(Self {
-			protocol_version: MinecraftProtocol::read(protocol_version, input)?,
-			server_address: MinecraftProtocol::read(protocol_version, input)?,
-			server_port: MinecraftProtocol::read(protocol_version, input)?,
-			next_state: match VarInt::read(protocol_version, input)?.0 {
-				1 => NextState::Status,
-				2 => NextState::Login,
-				3 => NextState::Transfer,
-				_ => bail!("Invalid NextState"),
+		let (input, version) = MinecraftProtocol::read(protocol_version, input)?;
+		let (input, server_address) = MinecraftProtocol::read(protocol_version, input)?;
+		let (input, server_port) = MinecraftProtocol::read(protocol_version, input)?;
+		let (input, next_state) = VarInt::read(protocol_version, input)?;
+
+		Ok((
+			input,
+			Self {
+				protocol_version: version,
+				server_address,
+				server_port,
+				next_state: match next_state.0 {
+					1 => NextState::Status,
+					2 => NextState::Login,
+					3 => NextState::Transfer,
+					_ => {
+						return Err(Error::InvalidData(format!(
+							"Invalid NextState {}",
+							next_state.0
+						)))
+					}
+				},
 			},
-		})
+		))
 	}
 
-	fn write(
-		&self,
-		protocol_version: u32,
-		output: &mut impl std::io::Write,
-	) -> anyhow::Result<usize> {
+	fn write(&self, protocol_version: u32, output: &mut impl std::io::Write) -> Result<usize> {
 		let mut written = 0;
 
 		written += VarInt(0x00).write(protocol_version, output)?;
@@ -63,8 +75,8 @@ impl MinecraftProtocol for Handshake {
 	}
 }
 
-impl Into<C2S> for Handshake {
-	fn into(self) -> C2S {
+impl<'a> Into<C2S<'a>> for Handshake<'a> {
+	fn into(self) -> C2S<'a> {
 		C2S::Handshake(self)
 	}
 }

@@ -7,6 +7,7 @@ pub struct NewConnection;
 pub struct Disconnect;
 
 impl Event for NewConnection {
+	type IDType = NewConnection;
 	/// The ID of the connection that was established.
 	type Args = usize;
 	/// If the event is blocked, connection will be closed.
@@ -14,6 +15,7 @@ impl Event for NewConnection {
 }
 
 impl Event for Disconnect {
+	type IDType = Disconnect;
 	/// The ID of the connection that was closed.
 	type Args = usize;
 	type Return = ();

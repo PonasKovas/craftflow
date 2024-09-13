@@ -1,7 +1,6 @@
-use crate::{datatypes::VarInt, protocol::S2C, MinecraftProtocol};
-use anyhow::{bail, Result};
+use crate::{datatypes::VarInt, protocol::S2C, Error, MinecraftProtocol, Result};
 use status::{Pong, StatusResponse};
-use std::io::{Read, Write};
+use std::io::Write;
 
 /// Module for the Legacy server list ping
 /// This state is stable and can be used with any protocol version
@@ -10,24 +9,32 @@ pub mod legacy;
 /// This state is stable and can be used with any protocol version
 pub mod status;
 
+/// Enum containing all possible packets of the `Status` state.
 #[derive(Debug, Clone, PartialEq)]
-pub enum StatusPacket {
-	StatusResponse { packet: StatusResponse },
+pub enum StatusPacket<'a> {
+	StatusResponse { packet: StatusResponse<'a> },
 	Pong { packet: Pong },
 }
 
-impl MinecraftProtocol for StatusPacket {
-	fn read(protocol_version: u32, input: &mut impl Read) -> Result<Self> {
-		let packet_id = VarInt::read(protocol_version, input)?;
+impl<'a> MinecraftProtocol<'a> for StatusPacket<'a> {
+	fn read(protocol_version: u32, input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+		let (input, packet_id) = VarInt::read(protocol_version, input)?;
 
 		match packet_id.0 {
-			0x00 => Ok(StatusPacket::StatusResponse {
-				packet: StatusResponse::read(protocol_version, input)?,
-			}),
-			0x01 => Ok(StatusPacket::Pong {
-				packet: Pong::read(protocol_version, input)?,
-			}),
-			_ => bail!("Unknown packet id: {}", packet_id.0),
+			0x00 => {
+				let (input, packet) = StatusResponse::read(protocol_version, input)?;
+				Ok((input, StatusPacket::StatusResponse { packet }))
+			}
+			0x01 => {
+				let (input, packet) = Pong::read(protocol_version, input)?;
+				Ok((input, StatusPacket::Pong { packet }))
+			}
+			_ => {
+				return Err(Error::InvalidData(format!(
+					"Invalid packet ID: {}",
+					packet_id.0
+				)))
+			}
 		}
 	}
 
@@ -49,8 +56,8 @@ impl MinecraftProtocol for StatusPacket {
 	}
 }
 
-impl Into<S2C> for StatusPacket {
-	fn into(self) -> S2C {
+impl<'a> Into<S2C<'a>> for StatusPacket<'a> {
+	fn into(self) -> S2C<'a> {
 		S2C::Status(self)
 	}
 }

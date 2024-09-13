@@ -20,6 +20,7 @@ use util::StateName;
 pub fn main() {
 	println!("cargo::rerun-if-changed=packets");
 	println!("cargo::rerun-if-changed=protocol.ron");
+	println!("cargo::rerun-if-env-changed=RUSTFMT_GENERATED");
 
 	// First handle the main protocol info file which includes
 	// * The list of all supported protocol versions

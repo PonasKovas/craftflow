@@ -110,7 +110,8 @@ fn int_len(num: i32) -> usize {
 }
 
 impl Packet for LegacyPingResponse {
-	type Direction = S2C;
+	type Direction = S2C<'static>;
+	type StaticSelf = LegacyPingResponse;
 
 	fn into_packet_enum(self) -> Self::Direction {
 		S2C::LegacyPingResponse(self)

@@ -168,8 +168,8 @@ impl FieldsContainer {
 						quote! {
 							{
 								#[allow(non_snake_case, unused_variables)]
-								let THIS: #data_type = crate::MinecraftProtocol::read(___PROTOCOL_VERSION___, ___INPUT___)?;
-								#read
+								let (___INPUT___, THIS): (&[u8], #data_type) = crate::MinecraftProtocol::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+								(___INPUT___, { #read })
 							}
 						}
 					}
@@ -190,7 +190,12 @@ impl FieldsContainer {
 								quote! { #[cfg_attr(not(feature = #feature_name), allow(unused_assignments))] }
 							});
 
-						quote! { #cfg_attr { #field_name = #read; } }
+						quote! { #cfg_attr {
+							#[allow(non_snake_case)]
+							let ___NEW_READ___ = #read;
+							___INPUT___ = ___NEW_READ___.0;
+							#field_name = ___NEW_READ___.1;
+						} }
 					}
 					None => quote! { #read; },
 				});

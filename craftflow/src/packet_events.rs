@@ -24,11 +24,11 @@ impl<P: Packet + 'static> Event for P {
 /// `Post<Packet>` events are emitted after a packet is sent to the client
 /// Contrary to the normal Packet events, which are emitted before the packet is sent
 /// and can modify or stop the packet from being sent
-pub struct Post<P: Packet<Direction = S2C>> {
+pub struct Post<P: Packet<Direction = S2C<'static>>> {
 	_phantom: PhantomData<P>,
 }
 
-impl<P: Packet<Direction = S2C> + 'static> Event for Post<P> {
+impl<P: Packet<Direction = S2C<'static>> + 'static> Event for Post<P> {
 	type Args = (usize, P);
 	type Return = ();
 }
@@ -36,12 +36,16 @@ impl<P: Packet<Direction = S2C> + 'static> Event for Post<P> {
 // FUCK RUST MACROS AND FUCK ENUMS AND FUCK DYN NOT SUPPORTING LIFETIMES
 // FUCK YOU
 
-pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: C2S) {
-	fn inner<P: Packet<Direction = C2S> + 'static>(
+pub(super) fn trigger_c2s<'a>(craftflow: &CraftFlow, conn_id: usize, packet: C2S<'a>) {
+	fn inner<'a, P: Packet<Direction = C2S<'a>>>(
 		packet: P,
 		(craftflow, conn_id): (&CraftFlow, usize),
-	) {
-		let _ = craftflow.reactor.event::<P>(&craftflow, (conn_id, packet));
+	) where
+		<P as Packet>::StaticSelf: Packet<Direction = C2S<'a>> + 'static,
+	{
+		let _ = craftflow
+			.reactor
+			.event::<<P as Packet>::StaticSelf>(&craftflow, (conn_id, packet));
 	}
 	match packet {
 		C2S::LegacyPing(legacy) => {
@@ -112,15 +116,15 @@ macro_rules! gen_trigger_s2c {
 	}};
 }
 
-pub(super) fn trigger_s2c_pre(
+pub(super) fn trigger_s2c_pre<'a>(
 	craftflow: &CraftFlow,
 	conn_id: usize,
-	packet: S2C,
-) -> ControlFlow<(), S2C> {
-	fn inner<P: Packet<Direction = S2C> + 'static>(
+	packet: S2C<'a>,
+) -> ControlFlow<(), S2C<'a>> {
+	fn inner<'a, P: Packet<Direction = S2C<'a>> + 'static>(
 		packet: P,
 		(craftflow, conn_id): (&CraftFlow, usize),
-	) -> ControlFlow<(), S2C> {
+	) -> ControlFlow<(), S2C<'a>> {
 		match craftflow.reactor.event::<P>(&craftflow, (conn_id, packet)) {
 			ControlFlow::Continue((_conn_id, packet)) => {
 				ControlFlow::Continue(packet.into_packet_enum())
@@ -132,15 +136,15 @@ pub(super) fn trigger_s2c_pre(
 	gen_trigger_s2c!(inner, packet, craftflow, conn_id)
 }
 
-pub(super) fn trigger_s2c_post(
+pub(super) fn trigger_s2c_post<'a>(
 	craftflow: &CraftFlow,
 	conn_id: usize,
-	packet: S2C,
-) -> ControlFlow<(), S2C> {
-	fn inner<P: Packet<Direction = S2C> + 'static>(
+	packet: S2C<'a>,
+) -> ControlFlow<(), S2C<'a>> {
+	fn inner<'a, P: Packet<Direction = S2C<'a>> + 'static>(
 		packet: P,
 		(craftflow, conn_id): (&CraftFlow, usize),
-	) -> ControlFlow<(), S2C> {
+	) -> ControlFlow<(), S2C<'a>> {
 		match craftflow
 			.reactor
 			.event::<Post<P>>(&craftflow, (conn_id, packet))
