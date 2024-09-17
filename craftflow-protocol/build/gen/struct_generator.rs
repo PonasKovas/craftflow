@@ -1,17 +1,16 @@
-use super::{feature::Feature, fields_container::FieldsContainer, generics::Generics};
+use super::{feature::Feature, fields_container::FieldsContainer};
 use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info};
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 
 pub struct StructGenerator {
 	pub name: Ident,
-	pub generics: Generics,
 	pub feature: Option<Feature>,
 	pub fields: FieldsContainer,
 }
 
 impl StructGenerator {
-	/// Generates a struct definition and a MinecraftProtocol implementation
+	/// Generates a struct definition and a MCPRead/MCPWrite implementations
 	pub fn gen(&self, info: &Info) -> TokenStream {
 		let feature_cfg = self.feature.as_ref().map(|f| {
 			f.gen_cfg(FeatureCfgOptions {
@@ -20,8 +19,6 @@ impl StructGenerator {
 			})
 		});
 		let struct_name = &self.name;
-		let struct_generics = self.generics.gen();
-		let impl_generics = self.generics.gen_with_a_lifetime();
 
 		let fields = self.fields.gen_definition(true);
 
@@ -31,17 +28,21 @@ impl StructGenerator {
 		quote! {
 			#feature_cfg
 			#[derive(Debug, Clone, PartialEq)]
-			pub struct #struct_name #struct_generics {
+			pub struct #struct_name {
 				#fields
 			}
 
-			impl #impl_generics crate::MinecraftProtocol<'a> for #struct_name #struct_generics {
+			#feature_cfg
+			impl crate::MCPRead for #struct_name {
 				fn read(
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
-					#[allow(non_snake_case)] mut ___INPUT___: &'a [u8]
-				) -> crate::Result<(&'a [u8], Self)> {
+					#[allow(non_snake_case)] mut ___INPUT___: &[u8]
+				) -> crate::Result<(&[u8], Self)> {
 					#read_impl
 				}
+			}
+			#feature_cfg
+			impl crate::MCPWrite for #struct_name {
 				fn write(
 					&self,
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,

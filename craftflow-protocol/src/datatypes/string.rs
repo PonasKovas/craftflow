@@ -1,11 +1,10 @@
 use super::VarInt;
-use crate::{Error, MinecraftProtocol, Result};
+use crate::{Error, MCPRead, MCPWrite, Result};
 use core::str;
-use std::borrow::Cow;
 use std::io::Write;
 
-impl<'a> MinecraftProtocol<'a> for Cow<'a, str> {
-	fn read(protocol_version: u32, input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+impl MCPRead for String {
+	fn read(protocol_version: u32, input: &[u8]) -> Result<(&[u8], Self)> {
 		let (mut input, len) = VarInt::read(protocol_version, input)?;
 		let len = len.0 as usize;
 
@@ -28,8 +27,11 @@ impl<'a> MinecraftProtocol<'a> for Cow<'a, str> {
 
 		input = &input[len..];
 
-		Ok((input, Cow::Borrowed(s)))
+		Ok((input, s.to_owned()))
 	}
+}
+
+impl MCPWrite for String {
 	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize> {
 		let prefix_len = VarInt(self.len() as i32).write(protocol_version, output)?;
 		output.write_all(self.as_bytes())?;

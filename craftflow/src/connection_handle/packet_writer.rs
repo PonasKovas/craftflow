@@ -1,7 +1,7 @@
 use super::{compression::CompressionGetter, encryption::Encryptor, ConnState};
 use aes::cipher::{generic_array::GenericArray, BlockEncryptMut};
 use anyhow::bail;
-use craftflow_protocol::{datatypes::VarInt, protocol::S2C, MinecraftProtocol};
+use craftflow_protocol::{datatypes::VarInt, protocol::S2C, MCPWrite};
 use flate2::write::ZlibEncoder;
 use std::{
 	io::Cursor,
@@ -21,7 +21,7 @@ pub(crate) struct PacketWriter {
 
 impl PacketWriter {
 	/// Sends a packet to the client, automatically checking if the packet is valid for the current state
-	pub(crate) async fn send<'a>(&mut self, packet: &S2C<'a>) -> anyhow::Result<()> {
+	pub(crate) async fn send(&mut self, packet: &S2C) -> anyhow::Result<()> {
 		match packet {
 			S2C::Status(p) if self.state == ConnState::Status => {
 				self.write_unchecked(p).await?;
@@ -43,10 +43,7 @@ impl PacketWriter {
 
 	/// Writes anything writable as a packet into the stream
 	/// Doesnt check if the packet is valid for the current state
-	pub(crate) async fn write_unchecked<'a>(
-		&mut self,
-		packet: &impl MinecraftProtocol<'a>,
-	) -> anyhow::Result<()> {
+	pub(crate) async fn write_unchecked(&mut self, packet: &impl MCPWrite) -> anyhow::Result<()> {
 		self.buffer.get_mut().clear();
 
 		let protocol_version = self.get_protocol_version();

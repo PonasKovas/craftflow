@@ -1,11 +1,11 @@
 //! Prefixes the inner type with a boolean, indicating whether the value is present or not.
 
-use crate::MinecraftProtocol;
 use crate::Result;
+use crate::{MCPRead, MCPWrite};
 use std::io::Write;
 
-impl<'a, T: MinecraftProtocol<'a>> MinecraftProtocol<'a> for Option<T> {
-	fn read(protocol_version: u32, input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+impl<T: MCPRead> MCPRead for Option<T> {
+	fn read(protocol_version: u32, input: &[u8]) -> Result<(&[u8], Self)> {
 		let (input, tag) = bool::read(protocol_version, input)?;
 
 		if tag {
@@ -15,6 +15,9 @@ impl<'a, T: MinecraftProtocol<'a>> MinecraftProtocol<'a> for Option<T> {
 			Ok((input, None))
 		}
 	}
+}
+
+impl<T: MCPWrite> MCPWrite for Option<T> {
 	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize> {
 		let mut written = 0;
 

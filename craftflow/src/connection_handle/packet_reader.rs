@@ -3,10 +3,10 @@ use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
 use craftflow_protocol::{
 	datatypes::VarInt,
 	protocol::{
-		c2s::{handshake::Handshake, ConfigurationPacket, LoginPacket, StatusPacket},
+		c2s::{ConfigurationPacket, HandshakePacket, LoginPacket, StatusPacket},
 		C2S,
 	},
-	Error, MinecraftProtocol,
+	Error, MCPRead,
 };
 use std::{
 	io::Write,
@@ -28,10 +28,7 @@ pub(crate) struct PacketReader {
 
 impl PacketReader {
 	/// Reads a single packet from the client (Cancel-safe)
-	/// WARNING: does NOT remove the packet bytes from the buffer
-	/// so consequent reads will return the same packet
-	/// call pop_packet() manually to move on to next packet!
-	pub(crate) async fn read_packet<'a>(&'a mut self) -> craftflow_protocol::Result<C2S<'a>> {
+	pub(crate) async fn read_packet(&mut self) -> craftflow_protocol::Result<C2S> {
 		// wait for the length of the next packet
 		let packet_len = self.read_varint_at_pos(0).await?;
 
@@ -100,7 +97,7 @@ impl PacketReader {
 		// Parse the packet
 		let (remaining, packet) = match self.state {
 			ConnState::Handshake => {
-				let (input, packet) = Handshake::read(protocol_version, packet_bytes)?;
+				let (input, packet) = HandshakePacket::read(protocol_version, packet_bytes)?;
 				(input, packet.into())
 			}
 			ConnState::Status => {
@@ -125,17 +122,10 @@ impl PacketReader {
 			)));
 		}
 
+		// remove the bytes from the buffer
+		self.buffer.drain(..total_packet_len);
+
 		Ok(packet)
-	}
-	/// Removes 1 packet from the buffer
-	/// Returns an error if there isn't a full packet there
-	pub fn pop_packet(&mut self) -> craftflow_protocol::Result<()> {
-		let length = VarInt::read(self.get_protocol_version(), &self.buffer[..])?;
-
-		self.buffer
-			.drain(..(length.1.len() + (length.1).0 as usize));
-
-		Ok(())
 	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	/// without removing the bytes from the buffer

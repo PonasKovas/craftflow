@@ -1,6 +1,6 @@
 use super::{
 	custom_format::CustomFormat, feature::Feature, fields_container::FieldsContainer,
-	generics::Generics, version_dependent::VersionDependent,
+	version_dependent::VersionDependent,
 };
 use crate::build::{gen::feature::FeatureCfgOptions, info_file::Info};
 use proc_macro2::{Ident, TokenStream};
@@ -8,7 +8,6 @@ use quote::quote;
 
 pub struct EnumGenerator {
 	pub name: Ident,
-	pub generics: Generics,
 	pub feature: Option<Feature>,
 	pub variants: Vec<Variant>,
 	pub tag_format: VersionDependent<CustomFormat>,
@@ -22,7 +21,7 @@ pub struct Variant {
 }
 
 impl EnumGenerator {
-	/// Generates the enum definition and MinecraftProtocol implementation
+	/// Generates the enum definition and MCPRead/MCPWrite implementations
 	pub fn gen(&self, info: &Info) -> TokenStream {
 		let feature_cfg = self.feature.as_ref().map(|f| {
 			f.gen_cfg(FeatureCfgOptions {
@@ -31,9 +30,6 @@ impl EnumGenerator {
 			})
 		});
 		let enum_name = &self.name;
-
-		let enum_generics = self.generics.gen();
-		let impl_generics = self.generics.gen_with_a_lifetime();
 
 		let mut variants = TokenStream::new();
 		for variant in &self.variants {
@@ -69,18 +65,21 @@ impl EnumGenerator {
 		quote! {
 			#[derive(Debug, Clone, PartialEq)]
 			#feature_cfg
-			pub enum #enum_name #enum_generics {
+			pub enum #enum_name {
 				#variants
 			}
 
 			#feature_cfg
-			impl #impl_generics crate::MinecraftProtocol<'a> for #enum_name #enum_generics {
+			impl crate::MCPRead for #enum_name {
 				fn read(
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
-					#[allow(non_snake_case)] ___INPUT___: &'a [u8]
-				) -> crate::Result<(&'a [u8], Self)> {
+					#[allow(non_snake_case)] ___INPUT___: &[u8]
+				) -> crate::Result<(&[u8], Self)> {
 					#read_impl
 				}
+			}
+			#feature_cfg
+			impl crate::MCPWrite for #enum_name {
 				fn write(
 					&self,
 					#[allow(non_snake_case)] ___PROTOCOL_VERSION___: u32,
@@ -104,7 +103,7 @@ impl EnumGenerator {
 					quote! {
 						{
 							#[allow(non_snake_case)]
-							let (___INPUT___, THIS) = <#read_as as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+							let (___INPUT___, THIS) = <#read_as as crate::MCPRead>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
 							(___INPUT___, { #read })
 						}
 					}
@@ -114,7 +113,7 @@ impl EnumGenerator {
 					quote! {
 						{
 							#[allow(non_snake_case)]
-							let (___INPUT___, THIS) = <crate::datatypes::VarInt as crate::MinecraftProtocol>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+							let (___INPUT___, THIS) = <crate::datatypes::VarInt as crate::MCPRead>::read(___PROTOCOL_VERSION___, ___INPUT___)?;
 							(___INPUT___, THIS.0)
 						}
 					}
@@ -149,7 +148,10 @@ impl EnumGenerator {
 					if ___TAG___ == #tag {
 						// Found it!
 						// continue reading this variant now
-						#read_variant
+						return crate::Context::with_context(
+						(|| { #read_variant })(),
+						|| format!("parsing {} enum variant", ___TAG___)
+						);
 					}
 				}
 			});
@@ -180,7 +182,7 @@ impl EnumGenerator {
 				.tag_format
 				.gen_protocol_version_match(info, |tag_format| match &tag_format.custom_write {
 					None => quote! {
-						___WRITTEN_BYTES___ += crate::MinecraftProtocol::write(
+						___WRITTEN_BYTES___ += crate::MCPWrite::write(
 							&crate::datatypes::VarInt(___TAG___),
 							___PROTOCOL_VERSION___,
 							___OUTPUT___
@@ -190,7 +192,7 @@ impl EnumGenerator {
 						___WRITTEN_BYTES___ += {
 							#[allow(non_snake_case, unused_variables)]
 							let THIS = ___TAG___;
-							crate::MinecraftProtocol::write(
+							crate::MCPWrite::write(
 								#[allow(unused_braces)] { #custom_write },
 								___PROTOCOL_VERSION___,
 								___OUTPUT___

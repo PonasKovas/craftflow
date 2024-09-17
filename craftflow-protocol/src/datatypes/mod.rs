@@ -2,17 +2,17 @@
 //!
 
 mod bool;
+mod boxed_slice;
 mod integers;
 mod json;
 mod nbt;
 mod option;
-mod seq;
 mod string;
 pub mod text;
 mod varint;
+mod vec;
 
 pub use json::Json;
 pub use nbt::Nbt;
-pub use seq::{Seq, SeqLen};
 pub use text::Text;
 pub use varint::VarInt;

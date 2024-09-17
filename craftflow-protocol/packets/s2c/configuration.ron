@@ -1,22 +1,22 @@
 (
 	items: {
-		"CookieRequest<'a>": packet(
+		"CookieRequest": packet(
 			id: 0x00,
 			data: {
-				"key": "Cow<'a, str>",
+				"key": "String",
 			},
 		),
-		"PluginMessage<'a>": packet(
+		"PluginMessage": packet(
 			id: 0x01,
 			data: {
-				"channel": "Cow<'a, str>",
-				"data": "Seq<'a, u8>",
+				"channel": "String",
+				"data": "Box<[u8]>",
 			},
 		),
-		"Disconnect<'a>": packet(
+		"Disconnect": packet(
 			id: 0x02,
 			data: {
-				"reason": "Nbt<Text<'a>>",
+				"reason": "Nbt<Text>",
 			},
 		),
 		"FinishConfiguration": packet(
@@ -39,16 +39,16 @@
 			id: 0x06,
 			data: {},
 		),
-		"RegistryData<'a>": packet(
+		"RegistryData": packet(
 			id: 0x07,
 			data: {
-				"registry_id": "Cow<'a, str>",
-				"entries": "SeqLen<'a, RegistryEntry<'a>>",
+				"registry_id": "String",
+				"entries": "Vec<RegistryEntry>",
 			},
 		),
-		"RegistryEntry<'a>": struct(
+		"RegistryEntry": struct(
 			data: {
-				"entry_id": "Cow<'a, str>",
+				"entry_id": "String",
 				//"data": "Option<Nbt>", TODO uncomment when Nbt added
 			},
 		),
@@ -58,92 +58,92 @@
 				"uuid": "Option<u128>",
 			},
 		),
-		"AddResourcePack<'a>": packet(
+		"AddResourcePack": packet(
 			id: 0x09,
 			data: {
 				"uuid": "u128",
-				"url": "Cow<'a, str>",
-				"hash": "Cow<'a, str>",
+				"url": "String",
+				"hash": "String",
 				"forced": "bool",
-				// "prompt_message": "Option<Text<'a>>", // todo this is NBT
+				// "prompt_message": "Option<Text>", // todo this is NBT
 			},
 		),
-		"StoreCookie<'a>": packet(
+		"StoreCookie": packet(
 			id: 0x0A,
 			data: {
-				"key": "Cow<'a, str>",
-				"payload": "SeqLen<'a, u8>",
+				"key": "String",
+				"payload": "Vec<u8>",
 			},
 		),
-		"Transfer<'a>": packet(
+		"Transfer": packet(
 			id: 0x0B,
 			data: {
-				"host": "Cow<'a, str>",
+				"host": "String",
 				"port": "VarInt",
 			},
 		),
-		"FeatureFlags<'a>": packet(
+		"FeatureFlags": packet(
 			id: 0x0C,
 			data: {
-				"features": "SeqLen<'a, Cow<'a, str>>",
+				"features": "Vec<String>",
 			},
 		),
-		"UpdateTags<'a>": packet(
+		"UpdateTags": packet(
 			id: 0x0D,
 			data: {
-				"tags": "SeqLen<'a, RegistryTags<'a>>",
+				"tags": "Vec<RegistryTags>",
 			},
 		),
-		"RegistryTags<'a>": struct(
+		"RegistryTags": struct(
 			data: {
-				"registry": "Cow<'a, str>",
-				"tags": "SeqLen<'a, Tag<'a>>",
+				"registry": "String",
+				"tags": "Vec<Tag>",
 			},
 		),
-		"Tag<'a>": struct(
+		"Tag": struct(
 			data: {
-				"name": "Cow<'a, str>",
-				"entries": "SeqLen<'a, VarInt>",
+				"name": "String",
+				"entries": "Vec<VarInt>",
 			},
 		),
-		"KnownPacks<'a>": packet(
+		"KnownPacks": packet(
 			id: 0x0E,
 			data: {
-				"packs": "SeqLen<'a, KnownPack<'a>>",
+				"packs": "Vec<KnownPack>",
 			},
 		),
-		"KnownPack<'a>": struct(
+		"KnownPack": struct(
 			data: {
-				"namespace": "Cow<'a, str>",
-				"id": "Cow<'a, str>",
-				"version": "Cow<'a, str>",
+				"namespace": "String",
+				"id": "String",
+				"version": "String",
 			},
 		),
-		"CustomReportDetails<'a>": packet(
+		"CustomReportDetails": packet(
 			id: 0x0F,
 			data: {
-				"details": "SeqLen<'a, ReportDetail<'a>>",
+				"details": "Vec<ReportDetail>",
 			},
 		),
-		"ReportDetail<'a>": struct(
+		"ReportDetail": struct(
 			data: {
-				"title": "Cow<'a, str>",
-				"description": "Cow<'a, str>",
+				"title": "String",
+				"description": "String",
 			},
 		),
-		"ServerLinks<'a>": packet(
+		"ServerLinks": packet(
 			id: 0x10,
 			data: {
-				"links": "SeqLen<'a, ServerLink<'a>>",
+				"links": "Vec<ServerLink>",
 			},
 		),
-		"ServerLink<'a>": struct(
+		"ServerLink": struct(
 			data: {
-				"link_type": "ServerLinkType<'a>",
-				"url": "Cow<'a, str>",
+				"link_type": "ServerLinkType",
+				"url": "String",
 			},
 		),
-		"ServerLinkType<'a>": enum(
+		"ServerLinkType": enum(
 			variants: {
 				"BuiltIn": (
 					tag: "1",
@@ -154,7 +154,7 @@
 				"Custom": (
 					tag: "0",
 					data: {
-						"label": "Nbt<Text<'a>>",
+						"label": "Nbt<Text>",
 					},
 				),
 			},

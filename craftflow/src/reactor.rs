@@ -5,7 +5,6 @@ use std::{
 	any::{Any, TypeId},
 	collections::BTreeMap,
 	marker::PhantomData,
-	mem::ManuallyDrop,
 	ops::ControlFlow,
 };
 
@@ -18,12 +17,7 @@ use std::{
 /// ```
 /// Return `ControlFlow::Continue(Event::Args)` to continue reacting to the event with the next registered
 /// handler, or `ControlFlow::Break(Event::Return)` to stop the event and return.
-pub trait Event {
-	/// This type must be 'static and will be used to identify the event
-	/// We cannot use the Event type directly because we need it to be able to be not 'static
-	/// and rust won't fucking allow that
-	type IDType: Any;
-
+pub trait Event: Any {
 	/// The type of the arguments that the event will receive
 	type Args;
 	/// The type of the return value of the event
@@ -69,7 +63,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	) {
 		let pos = self
 			.events
-			.get(&TypeId::of::<<E as Event>::IDType>())
+			.get(&TypeId::of::<E>())
 			.map(|handlers| handlers.len())
 			.unwrap_or(0);
 
@@ -93,19 +87,16 @@ impl<CTX: 'static> Reactor<CTX> {
 		// // Erase the type of the closure so we can store it
 		let type_erased = Box::new(closure) as Box<dyn Any + Send + Sync + 'static>;
 
-		let handlers = self
-			.events
-			.entry(TypeId::of::<<E as Event>::IDType>())
-			.or_insert(Vec::new());
+		let handlers = self.events.entry(TypeId::of::<E>()).or_insert(Vec::new());
 
 		// clamp the pos to valid range
 		let pos = pos.min(handlers.len());
 
-		// handlers.insert(pos, type_erased);
+		handlers.insert(pos, type_erased);
 	}
 	/// Trigger an event
 	pub fn event<E: Event>(&self, ctx: &CTX, mut args: E::Args) -> ControlFlow<E::Return, E::Args> {
-		if let Some(handlers) = self.events.get(&TypeId::of::<<E as Event>::IDType>()) {
+		if let Some(handlers) = self.events.get(&TypeId::of::<E>()) {
 			for handler in handlers {
 				// Convert back to the real closure type
 				let closure: &Box<
@@ -134,14 +125,12 @@ mod tests {
 	fn test_reactor() {
 		struct MyEvent;
 		impl Event for MyEvent {
-			type IDType = MyEvent;
 			type Args = u32;
 			type Return = ();
 		}
 
 		struct MyEvent2;
 		impl Event for MyEvent2 {
-			type IDType = MyEvent2;
 			type Args = ();
 			type Return = &'static str;
 		}

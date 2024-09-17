@@ -15,7 +15,6 @@ pub mod enum_generator;
 pub mod feature;
 pub mod field;
 pub mod fields_container;
-pub mod generics;
 pub mod packet_generator;
 pub mod state_generator;
 pub mod struct_generator;
@@ -40,17 +39,14 @@ pub fn generate_code(
 	quote! {
 		#[doc = "All possible Client -> Server packets."]
 		#[derive(Debug, Clone, PartialEq)]
-		pub enum C2S<'a> {
-			LegacyPing(crate::stable_packets::c2s::legacy::LegacyPing),
-			Handshake(crate::stable_packets::c2s::handshake::Handshake<'a>),
-			Status(crate::stable_packets::c2s::StatusPacket),
+		pub enum C2S {
+			LegacyPing(crate::legacy::LegacyPing),
 			#( #c2s_enum_variants )*
 		}
 		#[doc = "All possible Server -> Client packets."]
 		#[derive(Debug, Clone, PartialEq)]
-		pub enum S2C<'a> {
-			LegacyPingResponse(crate::stable_packets::s2c::legacy::LegacyPingResponse),
-			Status(crate::stable_packets::s2c::StatusPacket<'a>),
+		pub enum S2C {
+			LegacyPingResponse(crate::legacy::LegacyPingResponse),
 			#( #s2c_enum_variants )*
 		}
 
@@ -89,7 +85,7 @@ fn gen_state_enum_variants(
 
 		variants.push(quote! {
 			#feature
-			#variant_name(#direction_module::#state_enum_name<'a>),
+			#variant_name(#direction_module::#state_enum_name),
 		});
 	}
 

@@ -2,7 +2,7 @@ use crate::SimplePing;
 use craftflow::CraftFlow;
 use craftflow_protocol::{
 	datatypes::{text::TextContent, Text},
-	protocol::{c2s::legacy::LegacyPing, s2c::legacy::LegacyPingResponse},
+	legacy::{LegacyPing, LegacyPingResponse},
 };
 use std::ops::ControlFlow;
 

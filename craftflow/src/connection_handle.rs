@@ -32,9 +32,9 @@ use tracing::error;
 pub struct ConnectionHandle {
 	id: usize,
 	ip: IpAddr,
-	pub(crate) packet_sender: UnboundedSender<S2C<'static>>,
+	pub(crate) packet_sender: UnboundedSender<S2C>,
 	/// For when you want to send multiple packets at once without anything in between them
-	pub(crate) packet_batch_sender: UnboundedSender<Vec<S2C<'static>>>,
+	pub(crate) packet_batch_sender: UnboundedSender<Vec<S2C>>,
 	encryption: EncryptionSetter,
 	compression: CompressionSetter,
 	// the protocol version of the client
@@ -44,13 +44,13 @@ pub struct ConnectionHandle {
 
 impl ConnectionHandle {
 	/// Send a packet to this client.
-	pub fn send(&self, packet: impl Packet<Direction = S2C<'static>>) {
+	pub fn send(&self, packet: impl Packet<Direction = S2C>) {
 		// dont care if the client is disconnected
 		let _ = self.packet_sender.send(packet.into_packet_enum());
 	}
 
 	/// Send several packets to this client making sure nothing comes in-between
-	pub fn send_batch(&self, packets: Vec<S2C<'static>>) {
+	pub fn send_batch(&self, packets: Vec<S2C>) {
 		// dont care if the client is disconnected
 		let _ = self.packet_batch_sender.send(packets);
 	}
@@ -169,7 +169,7 @@ impl ConnectionHandle {
 			match r {
 				Ok(Ok(_)) => {} // ended peacefully 😊
 				Ok(Err(e)) => {
-					error!("Error handling connection: {e:?}");
+					error!("{e:?}");
 				}
 				Err(_) => {} // panicked... wow.. cringe
 			}

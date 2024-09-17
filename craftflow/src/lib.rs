@@ -2,7 +2,7 @@
 
 pub mod connection_handle;
 pub mod modules;
-// pub mod packet_events;
+pub mod packet_events;
 pub mod reactor;
 pub mod various_events;
 

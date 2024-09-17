@@ -127,7 +127,7 @@ impl FieldsContainer {
 		}
 	}
 	/// Generates code that reads all fields into their respective variables
-	/// In a MinecraftProtocol implementation
+	/// In a MCPRead implementation
 	pub fn gen_read_impl(&self, info: &Info) -> TokenStream {
 		let mut result = TokenStream::new();
 
@@ -155,7 +155,7 @@ impl FieldsContainer {
 					(None, true) => {
 						// default field read, type will be inferred from the field variable
 						quote! {
-							crate::MinecraftProtocol::read(___PROTOCOL_VERSION___, ___INPUT___)?
+							crate::MCPRead::read(___PROTOCOL_VERSION___, ___INPUT___)?
 						}
 					}
 					(None, false) => {
@@ -168,7 +168,7 @@ impl FieldsContainer {
 						quote! {
 							{
 								#[allow(non_snake_case, unused_variables)]
-								let (___INPUT___, THIS): (&[u8], #data_type) = crate::MinecraftProtocol::read(___PROTOCOL_VERSION___, ___INPUT___)?;
+								let (___INPUT___, THIS): (&[u8], #data_type) = crate::MCPRead::read(___PROTOCOL_VERSION___, ___INPUT___)?;
 								(___INPUT___, { #read })
 							}
 						}
@@ -207,7 +207,7 @@ impl FieldsContainer {
 		result
 	}
 	/// Generates code that writes all fields to the output
-	/// In a MinecraftProtocol implementation
+	/// In a MCPWrite implementation
 	///
 	/// all fields must already be prepared as normal variables
 	/// destructure your structure before generating this
@@ -223,7 +223,7 @@ impl FieldsContainer {
 					(None, Some(field_name)) => {
 						// default field write
 						quote! {
-							___WRITTEN_BYTES___ += crate::MinecraftProtocol::write(
+							___WRITTEN_BYTES___ += crate::MCPWrite::write(
 								#field_name,
 								___PROTOCOL_VERSION___,
 								___OUTPUT___
@@ -239,7 +239,7 @@ impl FieldsContainer {
 							___WRITTEN_BYTES___ += {
 								#[allow(non_snake_case, unused_variables)]
 								let THIS = &#field_name;
-								crate::MinecraftProtocol::write(
+								crate::MCPWrite::write(
 									#[allow(unused_braces)] { #custom_write },
 									___PROTOCOL_VERSION___,
 									___OUTPUT___
@@ -249,7 +249,7 @@ impl FieldsContainer {
 					}
 					(Some(custom_write), None) => {
 						quote! {
-							___WRITTEN_BYTES___ += crate::MinecraftProtocol::write(
+							___WRITTEN_BYTES___ += crate::MCPWrite::write(
 								#[allow(unused_braces)] { #custom_write },
 								___PROTOCOL_VERSION___,
 								___OUTPUT___

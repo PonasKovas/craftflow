@@ -1,17 +1,16 @@
 use crate::datatypes::Text;
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct StatusResponseInner<'a> {
-	pub version: Version<'a>,
+pub struct StatusResponse {
+	pub version: Version,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub players: Option<Players<'a>>,
+	pub players: Option<Players>,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub description: Option<Text<'a>>,
+	pub description: Option<Text>,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub favicon: Option<String>,
@@ -21,23 +20,23 @@ pub struct StatusResponseInner<'a> {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Version<'a> {
-	pub name: Cow<'a, str>,
+pub struct Version {
+	pub name: String,
 	pub protocol: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Players<'a> {
+pub struct Players {
 	pub max: i32,
 	pub online: i32,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Vec::is_empty")]
-	pub sample: Vec<PlayerSample<'a>>,
+	pub sample: Vec<PlayerSample>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct PlayerSample<'a> {
-	pub name: Cow<'a, str>,
+pub struct PlayerSample {
+	pub name: String,
 	#[serde(serialize_with = "ser_uuid")]
 	#[serde(deserialize_with = "de_uuid")]
 	pub id: u128,

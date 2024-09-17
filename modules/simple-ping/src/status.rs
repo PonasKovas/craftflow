@@ -1,7 +1,12 @@
 use crate::SimplePing;
 use craftflow::CraftFlow;
-use craftflow_protocol::protocol::{c2s::status::StatusRequest, s2c::status::StatusResponse};
-use serde_json::json;
+use craftflow_protocol::{
+	protocol::{c2s::status::StatusRequest, s2c::status::StatusResponse},
+	serde_types::{
+		self,
+		status_response::{Players, Version},
+	},
+};
 use std::ops::ControlFlow;
 
 pub fn status(
@@ -20,25 +25,24 @@ pub fn status(
 
 	let online_players = cf.connections().len() as i32; // more or less
 	let max_players = 10000; // todo after implementing max connections
-	let description = &cf.modules.get::<SimplePing>().server_description;
-	let favicon = &cf.modules.get::<SimplePing>().favicon;
+	let description = cf.modules.get::<SimplePing>().server_description.clone();
+	let favicon = cf.modules.get::<SimplePing>().favicon.clone();
 
 	cf.get(conn_id).send(StatusResponse {
-		json_response: serde_json::to_string(&json!({
-			"version": {
-				"name": format!("§f§lCraftFlow"),
-				"protocol": protocol_version,
+		response: serde_types::status_response::StatusResponse {
+			version: Version {
+				name: format!("§f§lCraftFlow"),
+				protocol: protocol_version as i32,
 			},
-			"players": {
-				"max": max_players,
-				"online": online_players,
-				"sample": [], // todo real player sample
-			},
-			"description": description,
-			"favicon": favicon,
-			"enforces_secure_chat": false
-		}))
-		.unwrap(),
+			players: Some(Players {
+				max: max_players,
+				online: online_players,
+				sample: vec![], // todo real player sample
+			}),
+			description: Some(description),
+			favicon,
+			enforces_secure_chat: None,
+		},
 	});
 
 	ControlFlow::Continue((conn_id, request))

@@ -5,11 +5,8 @@
 
 use crate::{reactor::Event, CraftFlow};
 use craftflow_protocol::{
-	protocol::{
-		c2s::{self, handshake::Handshake, legacy::LegacyPing},
-		s2c::{self, legacy::LegacyPingResponse},
-		C2S, S2C,
-	},
+	legacy::{LegacyPing, LegacyPingResponse},
+	protocol::{C2S, S2C},
 	Packet,
 };
 use std::{marker::PhantomData, ops::ControlFlow};
@@ -24,44 +21,39 @@ impl<P: Packet + 'static> Event for P {
 /// `Post<Packet>` events are emitted after a packet is sent to the client
 /// Contrary to the normal Packet events, which are emitted before the packet is sent
 /// and can modify or stop the packet from being sent
-pub struct Post<P: Packet<Direction = S2C<'static>>> {
+pub struct Post<P: Packet<Direction = S2C>> {
 	_phantom: PhantomData<P>,
 }
 
-impl<P: Packet<Direction = S2C<'static>> + 'static> Event for Post<P> {
+impl<P: Packet<Direction = S2C> + 'static> Event for Post<P> {
 	type Args = (usize, P);
 	type Return = ();
 }
 
-// FUCK RUST MACROS AND FUCK ENUMS AND FUCK DYN NOT SUPPORTING LIFETIMES
+// FUCK RUST MACROS AND FUCK ENUMS AND FUCK DYN ANY NOT SUPPORTING LIFETIMES
 // FUCK YOU
 
-pub(super) fn trigger_c2s<'a>(craftflow: &CraftFlow, conn_id: usize, packet: C2S<'a>) {
-	fn inner<'a, P: Packet<Direction = C2S<'a>>>(
+pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: usize, packet: C2S) {
+	fn inner<'a, P: Packet<Direction = C2S> + 'static>(
 		packet: P,
 		(craftflow, conn_id): (&CraftFlow, usize),
-	) where
-		<P as Packet>::StaticSelf: Packet<Direction = C2S<'a>> + 'static,
-	{
-		let _ = craftflow
-			.reactor
-			.event::<<P as Packet>::StaticSelf>(&craftflow, (conn_id, packet));
+	) {
+		let _ = craftflow.reactor.event::<P>(&craftflow, (conn_id, packet));
 	}
 	match packet {
 		C2S::LegacyPing(legacy) => {
 			inner::<LegacyPing>(legacy, (craftflow, conn_id));
 		}
 		C2S::Handshake(handshake) => {
-			inner::<Handshake>(handshake, (craftflow, conn_id));
+			craftflow_protocol::destructure_packet_c2s_handshake!(
+				handshake,
+				inner,
+				(craftflow, conn_id),
+			);
 		}
-		C2S::Status(status) => match status {
-			c2s::StatusPacket::StatusRequest { packet } => {
-				inner::<c2s::status::StatusRequest>(packet, (craftflow, conn_id));
-			}
-			c2s::StatusPacket::Ping { packet } => {
-				inner::<c2s::status::Ping>(packet, (craftflow, conn_id));
-			}
-		},
+		C2S::Status(status) => {
+			craftflow_protocol::destructure_packet_c2s_status!(status, inner, (craftflow, conn_id),);
+		}
 		C2S::Login(login) => {
 			craftflow_protocol::destructure_packet_c2s_login!(login, inner, (craftflow, conn_id),);
 		}
@@ -81,14 +73,13 @@ macro_rules! gen_trigger_s2c {
 			S2C::LegacyPingResponse(legacy) => {
 				Some($inner::<LegacyPingResponse>(legacy, ($craftflow, $conn_id)))
 			}
-			S2C::Status(status) => Some(match status {
-				s2c::StatusPacket::StatusResponse { packet } => {
-					$inner::<s2c::status::StatusResponse>(packet, ($craftflow, $conn_id))
-				}
-				s2c::StatusPacket::Pong { packet } => {
-					$inner::<s2c::status::Pong>(packet, ($craftflow, $conn_id))
-				}
-			}),
+			S2C::Status(status) => {
+				craftflow_protocol::destructure_packet_s2c_status!(
+					status,
+					$inner,
+					($craftflow, $conn_id),
+				)
+			}
 			S2C::Login(login) => {
 				craftflow_protocol::destructure_packet_s2c_login!(
 					login,
@@ -116,15 +107,15 @@ macro_rules! gen_trigger_s2c {
 	}};
 }
 
-pub(super) fn trigger_s2c_pre<'a>(
+pub(super) fn trigger_s2c_pre(
 	craftflow: &CraftFlow,
 	conn_id: usize,
-	packet: S2C<'a>,
-) -> ControlFlow<(), S2C<'a>> {
-	fn inner<'a, P: Packet<Direction = S2C<'a>> + 'static>(
+	packet: S2C,
+) -> ControlFlow<(), S2C> {
+	fn inner<'a, P: Packet<Direction = S2C> + 'static>(
 		packet: P,
 		(craftflow, conn_id): (&CraftFlow, usize),
-	) -> ControlFlow<(), S2C<'a>> {
+	) -> ControlFlow<(), S2C> {
 		match craftflow.reactor.event::<P>(&craftflow, (conn_id, packet)) {
 			ControlFlow::Continue((_conn_id, packet)) => {
 				ControlFlow::Continue(packet.into_packet_enum())
@@ -136,15 +127,15 @@ pub(super) fn trigger_s2c_pre<'a>(
 	gen_trigger_s2c!(inner, packet, craftflow, conn_id)
 }
 
-pub(super) fn trigger_s2c_post<'a>(
+pub(super) fn trigger_s2c_post(
 	craftflow: &CraftFlow,
 	conn_id: usize,
-	packet: S2C<'a>,
-) -> ControlFlow<(), S2C<'a>> {
-	fn inner<'a, P: Packet<Direction = S2C<'a>> + 'static>(
+	packet: S2C,
+) -> ControlFlow<(), S2C> {
+	fn inner<'a, P: Packet<Direction = S2C> + 'static>(
 		packet: P,
 		(craftflow, conn_id): (&CraftFlow, usize),
-	) -> ControlFlow<(), S2C<'a>> {
+	) -> ControlFlow<(), S2C> {
 		match craftflow
 			.reactor
 			.event::<Post<P>>(&craftflow, (conn_id, packet))

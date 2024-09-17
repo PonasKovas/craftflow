@@ -1,0 +1,20 @@
+(
+	items: {
+		"Handshake": packet(
+			id: 0x00,
+			data: {
+				"protocol_version": "VarInt",
+				"server_address": "String",
+				"server_port": "u16",
+				"next_state": "NextState",
+			},
+		),
+		"NextState": enum(
+			variants: {
+				"Status": ( tag: "1" ),
+				"Login": ( tag: "2" ),
+				"Transfer": ( tag: "3" ),
+			},
+		),
+	}
+)

@@ -1,6 +1,6 @@
-use crate::MinecraftProtocol;
+use crate::{MCPRead, MCPWrite};
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt, WriteBytesExt};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
 	collections::BTreeMap,
 	io::{Read, Write},
@@ -9,11 +9,13 @@ use std::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Nbt<T>(pub T);
 
-impl<'a, T: Deserialize<'a> + Serialize> MinecraftProtocol<'a> for Nbt<T> {
-	fn read(protocol_version: u32, input: &'a [u8]) -> crate::Result<(&'a [u8], Self)> {
+impl<T: DeserializeOwned> MCPRead for Nbt<T> {
+	fn read(protocol_version: u32, input: &[u8]) -> crate::Result<(&[u8], Self)> {
 		todo!()
 	}
+}
 
+impl<T: Serialize> MCPWrite for Nbt<T> {
 	fn write(&self, protocol_version: u32, output: &mut impl Write) -> crate::Result<usize> {
 		todo!()
 	}

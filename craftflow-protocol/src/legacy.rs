@@ -1,4 +1,9 @@
-use crate::{protocol::S2C, Packet};
+use crate::protocol::S2C;
+use crate::{protocol::C2S, Packet};
+
+/// This is a special packet with a different format that is sent by old clients to ping the server
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct LegacyPing;
 
 /// This is a special packet with a different format that is sent in response to a legacy ping
 /// Do not edit the fields directly, use the builder methods instead, otherwise might end up with an invalid packet
@@ -110,10 +115,17 @@ fn int_len(num: i32) -> usize {
 }
 
 impl Packet for LegacyPingResponse {
-	type Direction = S2C<'static>;
-	type StaticSelf = LegacyPingResponse;
+	type Direction = S2C;
 
 	fn into_packet_enum(self) -> Self::Direction {
 		S2C::LegacyPingResponse(self)
+	}
+}
+
+impl Packet for LegacyPing {
+	type Direction = C2S;
+
+	fn into_packet_enum(self) -> Self::Direction {
+		C2S::LegacyPing(self)
 	}
 }

@@ -1,6 +1,6 @@
 use crate::Error;
-use crate::MinecraftProtocol;
 use crate::Result;
+use crate::{MCPRead, MCPWrite};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
@@ -27,8 +27,8 @@ impl VarInt {
 	}
 }
 
-impl<'a> MinecraftProtocol<'a> for VarInt {
-	fn read(_protocol_version: u32, mut input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+impl MCPRead for VarInt {
+	fn read(_protocol_version: u32, mut input: &[u8]) -> Result<(&[u8], Self)> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed
 
@@ -57,6 +57,9 @@ impl<'a> MinecraftProtocol<'a> for VarInt {
 
 		Ok((input, Self(result)))
 	}
+}
+
+impl MCPWrite for VarInt {
 	fn write(&self, _protocol_version: u32, output: &mut impl Write) -> Result<usize> {
 		let mut i = 0;
 		let mut value = self.0;
