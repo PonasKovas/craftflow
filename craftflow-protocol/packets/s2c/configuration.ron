@@ -16,7 +16,12 @@
 		"Disconnect": packet(
 			id: 0x02,
 			data: {
-				"reason": "Nbt<Text>",
+				"reason": "Text",
+			},
+			format: {
+		        ["*"]: [
+					( field: "reason", read_as: "Nbt<Text>", read: "THIS.0", write: "&Nbt(THIS)" ),
+				],
 			},
 		),
 		"FinishConfiguration": packet(
@@ -49,7 +54,7 @@
 		"RegistryEntry": struct(
 			data: {
 				"entry_id": "String",
-				//"data": "Option<Nbt>", TODO uncomment when Nbt added
+				"data": "Option<DynNbt>",
 			},
 		),
 		"RemoveResourcePack": packet(
@@ -65,7 +70,21 @@
 				"url": "String",
 				"hash": "String",
 				"forced": "bool",
-				// "prompt_message": "Option<Text>", // todo this is NBT
+				"prompt_message": "Option<Text>",
+			},
+			format: {
+		        ["*"]: [
+					( field: "uuid" ),
+					( field: "url" ),
+					( field: "hash" ),
+					( field: "forced" ),
+					(
+					    field: "prompt_message",
+					    read_as: "Option<Nbt<Text>>",
+						read: "THIS.map(|nbt| nbt.0)",
+						write: "&THIS.as_ref().map(|s| Nbt(s))"
+					),
+				],
 			},
 		),
 		"StoreCookie": packet(

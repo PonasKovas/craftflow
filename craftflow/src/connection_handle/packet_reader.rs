@@ -3,7 +3,7 @@ use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
 use craftflow_protocol::{
 	datatypes::VarInt,
 	protocol::{
-		c2s::{ConfigurationPacket, HandshakePacket, LoginPacket, StatusPacket},
+		c2s::{self, ConfigurationPacket, HandshakePacket, LoginPacket, StatusPacket},
 		C2S,
 	},
 	Error, MCPRead,
@@ -124,6 +124,19 @@ impl PacketReader {
 
 		// remove the bytes from the buffer
 		self.buffer.drain(..total_packet_len);
+
+		// match certain special packets that change the state
+		match &packet {
+			C2S::Login(c2s::LoginPacket::LoginAcknowledged { packet: _ }) => {
+				self.state = ConnState::Configuration;
+			}
+			C2S::Configuration(c2s::ConfigurationPacket::AcknowledgeFinishConfiguration {
+				packet: _,
+			}) => {
+				self.state = ConnState::Play;
+			}
+			_ => {}
+		}
 
 		Ok(packet)
 	}

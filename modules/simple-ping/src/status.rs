@@ -24,7 +24,7 @@ pub fn status(
 	};
 
 	let online_players = cf.connections().len() as i32; // more or less
-	let max_players = 10000; // todo after implementing max connections
+	let max_players = 2_000_000_000; // todo after implementing max connections
 	let description = cf.modules.get::<SimplePing>().server_description.clone();
 	let favicon = cf.modules.get::<SimplePing>().favicon.clone();
 

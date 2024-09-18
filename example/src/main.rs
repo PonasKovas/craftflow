@@ -1,5 +1,10 @@
+use std::ops::ControlFlow;
+
 use craftflow::CraftFlow;
-use craftflow_protocol::text;
+use craftflow_protocol::{
+	protocol::{c2s::login::LoginAcknowledged, s2c::configuration::FinishConfiguration},
+	text,
+};
 use login::Login;
 use simple_ping::SimplePing;
 
@@ -20,6 +25,14 @@ async fn main() -> anyhow::Result<()> {
 		.register(&mut craftflow);
 
 	Login::default().register(&mut craftflow);
+
+	craftflow
+		.reactor
+		.add_handler::<LoginAcknowledged, _>(|cf, (conn_id, packet)| {
+			cf.get(conn_id).send(FinishConfiguration {});
+
+			ControlFlow::Continue((conn_id, packet))
+		});
 
 	craftflow.run().await
 }

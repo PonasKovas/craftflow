@@ -13,6 +13,8 @@ mod varint;
 mod vec;
 
 pub use json::Json;
-pub use nbt::Nbt;
+pub use nbt::{DynNbt, Nbt};
 pub use text::Text;
 pub use varint::VarInt;
+
+pub use crab_nbt::nbt;

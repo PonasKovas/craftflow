@@ -8,6 +8,8 @@ byteorder = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+crab_nbt = { workspace = true }
+bytes = "*"                       # hopefully temporary, only need this bcs crab_nbt
 
 [build-dependencies]
 ron = { workspace = true }

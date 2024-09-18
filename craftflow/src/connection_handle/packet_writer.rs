@@ -1,7 +1,11 @@
 use super::{compression::CompressionGetter, encryption::Encryptor, ConnState};
 use aes::cipher::{generic_array::GenericArray, BlockEncryptMut};
 use anyhow::bail;
-use craftflow_protocol::{datatypes::VarInt, protocol::S2C, MCPWrite};
+use craftflow_protocol::{
+	datatypes::VarInt,
+	protocol::{s2c, S2C},
+	MCPWrite,
+};
 use flate2::write::ZlibEncoder;
 use std::{
 	io::Cursor,
@@ -29,6 +33,9 @@ impl PacketWriter {
 			S2C::Login(p) if self.state == ConnState::Login => {
 				self.write_unchecked(p).await?;
 			}
+			S2C::Configuration(p) if self.state == ConnState::Configuration => {
+				self.write_unchecked(p).await?;
+			}
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",
@@ -36,6 +43,17 @@ impl PacketWriter {
 					packet
 				);
 			}
+		}
+
+		// match certain special packets that change the state
+		match packet {
+			S2C::Login(s2c::LoginPacket::LoginSuccess { packet: _ }) => {
+				self.state = ConnState::Configuration;
+			}
+			S2C::Configuration(s2c::ConfigurationPacket::FinishConfiguration { packet: _ }) => {
+				self.state = ConnState::Play;
+			}
+			_ => {}
 		}
 
 		Ok(())

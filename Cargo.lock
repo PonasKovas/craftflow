@@ -110,6 +110,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "cesu8"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
+
+[[package]]
 name = "cfb8"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -150,6 +156,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "crab_nbt"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b58aefeb07e50ea11603290f7a4a97d306413c274609ecdc9d8bc62ae64be595"
+dependencies = [
+ "bytes",
+ "cesu8",
+ "derive_more",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "craftflow"
 version = "0.1.0"
 dependencies = [
@@ -169,6 +188,8 @@ name = "craftflow-protocol"
 version = "0.1.0"
 dependencies = [
  "byteorder",
+ "bytes",
+ "crab_nbt",
  "indexmap",
  "proc-macro2",
  "quote",
@@ -215,6 +236,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4"
 dependencies = [
  "powerfmt",
+]
+
+[[package]]
+name = "derive_more"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a9b99b9cbbe49445b21764dc0625032a89b145a2642e67603e1c936f5458d05"
+dependencies = [
+ "derive_more-impl",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb7330aeadfbe296029522e6c40f315320aba36fc43a5b3632f3795348f3bd22"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

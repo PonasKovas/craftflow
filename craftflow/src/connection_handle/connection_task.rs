@@ -13,7 +13,6 @@ use craftflow_protocol::{
 	legacy::LegacyPing,
 	protocol::{
 		c2s::{
-			self,
 			handshake::{Handshake, NextState},
 			HandshakePacket,
 		},
@@ -206,14 +205,6 @@ async fn reader_task(
 ) -> anyhow::Result<()> {
 	loop {
 		let packet = reader.read_packet().await?;
-
-		// match certain special packets that change the state
-		match &packet {
-			C2S::Login(c2s::LoginPacket::LoginAcknowledged { packet: _ }) => {
-				reader.state = ConnState::Configuration;
-			}
-			_ => {}
-		}
 
 		// trigger packet event
 		trigger_c2s(&craftflow, conn_id, packet);
