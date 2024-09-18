@@ -30,7 +30,7 @@ use tracing::error;
 /// The task that handles the connection and later splits into two tasks: reader and writer.
 pub(super) async fn connection_task(
 	craftflow: Arc<CraftFlow>,
-	conn_id: usize,
+	conn_id: u64,
 	mut reader: PacketReader,
 	mut writer: PacketWriter,
 	mut packet_sender: UnboundedReceiver<S2C>,
@@ -155,7 +155,7 @@ pub(super) async fn connection_task(
 /// The task that handles writing packets to the client.
 pub(super) async fn writer_task(
 	craftflow: Arc<CraftFlow>,
-	conn_id: usize,
+	conn_id: u64,
 	mut writer: PacketWriter,
 	mut packet_sender: UnboundedReceiver<S2C>,
 	mut packet_batch_sender: UnboundedReceiver<Vec<S2C>>,
@@ -200,7 +200,7 @@ pub(super) async fn writer_task(
 
 async fn reader_task(
 	craftflow: Arc<CraftFlow>,
-	conn_id: usize,
+	conn_id: u64,
 	mut reader: PacketReader,
 ) -> anyhow::Result<()> {
 	loop {

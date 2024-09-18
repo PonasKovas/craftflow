@@ -3,7 +3,7 @@ use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
 use craftflow_protocol::{
 	datatypes::VarInt,
 	protocol::{
-		c2s::{self, ConfigurationPacket, HandshakePacket, LoginPacket, StatusPacket},
+		c2s::{self, ConfigurationPacket, HandshakePacket, LoginPacket, PlayPacket, StatusPacket},
 		C2S,
 	},
 	Error, MCPRead,
@@ -112,7 +112,10 @@ impl PacketReader {
 				let (input, packet) = ConfigurationPacket::read(protocol_version, packet_bytes)?;
 				(input, packet.into())
 			}
-			ConnState::Play => todo!(),
+			ConnState::Play => {
+				let (input, packet) = PlayPacket::read(protocol_version, packet_bytes)?;
+				(input, packet.into())
+			}
 		};
 
 		if remaining.len() != 0 {

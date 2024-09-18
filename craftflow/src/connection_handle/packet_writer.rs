@@ -36,6 +36,9 @@ impl PacketWriter {
 			S2C::Configuration(p) if self.state == ConnState::Configuration => {
 				self.write_unchecked(p).await?;
 			}
+			S2C::Play(p) if self.state == ConnState::Play => {
+				self.write_unchecked(p).await?;
+			}
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",

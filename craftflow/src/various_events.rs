@@ -8,13 +8,13 @@ pub struct Disconnect;
 
 impl Event for NewConnection {
 	/// The ID of the connection that was established.
-	type Args = usize;
+	type Args = u64;
 	/// If the event is blocked, connection will be closed.
 	type Return = ();
 }
 
 impl Event for Disconnect {
 	/// The ID of the connection that was closed.
-	type Args = usize;
+	type Args = u64;
 	type Return = ();
 }

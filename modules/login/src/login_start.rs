@@ -12,8 +12,8 @@ use std::ops::ControlFlow;
 
 pub fn login_start(
 	cf: &CraftFlow,
-	(conn_id, request): (usize, LoginStart),
-) -> ControlFlow<(), (usize, LoginStart)> {
+	(conn_id, request): (u64, LoginStart),
+) -> ControlFlow<(), (u64, LoginStart)> {
 	cf.modules
 		.get::<Login>()
 		.player_names_uuids

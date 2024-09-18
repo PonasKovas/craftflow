@@ -20,7 +20,7 @@ pub struct Login {
 	pub rsa_key: Option<RsaPrivateKey>,
 	pub compression_threshold: Option<usize>,
 	// The usernames and UUIDs that the client sends in the LoginStart packet
-	pub player_names_uuids: RwLock<BTreeMap<usize, (String, u128)>>,
+	pub player_names_uuids: RwLock<BTreeMap<u64, (String, u128)>>,
 }
 
 const VERIFY_TOKEN: &str = "craftflow easter egg! 🐇🐰 :D";
@@ -81,7 +81,7 @@ impl Login {
 	}
 }
 
-fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: usize) -> ControlFlow<(), usize> {
+fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: u64) -> ControlFlow<(), u64> {
 	cf.modules
 		.get::<Login>()
 		.player_names_uuids

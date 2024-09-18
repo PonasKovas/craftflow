@@ -8,8 +8,8 @@ use std::ops::ControlFlow;
 
 pub fn legacy_ping(
 	cf: &CraftFlow,
-	(conn_id, request): (usize, LegacyPing),
-) -> ControlFlow<(), (usize, LegacyPing)> {
+	(conn_id, request): (u64, LegacyPing),
+) -> ControlFlow<(), (u64, LegacyPing)> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway
 	let online_players = cf.connections().len() as i32; // more or less
 	let max_players = 1000; // todo after implementing max connections

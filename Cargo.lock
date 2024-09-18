@@ -178,7 +178,6 @@ dependencies = [
  "craftflow-protocol",
  "flate2",
  "futures",
- "slab",
  "tokio",
  "tracing",
 ]

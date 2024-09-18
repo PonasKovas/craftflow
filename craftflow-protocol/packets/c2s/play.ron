@@ -1,0 +1,10 @@
+(
+	items: {
+		"ConfirmTeleportation": packet(
+			id: 0x00,
+			data: {
+				"teleport_id": "VarInt",
+			},
+		),
+	}
+)

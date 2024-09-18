@@ -30,7 +30,7 @@ use tracing::error;
 /// A handle to a client connection.
 /// Use this to send packets or end the connection (by dropping this handle).
 pub struct ConnectionHandle {
-	id: usize,
+	id: u64,
 	ip: IpAddr,
 	pub(crate) packet_sender: UnboundedSender<S2C>,
 	/// For when you want to send multiple packets at once without anything in between them
@@ -89,7 +89,7 @@ impl ConnectionHandle {
 	}
 
 	/// Returns the ID of the connection
-	pub fn id(&self) -> usize {
+	pub fn id(&self) -> u64 {
 		self.id
 	}
 }
@@ -98,7 +98,7 @@ impl ConnectionHandle {
 	/// Spawns the reading and writing tasks for a client connection.
 	/// And adds the connection handle to the craftflow instance
 	/// returns the ID of the connection
-	pub(crate) fn add(craftflow: &Arc<CraftFlow>, stream: TcpStream) -> usize {
+	pub(crate) fn add(craftflow: &Arc<CraftFlow>, stream: TcpStream) -> u64 {
 		let peer_ip = stream.peer_addr().unwrap().ip();
 
 		let (packet_sender_in, packet_sender_out) = mpsc::unbounded_channel();
@@ -131,22 +131,25 @@ impl ConnectionHandle {
 
 		let client_protocol_version_clone = Arc::clone(&client_protocol_version);
 
-		let handle = Self {
-			id: 0, // set below
-			ip: peer_ip,
-			packet_sender: packet_sender_in,
-			packet_batch_sender: packet_batch_sender_in,
-			encryption: encryption_setter,
-			compression: compression_setter,
-			protocol_version: client_protocol_version,
-		};
-
 		// Insert into the connections slab
 		let conn_id = {
 			let mut lock = craftflow.connections.write().unwrap();
-			let conn_id = lock.insert(handle);
-			lock[conn_id].id = conn_id;
-			conn_id
+			let id = lock.next_conn_id;
+			lock.connections.insert(
+				id,
+				Self {
+					id,
+					ip: peer_ip,
+					packet_sender: packet_sender_in,
+					packet_batch_sender: packet_batch_sender_in,
+					encryption: encryption_setter,
+					compression: compression_setter,
+					protocol_version: client_protocol_version,
+				},
+			);
+
+			lock.next_conn_id += 1;
+			id
 		};
 
 		let craftflow = Arc::clone(craftflow);

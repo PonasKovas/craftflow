@@ -11,8 +11,8 @@ use std::ops::ControlFlow;
 
 pub fn status(
 	cf: &CraftFlow,
-	(conn_id, request): (usize, StatusRequest),
-) -> ControlFlow<(), (usize, StatusRequest)> {
+	(conn_id, request): (u64, StatusRequest),
+) -> ControlFlow<(), (u64, StatusRequest)> {
 	let client_protocol_version = cf.get(conn_id).protocol_version();
 	let protocol_version = if craftflow_protocol::protocol::SUPPORTED_PROTOCOL_VERSIONS
 		.contains(&client_protocol_version)

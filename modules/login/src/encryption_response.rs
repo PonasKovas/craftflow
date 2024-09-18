@@ -7,8 +7,8 @@ use tracing::error;
 
 pub fn encryption_response(
 	cf: &CraftFlow,
-	(conn_id, request): (usize, EncryptionResponse),
-) -> ControlFlow<(), (usize, EncryptionResponse)> {
+	(conn_id, request): (u64, EncryptionResponse),
+) -> ControlFlow<(), (u64, EncryptionResponse)> {
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
 		match (
 			rsa_key.decrypt(Pkcs1v15Encrypt, &request.shared_secret),
