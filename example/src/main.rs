@@ -83,13 +83,18 @@ async fn main() -> anyhow::Result<()> {
 				dimension_type: VarInt(0),
 				dimension_name: format!("craftflow_dimension"),
 				hashed_seed: 0,
-				game_mode: play::GameMode::Creative {},
-				previous_game_mode: play::GameMode::Creative {},
+				game_mode: play::GameMode::Spectator {},
+				previous_game_mode: play::GameMode::Spectator {},
 				is_debug_world: false,
 				is_flat_world: true,
 				death_location: None,
 				portal_cooldown: VarInt(0),
 				enforces_secure_chat: false,
+			});
+
+			cf.get(conn_id).send(play::GameEvent {
+				event: play::Event::WaitForLevelChunks {},
+				value: 0.0,
 			});
 
 			ControlFlow::Continue((conn_id, packet))

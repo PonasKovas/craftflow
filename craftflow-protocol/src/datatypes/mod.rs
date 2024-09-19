@@ -3,6 +3,7 @@
 
 mod bool;
 mod boxed_slice;
+mod float;
 mod integers;
 mod json;
 mod nbt;

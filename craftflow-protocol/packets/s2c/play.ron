@@ -1,5 +1,31 @@
 (
 	items: {
+    	"GameEvent": packet(
+			id: 0x22,
+			data: {
+				"event": "Event",
+				"value": "f32",
+			},
+		),
+		"Event": enum(
+		    variants: {
+				"NoRespawnBlockAvailable": ( tag: "0" ),
+				"BeginRaining": ( tag: "1" ),
+				"EndRaining": ( tag: "2" ),
+				"ChangeGameMode": ( tag: "3" ),
+				"WinGame": ( tag: "4" ),
+				"DemoEvent": ( tag: "5" ),
+				"ArrowHitPlayer": ( tag: "6" ),
+				"RainLevel": ( tag: "7" ),
+				"ThunderLevel": ( tag: "8" ),
+				"PufferfishStingSound": ( tag: "9" ),
+				"ElderGuardianEffect": ( tag: "10" ),
+				"EnableRespawnScreen": ( tag: "11" ),
+				"LimitedCrafting": ( tag: "12" ),
+				"WaitForLevelChunks": ( tag: "13" ),
+			},
+			tag_format: ( read_as: "u8", read: "THIS" ),
+		),
 		"Login": packet(
 			id: 0x2B,
 			data: {
@@ -33,6 +59,18 @@
 				"Spectator": ( tag: "3" ),
 			},
 			tag_format: ( read_as: "i8", read: "THIS" ),
+		),
+		"SynchronizePlayerPosition": packet(
+			id: 0x40,
+			data: {
+				"x": "f64",
+				"y": "f64",
+				"z": "f64",
+				"yaw": "f32",
+				"pitch": "f32",
+				"rel_flags": "u8",
+				"teleport_id": "VarInt",
+			},
 		),
 	}
 )
