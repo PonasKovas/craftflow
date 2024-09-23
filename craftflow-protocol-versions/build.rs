@@ -14,7 +14,5 @@ const VERSIONS: &[u32] = &[
 pub fn main() {
 	println!("cargo::rerun-if-changed=build.rs");
 
-	if let Err(e) = build::main() {
-		panic!("{}", e);
-	}
+	build::main()
 }
