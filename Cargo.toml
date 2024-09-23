@@ -1,5 +1,12 @@
 [workspace]
-members = ["craftflow", "craftflow-protocol", "example", "modules/*"]
+members = [
+    "craftflow",
+    "craftflow-protocol",
+    "craftflow-protocol-core",
+    "craftflow-protocol-versions",
+    "example",
+    "modules/*",
+]
 resolver = "2"
 
 [workspace.dependencies]
@@ -21,4 +28,5 @@ proc-macro2 = "1.0"
 quote = "1.0"
 indexmap = { version = "2.5", features = ["serde"] }
 thiserror = "1.0"
-crab_nbt = { version = "0.2.1", features = ["serde"] }
+crab_nbt = { version = "0.2.2", features = ["serde"] }
+git2 = "0.19"
