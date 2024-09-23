@@ -3,7 +3,7 @@
 #[path = "build/mod.rs"]
 mod build;
 
-const GIT_URL: &str = "/home/mykolas/Projects/other/minecraft-data/"; //"https://github.com/PrismarineJS/minecraft-data.git";
+const GIT_URL: &str = "https://github.com/PrismarineJS/minecraft-data.git";
 const GIT_COMMIT: &str = "3f429fb293184d1b7a1887e7addad5dc8c77ead1";
 const VERSIONS: &[u32] = &[
 	767, 766, 765, 764, 763, 762, 761, 760, 759, 758, 757, 756, 755, 754, 753, 751, 736, 735, 578,
