@@ -11,8 +11,6 @@ pub fn prepare_git_repo(repo_path: impl AsRef<Path>) {
 			let mut fo = FetchOptions::new();
 			fo.download_tags(AutotagOption::All);
 
-			println!("cargo:warning=Fetching latest changes from the remote repository");
-
 			// Fetch from origin and ensure we have the latest refs
 			repo.find_remote("origin")
 				.unwrap()
@@ -37,8 +35,6 @@ pub fn prepare_git_repo(repo_path: impl AsRef<Path>) {
 			if fs::exists(&repo_path).unwrap() {
 				fs::remove_dir_all(&repo_path).unwrap();
 			}
-
-			println!("cargo:warning=Cloning the remote repository");
 
 			Repository::clone_recurse(GIT_URL, repo_path).unwrap()
 		}
