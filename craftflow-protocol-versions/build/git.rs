@@ -24,8 +24,6 @@ pub fn prepare_git_repo(repo_path: impl AsRef<Path>) {
 				let default_branch = repo.find_reference("refs/remotes/origin/master").unwrap();
 				let latest_commit = default_branch.peel_to_commit().unwrap();
 
-				println!("cargo:warning=Resetting the repository to the latest commit");
-
 				// Reset the repository  clearing any local changes
 				repo.reset(latest_commit.as_object(), git2::ResetType::Hard, None)
 					.unwrap();

@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
       - name: Cache craftflow-protocol-versions/.cache
         uses: actions/cache@v4.0.2
         with:
@@ -23,8 +25,6 @@ jobs:
           key: craftflow-protocol-versions-cache
           # An optional boolean when enabled, allows windows runners to save or restore caches that can be restored or saved respectively on other platforms
           enableCrossOsArchive: true
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
       - name: Build
         run: cargo build --verbose --workspace
       - name: Run tests
