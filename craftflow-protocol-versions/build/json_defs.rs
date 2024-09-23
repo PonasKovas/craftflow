@@ -9,6 +9,4 @@ pub struct VersionFile {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct ProtocolFile {
-	pub version: u32,
-}
+pub struct ProtocolFile {}
