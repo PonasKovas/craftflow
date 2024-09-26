@@ -3,10 +3,10 @@ use craftflow_protocol_core::datatypes::*;
 
 #[derive(Debug, PartialEq)]
 pub struct PacketSetProtocol {
-    protocol_version: VarInt,
-    server_host: String,
-    server_port: u16,
-    next_state: VarInt,
+    pub protocol_version: VarInt,
+    pub server_host: String,
+    pub server_port: u16,
+    pub next_state: VarInt,
 }
 
 impl MCPWrite for PacketSetProtocol {

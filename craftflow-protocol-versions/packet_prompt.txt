@@ -20,20 +20,20 @@ JSON:
 RUST OUTPUT:
 #[derive(Debug, PartialEq)]
 pub struct PacketUpdateAttributes {
-    entity_id: i32,
-    properties: Vec<Property>,
+    pub entity_id: i32,
+    pub properties: Vec<Property>,
 }
 #[derive(Debug, PartialEq)]
 pub struct Property {
-    key: String,
-    value: f64
-    modifiers: Vec<PropertyModifier>,
+    pub key: String,
+    pub value: f64
+    pub modifiers: Vec<PropertyModifier>,
 }
 #[derive(Debug, PartialEq)]
 pub struct PropertyModifier {
-    uuid: u128,
-    amount: f64
-    operation: i8,
+    pub uuid: u128,
+    pub amount: f64
+    pub operation: i8,
 }
 impl MCPWrite for PacketUpdateAttributes {
     fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
