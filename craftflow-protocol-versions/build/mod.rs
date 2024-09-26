@@ -1,6 +1,4 @@
-use crate::VERSIONS;
 use gen::generate;
-use json_defs::{ProtocolFile, VersionFile};
 use proc_macro2::TokenStream;
 use std::{
 	collections::HashMap,
@@ -12,7 +10,6 @@ use std::{
 
 mod gen;
 mod git;
-mod json_defs;
 
 const CACHE_DIR: &str = ".cache/minecraft-data/";
 
@@ -28,48 +25,26 @@ pub fn main() {
 	for version in fs::read_dir(versions_dir).unwrap() {
 		let version = version.unwrap();
 
-		let protocol: ProtocolFile = match fs::read_to_string(version.path().join("protocol.json"))
-		{
-			Ok(p) => match serde_json::from_str(&p) {
-				Ok(p) => p,
-				Err(e) => panic!("failed to parse {:?}: {e}", version.path()),
-			},
-			Err(_) => continue, // skip versions that dont change the protocol
-		};
+		let protocol: serde_json::Value =
+			match fs::read_to_string(version.path().join("protocol.json")) {
+				Ok(p) => match serde_json::from_str(&p) {
+					Ok(p) => p,
+					Err(e) => panic!("failed to parse {:?}: {e}", version.path()),
+				},
+				Err(_) => continue, // skip versions that dont change the protocol
+			};
 
-		let version: VersionFile = match serde_json::from_str(
+		let version: serde_json::Value = match serde_json::from_str(
 			&fs::read_to_string(version.path().join("version.json")).unwrap(),
 		) {
 			Ok(v) => v,
 			Err(e) => panic!("failed to parse {:?}: {e}", version.path()),
 		};
 
-		versions.insert(version.version, protocol);
+		versions.insert(version["version"].as_u64().unwrap() as u32, protocol);
 	}
 
-	// prepare a structure that groups identical protocols to their JSON definitions
-	let mut supported_versions = VERSIONS.to_owned();
-	supported_versions.sort();
-	let mut last_defined_version = None;
-	let mut version_defs = HashMap::new();
-	for version in supported_versions {
-		match versions.get(&version) {
-			Some(protocol) => {
-				last_defined_version = Some(version);
-				version_defs.insert(version, protocol.clone());
-			}
-			None => {
-				version_defs.insert(
-					version,
-					versions[&last_defined_version
-						.expect("the earliest supported version must have a protocol definition")]
-						.clone(),
-				);
-			}
-		}
-	}
-
-	let rust_code = generate(version_defs);
+	let rust_code = generate(versions);
 	let path = Path::new(&env::var("OUT_DIR").unwrap()).join(format!("protocol_defs.rs"));
 	write(rust_code, path);
 }
