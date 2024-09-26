@@ -67,7 +67,7 @@ def generate_protocol_direction(version: int, protocol, prev_version: Optional[i
             generated_rust = f"pub use crate::v{prev_version:05}::{dir_mod_name}::{state}::{packet}::{snake_to_pascal(packet)};"
         else:
             print(Fore.GREEN + Style.BRIGHT + f"Generating {packet} for {state} in {dir_mod_name} in {version}")
-            generated_rust = gen_packet(spec)
+            generated_rust = gen_packet(snake_to_pascal(packet), spec)
 
         prepare_dir(version, dir_mod_name, state)
 

@@ -4,8 +4,7 @@ naturally in a Rust codebase. Change the structure of the packet to make invalid
 You do not need to rewrite the structure of the packet 1:1, change it to be simpler and more rust-like (most importantly
 make invalid state impossible by leveraging enums, BUT ONLY IF IT IS SPECIFIED, DO NOT ASSUME ANY INVALID STATE THAT IS
 NOT SPECIFIED), but keep the serialized binary format the same. You can define multiple structures or enums to represent
-deeper structure. It is VERY IMPORTANT that you do not change the packet name, it should strictly be the given name,
-converted to Pascal Case. Do not reply with any words or text formatting, ONLY the code. Do not use unwrap or expect.
+deeper structure. Do not reply with any words or text formatting, ONLY the code. Do not use unwrap or expect.
 Do not make any assumptions about the packet that are not provided in the specification. If you make any unprovided
 assumptions or write anything more than is requested of you, you will be fired. All types that are used but not given a
 definition are ALREADY DEFINED and have MCPRead and MCPWrite traits implemented for them. Do not import anything,
@@ -14,8 +13,9 @@ VarInt can be constructed with VarInt(n) where n is i32, and inner number accese
 Below is an example of how a JSON specification should be implemented in Rust.
 
 EXAMPLE
+Packet name: PacketUpdateAttributes
 JSON:
-{"packet_update_attributes":["container",[{"name":"entityId","type":"i32"},{"name":"properties","type":["array",{"countType":"i32","type":["container",[{"name":"key","type":"string"},{"name":"value","type":"f64"},{"name":"modifiers","type":["array",{"countType":"i16","type":["container",[{"name":"uuid","type":"UUID"},{"name":"amount","type":"f64"},{"name":"operation","type":"i8"}]]}]}]]}]}]]}
+["container",[{"name":"entityId","type":"i32"},{"name":"properties","type":["array",{"countType":"i32","type":["container",[{"name":"key","type":"string"},{"name":"value","type":"f64"},{"name":"modifiers","type":["array",{"countType":"i16","type":["container",[{"name":"uuid","type":"UUID"},{"name":"amount","type":"f64"},{"name":"operation","type":"i8"}]]}]}]]}]}]]
 
 RUST OUTPUT:
 #[derive(Debug, PartialEq)]
@@ -82,5 +82,6 @@ impl MCPRead for PacketUpdateAttributes {
 
 EXAMPLE OVER.
 
-Do not repeat the example. You need to write the follow JSON in Rust:
+Do not repeat the example. You need to write the follow specification in Rust:
+Packet name: {{packet_name}}
 {{packet_json}}
