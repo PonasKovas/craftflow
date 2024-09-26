@@ -1,5 +1,7 @@
 import json
-import openai
+from openai import OpenAI
+
+# openai_client = OpenAI()
 
 # Generates a rust implementation for a packet just from it's JSON specification using an LLM
 def gen_packet(spec) -> str:

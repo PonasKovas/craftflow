@@ -58,6 +58,13 @@ def main():
 
             defined_versions[version_data["version"]] = version_dir_path
 
+    # for debugging purposes
+    for version in sorted(defined_versions.keys()):
+        print(Fore.CYAN + "Found version " +
+            Fore.YELLOW + Style.BRIGHT + str(version) +
+            Fore.CYAN + Style.NORMAL + " at " +
+            Fore.YELLOW + Style.BRIGHT + defined_versions[version])
+
     # now iterate over all versions and packets, finding any that are not already generated
     for version in range(VERSION_RANGE[0], VERSION_RANGE[1] + 1):
         # if this version is not defined that means its identical to its previous one
@@ -80,6 +87,8 @@ def main():
 
         if protocol == prev_protocol:
             # if identical to previous protocol, no need to generate anything
+            # and remove from defined_versions so other versions dont try to re-export this
+            del defined_versions[version]
             continue
 
         generate_protocol(version, protocol, prev_version, prev_protocol)
