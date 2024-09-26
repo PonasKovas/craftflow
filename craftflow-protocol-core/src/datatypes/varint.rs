@@ -1,6 +1,6 @@
 use crate::Error;
 use crate::Result;
-use crate::{MCPBaseRead, MCPBaseWrite};
+use crate::{MCPRead, MCPWrite};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
@@ -27,8 +27,8 @@ impl VarInt {
 	}
 }
 
-impl MCPBaseRead for VarInt {
-	fn read(_protocol_version: u32, mut input: &[u8]) -> Result<(&[u8], Self)> {
+impl MCPRead for VarInt {
+	fn read(mut input: &[u8]) -> Result<(&[u8], Self)> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed
 
@@ -59,8 +59,8 @@ impl MCPBaseRead for VarInt {
 	}
 }
 
-impl MCPBaseWrite for VarInt {
-	fn write(&self, _protocol_version: u32, output: &mut impl Write) -> Result<usize> {
+impl MCPWrite for VarInt {
+	fn write(&self, output: &mut impl Write) -> Result<usize> {
 		let mut i = 0;
 		let mut value = self.0;
 
@@ -125,7 +125,7 @@ mod tests {
 	#[test]
 	fn varint_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			let (_, result) = VarInt::read(0, &mut &case.1[..]).unwrap();
+			let (_, result) = VarInt::read(&mut &case.1[..]).unwrap();
 			assert_eq!(result.0, case.0, "{i}");
 		}
 	}
@@ -134,7 +134,7 @@ mod tests {
 	fn varint_write() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let mut buf = Vec::new();
-			let result = VarInt(case.0).write(0, &mut buf).unwrap();
+			let result = VarInt(case.0).write(&mut buf).unwrap();
 			assert_eq!(result, case.1.len(), "{i}");
 			assert_eq!(buf, case.1, "{i}");
 		}

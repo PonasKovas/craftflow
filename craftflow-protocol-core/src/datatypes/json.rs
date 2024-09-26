@@ -1,6 +1,6 @@
 use crate::Error;
 use crate::Result;
-use crate::{MCPBaseRead, MCPBaseWrite};
+use crate::{MCPRead, MCPWrite};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::io::Write;
@@ -8,9 +8,9 @@ use std::io::Write;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Json<T>(pub T);
 
-impl<T: DeserializeOwned> MCPBaseRead for Json<T> {
-	fn read(protocol_version: u32, input: &[u8]) -> Result<(&[u8], Self)> {
-		let (input, raw_str) = String::read(protocol_version, input)?;
+impl<T: DeserializeOwned> MCPRead for Json<T> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+		let (input, raw_str) = String::read(input)?;
 
 		let json: T = match serde_json::from_str(&raw_str) {
 			Ok(json) => json,
@@ -25,8 +25,8 @@ impl<T: DeserializeOwned> MCPBaseRead for Json<T> {
 	}
 }
 
-impl<T: Serialize> MCPBaseWrite for Json<T> {
-	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize> {
+impl<T: Serialize> MCPWrite for Json<T> {
+	fn write(&self, output: &mut impl Write) -> Result<usize> {
 		let s = match serde_json::to_string(&self.0) {
 			Ok(s) => s,
 			Err(e) => {
@@ -36,6 +36,6 @@ impl<T: Serialize> MCPBaseWrite for Json<T> {
 			}
 		};
 
-		s.write(protocol_version, output)
+		s.write(output)
 	}
 }

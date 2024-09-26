@@ -1,4 +1,4 @@
-use crate::{MCPBaseRead, MCPBaseWrite};
+use crate::{MCPRead, MCPWrite};
 use std::io::Write;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -8,19 +8,19 @@ pub struct Position {
 	pub z: i32,
 }
 
-impl MCPBaseWrite for Position {
-	fn write(&self, protocol_version: u32, output: &mut impl Write) -> crate::Result<usize> {
+impl MCPWrite for Position {
+	fn write(&self, output: &mut impl Write) -> crate::Result<usize> {
 		let packed = (((self.x as i64) & 0x3FFFFFF) << 38)
 			| (((self.z as i64) & 0x3FFFFFF) << 12)
 			| ((self.y as i64) & 0xFFF);
 
-		packed.write(protocol_version, output)
+		packed.write(output)
 	}
 }
 
-impl MCPBaseRead for Position {
-	fn read(protocol_version: u32, input: &[u8]) -> crate::Result<(&[u8], Self)> {
-		let (input, packed) = i64::read(protocol_version, input)?;
+impl MCPRead for Position {
+	fn read(input: &[u8]) -> crate::Result<(&[u8], Self)> {
+		let (input, packed) = i64::read(input)?;
 
 		let x = (packed >> 38) as i32;
 		let y = ((packed << 52) >> 52) as i32;
@@ -43,9 +43,9 @@ mod tests {
 		};
 
 		let mut buffer = Vec::new();
-		position.write(0, &mut buffer).unwrap();
+		position.write(&mut buffer).unwrap();
 
-		let (rest, read_position) = Position::read(0, &buffer).unwrap();
+		let (rest, read_position) = Position::read(&buffer).unwrap();
 		assert_eq!(rest.len(), 0);
 		assert_eq!(position, read_position);
 	}

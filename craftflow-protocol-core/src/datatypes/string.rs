@@ -1,11 +1,11 @@
 use super::VarInt;
-use crate::{Error, MCPBaseRead, MCPBaseWrite, Result};
+use crate::{Error, MCPRead, MCPWrite, Result};
 use core::str;
 use std::io::Write;
 
-impl MCPBaseRead for String {
-	fn read(protocol_version: u32, input: &[u8]) -> Result<(&[u8], Self)> {
-		let (mut input, len) = VarInt::read(protocol_version, input)?;
+impl MCPRead for String {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+		let (mut input, len) = VarInt::read(input)?;
 		let len = len.0 as usize;
 
 		if len > 1024 * 1024 {
@@ -31,9 +31,9 @@ impl MCPBaseRead for String {
 	}
 }
 
-impl MCPBaseWrite for String {
-	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize> {
-		let prefix_len = VarInt(self.len() as i32).write(protocol_version, output)?;
+impl MCPWrite for String {
+	fn write(&self, output: &mut impl Write) -> Result<usize> {
+		let prefix_len = VarInt(self.len() as i32).write(output)?;
 		output.write_all(self.as_bytes())?;
 
 		Ok(prefix_len + self.len())

@@ -16,21 +16,15 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Types that can be serialized in the Minecraft network protocol format
-/// in any protocol version. This is the base datatypes that are used all throughout the
-/// Minecraft network protocol history
-pub trait MCPBaseWrite {
+pub trait MCPWrite {
 	/// Writes the data and returns the number of bytes written
-	/// `protocol_version` of the connected peer.
-	fn write(&self, protocol_version: u32, output: &mut impl Write) -> Result<usize>;
+	fn write(&self, output: &mut impl Write) -> Result<usize>;
 }
 
 /// Types that can be deserialized in the Minecraft network protocol format
-/// in any protocol version. This is the base datatypes that are used all throughout the
-/// Minecraft network protocol history
-pub trait MCPBaseRead {
+pub trait MCPRead {
 	/// Reads and parses the data, returning the remaining data (if any) together with the parsed value.
-	/// `protocol_version` of the connected peer.
-	fn read(protocol_version: u32, input: &[u8]) -> Result<(&[u8], Self)>
+	fn read(input: &[u8]) -> Result<(&[u8], Self)>
 	where
 		Self: Sized;
 }
