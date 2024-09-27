@@ -1,7 +1,9 @@
 use crate::{MCPRead, MCPWrite, Result};
 use std::io::Write;
 
-impl<T: MCPRead> MCPRead for Box<[T]> {
+pub struct RestBuffer<T>(pub Vec<T>);
+
+impl<T: MCPRead> MCPRead for RestBuffer<T> {
 	fn read(mut input: &[u8]) -> Result<(&[u8], Self)> {
 		let mut result = Vec::new();
 
@@ -19,15 +21,15 @@ impl<T: MCPRead> MCPRead for Box<[T]> {
 			}
 		}
 
-		Ok((input, result.into_boxed_slice()))
+		Ok((input, Self(result)))
 	}
 }
 
-impl<T: MCPWrite> MCPWrite for Box<[T]> {
+impl<T: MCPWrite> MCPWrite for RestBuffer<T> {
 	fn write(&self, output: &mut impl Write) -> Result<usize> {
 		let mut written = 0;
 
-		for element in self.as_ref() {
+		for element in &self.0 {
 			written += element.write(output)?;
 		}
 

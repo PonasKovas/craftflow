@@ -58,6 +58,13 @@ def main():
 
             defined_versions[version_data["version"]] = version_dir_path
 
+    # Remove classic minecraft version which has no bussiness being here anyway and is
+    # causing trouble with the conflicting protocol version
+    # Hopefully later it will be deleted upstream and this can be removed
+    for key, value in dict(defined_versions).items():
+        if value == ".cache/minecraft-data/data/pc/0.30c":
+            del defined_versions[key]
+
     # for debugging purposes
     for version in sorted(defined_versions.keys()):
         print(Fore.CYAN + "Found version " +

@@ -1,24 +1,20 @@
 //! Common datatypes found all throughout the network protocol.
 //!
 
+mod array;
 mod bool;
-mod boxed_slice;
+mod buffer;
 mod float;
 mod integers;
-mod json;
 mod nbt;
 mod option;
-mod position;
+mod rest_buffer;
 mod string;
-pub mod text;
 mod tuples;
 mod varint;
-mod vec;
+mod varlong;
 
-pub use json::Json;
-pub use nbt::{DynNbt, Nbt};
-pub use position::Position;
-pub use text::Text;
+pub use array::Array;
+pub use rest_buffer::RestBuffer;
 pub use varint::VarInt;
-
-pub use crab_nbt::nbt;
+pub use varlong::VarLong;

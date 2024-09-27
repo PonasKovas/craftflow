@@ -10,6 +10,14 @@ assumptions or write anything more than is requested of you, you will be fired. 
 definition are ALREADY DEFINED and have MCPRead and MCPWrite traits implemented for them. Do not import anything,
 everything you need is already imported.
 VarInt can be constructed with VarInt(n) where n is i32, and inner number accesed with varint.0
+Same for VarLong, but with i64.
+UUID is just u128.
+buffer is Buffer<LEN_TYPE>.
+array is Array<LEN_TYPE, ELEMENT_TYPE>.
+restBuffer is RestBuffer<ELEMENT_TYPE>.
+You will have to implement these types manually:
+- bitfield
+- topBitSetTerminatedArray (array where the first bit of an element signifies if another element follows)
 Below is an example of how a JSON specification should be implemented in Rust.
 
 EXAMPLE
