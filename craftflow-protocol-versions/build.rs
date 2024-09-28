@@ -126,7 +126,7 @@ fn generate_direction_enum(version: &str, direction: &str, states: &[String]) {
 			.iter()
 			.map(|state| {
 				format!(
-					"{state}({direction}::{state_enum_name}),",
+					"{state_enum_name}({direction}::{state_enum_name}),",
 					state_enum_name = snake_to_pascal_case(state)
 				)
 			})

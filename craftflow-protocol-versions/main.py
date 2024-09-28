@@ -13,8 +13,8 @@ from colorama import init, Fore, Style
 from conf import CACHE_DIR, REPOSITORY, COMMIT, VERSION_RANGE
 from gen_protocol import generate_protocol
 
-def find_closest_below(defined_versions, version):
-    versions = sorted(defined_versions.keys())
+# finds the closest version that is below the given version
+def find_closest_below(versions, version):
     closest_version = None
 
     for v in versions:
@@ -92,33 +92,34 @@ def main():
             Fore.CYAN + Style.NORMAL + " at " +
             Fore.YELLOW + Style.BRIGHT + defined_versions[version])
 
-    # now iterate over all versions and packets, finding any that are not already generated
+    # load all the protocol.json files into a dictionary
+    protocols = {}
     for version in range(VERSION_RANGE[0], VERSION_RANGE[1] + 1):
+        prev_version = find_closest_below(list(protocols.keys()), version)
         # if this version is not defined that means its identical to its previous one
+        # and there is nothing to generate
         if version not in defined_versions.keys():
-            if find_closest_below(defined_versions, version) is None:
-                print(Fore.RED + Style.BRIGHT + f"Version {version} not found")
+            if prev_version is None:
+                print(Fore.RED + Style.BRIGHT + f"First version {version} not found")
                 sys.exit(1)
             continue
-
-        # find the most recent version that was defined before this version
-        prev_version = find_closest_below(defined_versions, version)
 
         with open(os.path.join(defined_versions[version], "protocol.json"), "r") as f:
             protocol = json.loads(f.read())
 
-        prev_protocol = None
-        if prev_version is not None:
-            with open(os.path.join(defined_versions[prev_version], "protocol.json"), "r") as f:
-                prev_protocol = json.loads(f.read())
-
-        if protocol == prev_protocol:
-            # if identical to previous protocol, no need to generate anything
-            # and remove from defined_versions so other versions dont try to re-export this
-            del defined_versions[version]
+        # just in case minecraft-data is even more retarded than i realize
+        # if the previous version protocol is identical to this one, we can just skip it
+        if prev_version is not None and protocols[prev_version] == protocol:
             continue
 
-        generate_protocol(version, protocol, prev_version, prev_protocol)
+        protocols[version] = protocol
+
+    # now iterate over all versions and packets, finding any that are not already generated
+    for version, protocol in protocols.items():
+        generate_protocol(version, protocol, protocols)
+
+    print(Fore.GREEN + Style.BRIGHT + "Formatting")
+    os.system("cargo fmt")
 
     print(Fore.GREEN + Style.BRIGHT + "Done")
 

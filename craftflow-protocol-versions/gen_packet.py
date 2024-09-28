@@ -36,4 +36,9 @@ def gen_packet(packet_name, spec) -> str:
 
     response = json.loads(response)["rust_code"]
 
-    return f"use craftflow_protocol_core::*;\nuse craftflow_protocol_core::datatypes::*;\n\n{response}"
+    return f"""
+    use craftflow_protocol_core::*;
+    use craftflow_protocol_core::datatypes::*;
+
+    {response}
+    """

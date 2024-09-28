@@ -8,11 +8,13 @@ from gen_packet import gen_packet
 def snake_to_pascal(snake_str):
     return ''.join(word.capitalize() for word in snake_str.split('_'))
 
-def get_packet_spec(protocol, state: str, packet: str, c2s: bool):
+def get_packet_spec(protocol, state: str, packet: str, direction: str):
     if state not in protocol:
         return None
 
-    d = "toServer" if c2s else "toClient"
+    packet = f"packet_{packet}"
+
+    d = "toServer" if direction == "c2s" else "toClient"
 
     if packet not in protocol[state][d]["types"]:
         return None
@@ -21,7 +23,8 @@ def get_packet_spec(protocol, state: str, packet: str, c2s: bool):
 
 # Prepares the src/v{version}/{dir_mod_name}/{state}/ directory
 # with all the mod.rs files for rust
-def prepare_dir(version, dir_mod_name, state):
+# creating any if they dont already exist
+def prepare_dir(version, direction, state):
     # create version directory
     path = f"src/v{version:05}/"
     if not os.path.exists(path):
@@ -31,12 +34,12 @@ def prepare_dir(version, dir_mod_name, state):
         open(os.path.join(path, "mod.rs"), "w").close()
 
     # create direction directory
-    path2 = os.path.join(path, dir_mod_name)
+    path2 = os.path.join(path, direction)
     if not os.path.exists(path2):
         os.makedirs(path2)
         with open(os.path.join(path, "mod.rs"), "a") as f:
-            f.write(f"pub mod {dir_mod_name};\n")
-            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/v{version:05}/{dir_mod_name}.rs\"));\n\n")
+            f.write(f"pub mod {direction};\n")
+            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/v{version:05}/{direction}.rs\"));\n\n")
         open(os.path.join(path2, "mod.rs"), "w").close()
 
     path3 = os.path.join(path2, state)
@@ -44,43 +47,105 @@ def prepare_dir(version, dir_mod_name, state):
         os.makedirs(path3)
         with open(os.path.join(path2, "mod.rs"), "a") as f:
             f.write(f"pub mod {state};\n")
-            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/v{version:05}/{dir_mod_name}/{state}.rs\"));\n\n")
+            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/v{version:05}/{direction}/{state}.rs\"));\n\n")
         open(os.path.join(path3, "mod.rs"), "w").close()
 
-def generate_protocol_direction(version: int, protocol, prev_version: Optional[int], prev_protocol, c2s: bool):
-    packets = C2S_PACKETS if c2s else S2C_PACKETS
+def generate_protocol_direction(version: int, protocol, all_protocols, direction: str):
+    states = C2S_PACKETS if direction == "c2s" else S2C_PACKETS
 
-    dir_mod_name = "c2s" if c2s else "s2c"
+    for state, packets in states.items():
+        for packet in packets:
+            # check if already generated
+            if os.path.exists(f"src/v{version:05}/{direction}/{state}/{packet}.rs"):
+                continue
 
-    for packet in packets:
-        state, packet = packet.split("/")
+            spec = get_packet_spec(protocol, state, packet, direction)
 
-        # check if already generated
-        if os.path.exists(f"src/v{version:05}/{dir_mod_name}/{state}/{packet}.rs"):
-            continue
+            if spec is None:
+                continue
 
-        spec = get_packet_spec(protocol, state, packet, c2s)
+            # check if any other version has an identical packet
+            # saving the first one found
+            first_identical = None
+            identical_versions = []
+            for v, p in all_protocols.items():
+                prev_spec = get_packet_spec(p, state, packet, direction)
+                if spec == prev_spec:
+                    if first_identical is None:
+                        first_identical = v
+                    identical_versions.append(v)
 
-        if spec is None:
-            continue
+            if first_identical != version:
+                # there is a identical packet already defined - reuse it
+                first_identical_path = f"crate::v{first_identical:05}::{direction}::{state}::{packet}::{snake_to_pascal(packet)}"
+                generated_rust = f"""
+                pub struct {snake_to_pascal(packet)}(pub {first_identical_path});
 
-        prev_spec = get_packet_spec(prev_protocol, state, packet, c2s) if prev_protocol else None
+                impl crate::EqvPacket<{first_identical_path}> for {snake_to_pascal(packet)} {{
+                    fn into_eqv_packet(self) -> {first_identical_path} {{
+                        self.0
+                    }}
+                   	fn from_eqv_packet(p: {first_identical_path}) -> Self {{
+                        Self(p)
+                    }}
+                }}
 
-        if spec == prev_spec:
-            # just re-export from previous version
-            generated_rust = f"pub use crate::v{prev_version:05}::{dir_mod_name}::{state}::{packet}::{snake_to_pascal(packet)};"
-        else:
-            print(Fore.GREEN + Style.BRIGHT + f"Generating {packet} for {state} in {dir_mod_name} in {version}")
-            generated_rust = gen_packet(snake_to_pascal(packet), spec)
+                impl std::ops::Deref for {snake_to_pascal(packet)} {{
+                    type Target = {first_identical_path};
 
-        prepare_dir(version, dir_mod_name, state)
+                    fn deref(&self) -> &Self::Target {{
+                        &self.0
+                    }}
+                }}
+                """
+            else:
+                # generate a new definition for this new packet
+                print(Fore.GREEN + Style.BRIGHT +
+                    f"Generating {packet} for {state} in {direction} in {version} (for versions {identical_versions})"
+                )
+                generated_rust = gen_packet(snake_to_pascal(packet), spec)
 
-        with open(f"src/v{version:05}/{dir_mod_name}/{state}/mod.rs", "a") as f:
-            f.write(f"pub mod {packet};\n")
+                generated_rust += f"""
+                impl crate::EqvPacket<{snake_to_pascal(packet)}> for {snake_to_pascal(packet)} {{
+                    fn into_eqv_packet(self) -> {snake_to_pascal(packet)} {{
+                        self
+                    }}
+                   	fn from_eqv_packet(p: {snake_to_pascal(packet)}) -> Self {{
+                        p
+                    }}
+                }}
+                """
 
-        with open(f"src/v{version:05}/{dir_mod_name}/{state}/{packet}.rs", "w") as f:
-            f.write(generated_rust)
+            generated_rust += f"""
+            impl crate::Packet for {snake_to_pascal(packet)} {{
+               	type Direction = crate::{direction.upper()};
+               	type Version = crate::v{version:05}::{direction.upper()};
+               	type State = crate::v{version:05}::{direction}::{snake_to_pascal(state)};
 
-def generate_protocol(version: int, protocol, prev_version: Optional[int], prev_protocol):
-    generate_protocol_direction(version, protocol, prev_version, prev_protocol, True)
-    generate_protocol_direction(version, protocol, prev_version, prev_protocol, False)
+               	fn into_state_enum(self) -> Self::State {{
+              		crate::v{version:05}::{direction}::{snake_to_pascal(state)}::{snake_to_pascal(packet)}(self)
+               	}}
+               	fn into_version_enum(self) -> Self::Version {{
+              		crate::v{version:05}::{direction.upper()}::{snake_to_pascal(state)}(self.into_state_enum())
+               	}}
+               	fn into_direction_enum(self) -> Self::Direction {{
+              		crate::{direction.upper()}::V{version:05}(self.into_version_enum())
+               	}}
+            }}
+
+            impl crate::PacketVersion for {snake_to_pascal(packet)} {{
+                const VERSIONS: &'static [u32] = &{identical_versions};
+            }}
+            """
+
+            prepare_dir(version, direction, state)
+            with open(f"src/v{version:05}/{direction}/{state}/mod.rs", "a") as f:
+                f.write(f"pub mod {packet};\n")
+
+            with open(f"src/v{version:05}/{direction}/{state}/{packet}.rs", "w") as f:
+                f.write(generated_rust)
+
+# all_protocols must be ordered by version ascending
+def generate_protocol(version: int, protocol, all_protocols):
+    generate_protocol_direction(version, protocol, all_protocols, "c2s")
+    generate_protocol_direction(version, protocol, all_protocols, "s2c")
