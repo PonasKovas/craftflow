@@ -21,6 +21,15 @@ def get_packet_spec(protocol, state: str, packet: str, direction: str):
 
     return protocol[state][d]["types"][packet]
 
+def get_packet_id(protocol, state: str, packet: str, direction: str):
+    d = "toServer" if direction == "c2s" else "toClient"
+
+    mappings = protocol[state][d]["types"]["packet"][1][0]["type"][1]["mappings"]
+
+    for id, name in mappings.items():
+        if name == packet:
+            return int(id, 16)
+
 # Prepares the src/v{version}/{dir_mod_name}/{state}/ directory
 # with all the mod.rs files for rust
 # creating any if they dont already exist
@@ -63,6 +72,8 @@ def generate_protocol_direction(version: int, protocol, all_protocols, direction
 
             if spec is None:
                 continue
+
+            packet_id = get_packet_id(protocol, state, packet, direction)
 
             # check if any other version has an identical packet
             # saving the first one found
@@ -141,6 +152,8 @@ def generate_protocol_direction(version: int, protocol, all_protocols, direction
             prepare_dir(version, direction, state)
             with open(f"src/v{version:05}/{direction}/{state}/mod.rs", "a") as f:
                 f.write(f"pub mod {packet};\n")
+            with open(f"src/v{version:05}/{direction}/{state}/packet_ids", "a") as f:
+                f.write(f"{packet}:{packet_id}\n")
 
             with open(f"src/v{version:05}/{direction}/{state}/{packet}.rs", "w") as f:
                 f.write(generated_rust)
