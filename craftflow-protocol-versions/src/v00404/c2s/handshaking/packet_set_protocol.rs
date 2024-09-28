@@ -1,1 +1,1 @@
-pub use crate::v00402::c2s::handshaking::packet_set_protocol::PacketSetProtocol;
+pub use crate::v00401::c2s::handshaking::packet_set_protocol::PacketSetProtocol;

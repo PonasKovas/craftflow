@@ -42,7 +42,12 @@ def main():
 
     os.system(f"cd {repo_path} && git checkout --force {COMMIT}")
 
-    # first iterate over all defined versions in minecraft-data
+    # read the data/pc/common/protocolVersions.json because it contains all versions without the classic
+    # versions that are present in this repository for whatever fucking reason
+    with open(os.path.join(repo_path, "data", "pc", "common", "protocolVersions.json"), "r") as f:
+        common_protocol_versions = json.loads(f.read())
+
+    # iterate over all defined versions in minecraft-data
     # to create a structure mapping protocol versions to their definition paths
     defined_versions = {}
     all_versions_dir = os.path.join(repo_path, "data", "pc")
@@ -52,18 +57,33 @@ def main():
         version_file = os.path.join(version_dir_path, "version.json")
         protocol_file = os.path.join(version_dir_path, "protocol.json")
         # only add if both version and protocol files exist
-        if os.path.isfile(version_file) and os.path.isfile(protocol_file):
-            with open(version_file, "r") as f:
-                version_data = json.loads(f.read())
+        if not (os.path.isfile(version_file) and os.path.isfile(protocol_file)):
+            print(Fore.YELLOW + Style.BRIGHT + f"Skipping version {version_dir} (no version.json or protocol.json)")
+            continue
 
-            defined_versions[version_data["version"]] = version_dir_path
+        with open(version_file, "r") as f:
+            version_data = json.loads(f.read())
 
-    # Remove classic minecraft version which has no bussiness being here anyway and is
-    # causing trouble with the conflicting protocol version
-    # Hopefully later it will be deleted upstream and this can be removed
-    for key, value in dict(defined_versions).items():
-        if value == ".cache/minecraft-data/data/pc/0.30c":
-            del defined_versions[key]
+        # skip versions that are not in the common versions list (this will be the classic minecraft versions)
+        skip = True
+        for v in common_protocol_versions:
+            if v["minecraftVersion"] == version_data["minecraftVersion"]:
+                skip = False
+                break
+
+        if skip:
+            print(Fore.YELLOW + Style.BRIGHT + f"Skipping version {version_dir} (not in common versions list)")
+            continue
+
+        # since minecraft-data is so fucking shitty and impossible to work with
+        # we have to use this hack to check if the version is a release or a snapshot
+        if not all(char.isdigit() or char == '.' for char in version_data["minecraftVersion"]):
+            # there is "releaseType" field in common protocol versions list, but only for SOME of the versions,
+            # while the majority dont have it, making it completely useless
+            print(Fore.YELLOW + Style.BRIGHT + f"Skipping version {version_dir} (not release)")
+            continue
+
+        defined_versions[version_data["version"]] = version_dir_path
 
     # for debugging purposes
     for version in sorted(defined_versions.keys()):

@@ -199,6 +199,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "craftflow-protocol-abstract"
+version = "0.1.0"
+dependencies = [
+ "craftflow-protocol-versions",
+]
+
+[[package]]
 name = "craftflow-protocol-core"
 version = "0.1.0"
 dependencies = [

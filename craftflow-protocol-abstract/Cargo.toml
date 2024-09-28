@@ -1,0 +1,7 @@
+[package]
+name = "craftflow-protocol-abstract"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+craftflow-protocol-versions = { path = "../craftflow-protocol-versions" }
