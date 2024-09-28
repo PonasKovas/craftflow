@@ -22,6 +22,7 @@ def get_packet_spec(protocol, state: str, packet: str, c2s: bool):
 # Prepares the src/v{version}/{dir_mod_name}/{state}/ directory
 # with all the mod.rs files for rust
 def prepare_dir(version, dir_mod_name, state):
+    # create version directory
     path = f"src/v{version:05}/"
     if not os.path.exists(path):
         os.makedirs(path)
@@ -29,11 +30,13 @@ def prepare_dir(version, dir_mod_name, state):
             f.write(f"pub mod v{version:05};\n")
         open(os.path.join(path, "mod.rs"), "w").close()
 
+    # create direction directory
     path2 = os.path.join(path, dir_mod_name)
     if not os.path.exists(path2):
         os.makedirs(path2)
         with open(os.path.join(path, "mod.rs"), "a") as f:
             f.write(f"pub mod {dir_mod_name};\n")
+            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/v{version:05}/{dir_mod_name}.rs\"));\n\n")
         open(os.path.join(path2, "mod.rs"), "w").close()
 
     path3 = os.path.join(path2, state)
@@ -41,6 +44,7 @@ def prepare_dir(version, dir_mod_name, state):
         os.makedirs(path3)
         with open(os.path.join(path2, "mod.rs"), "a") as f:
             f.write(f"pub mod {state};\n")
+            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/v{version:05}/{dir_mod_name}/{state}.rs\"));\n\n")
         open(os.path.join(path3, "mod.rs"), "w").close()
 
 def generate_protocol_direction(version: int, protocol, prev_version: Optional[int], prev_protocol, c2s: bool):

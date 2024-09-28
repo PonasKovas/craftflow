@@ -8,7 +8,7 @@ mod packet_writer;
 use crate::CraftFlow;
 use compression::CompressionSetter;
 use connection_task::connection_task;
-use craftflow_protocol::{protocol::S2C, Packet};
+use craftflow_protocol_abstract::S2C;
 use encryption::EncryptionSetter;
 use futures::FutureExt;
 use packet_reader::PacketReader;
@@ -18,7 +18,7 @@ use std::{
 	io::Cursor,
 	net::IpAddr,
 	panic::AssertUnwindSafe,
-	sync::{Arc, OnceLock},
+	sync::{Arc, Mutex, OnceLock, RwLock},
 };
 use tokio::{
 	net::TcpStream,
@@ -32,14 +32,29 @@ use tracing::error;
 pub struct ConnectionHandle {
 	id: u64,
 	ip: IpAddr,
-	pub(crate) packet_sender: UnboundedSender<S2C>,
-	/// For when you want to send multiple packets at once without anything in between them
-	pub(crate) packet_batch_sender: UnboundedSender<Vec<S2C>>,
+	// This is put in RwLock to allow threads to send multiple packets without anything in between
+	// from other threads, by requesting exclusive access to the sender.
+	packet_sender: RwLock<UnboundedSender<S2C>>,
 	encryption: EncryptionSetter,
 	compression: CompressionSetter,
 	// the protocol version of the client
 	// it is set by the reader task when handshake is received
 	protocol_version: Arc<OnceLock<u32>>,
+}
+
+/// Guarantees that packets are sent in a row without any other packets in between them
+pub struct PacketBatchSender<'a> {
+	lock: std::sync::RwLockWriteGuard<'a, UnboundedSender<S2C>>,
+}
+
+impl<'a> PacketBatchSender<'a> {
+	/// Send a packet to this client.
+	pub fn send(&self, packet: impl Packet<Direction = S2C>) -> &Self {
+		// dont care if the client is disconnected
+		let _ = self.packet_sender.send(packet.into_packet_enum());
+
+		self
+	}
 }
 
 impl ConnectionHandle {
@@ -50,9 +65,9 @@ impl ConnectionHandle {
 	}
 
 	/// Send several packets to this client making sure nothing comes in-between
-	pub fn send_batch(&self, packets: Vec<S2C>) {
-		// dont care if the client is disconnected
-		let _ = self.packet_batch_sender.send(packets);
+	pub fn batch_sender(&self) -> PacketBatchSender {
+		let lock = self.packet_sender.write().unwrap();
+		PacketBatchSender { lock }
 	}
 
 	/// Set the encryption shared secret for this client.
@@ -140,8 +155,7 @@ impl ConnectionHandle {
 				Self {
 					id,
 					ip: peer_ip,
-					packet_sender: packet_sender_in,
-					packet_batch_sender: packet_batch_sender_in,
+					packet_sender: RwLock::new(packet_sender_in),
 					encryption: encryption_setter,
 					compression: compression_setter,
 					protocol_version: client_protocol_version,
@@ -157,7 +171,8 @@ impl ConnectionHandle {
 			// Fuck your unwind safety.
 			// i wont be accessing any of the state of this future,
 			// i just need to know if it panicked
-			let r = AssertUnwindSafe(connection_task(
+			let r = //AssertUnwindSafe(
+			connection_task(
 				Arc::clone(&craftflow),
 				conn_id,
 				packet_reader,
@@ -165,7 +180,7 @@ impl ConnectionHandle {
 				packet_sender_out,
 				packet_batch_sender_out,
 				client_protocol_version_clone,
-			))
+			)//)
 			.catch_unwind() // generally this shouldnt panic, but if it does, we still want to remove the connection
 			.await;
 

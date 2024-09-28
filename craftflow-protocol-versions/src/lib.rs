@@ -1,3 +1,17 @@
+pub trait VersionSpecificPacket {
+	type Version;
+	type Direction;
+	type State;
+
+	const VERSION: u32;
+
+	fn into_state_enum(self) -> Self::State;
+	fn into_direction_enum(self) -> Self::Direction;
+	fn into_version_enum(self) -> Self::Version;
+}
+
+include!(concat!(env!("OUT_DIR"), "/c2s.rs"));
+include!(concat!(env!("OUT_DIR"), "/s2c.rs"));
 
 pub mod v00005;
 pub mod v00047;
