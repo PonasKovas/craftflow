@@ -15,6 +15,7 @@ mod varint;
 mod varlong;
 
 pub use array::Array;
+pub use buffer::Buffer;
 pub use rest_buffer::RestBuffer;
 pub use varint::VarInt;
 pub use varlong::VarLong;
