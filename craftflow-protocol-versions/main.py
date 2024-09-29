@@ -11,7 +11,7 @@ import json
 from colorama import init, Fore, Style
 
 from conf import CACHE_DIR, REPOSITORY, COMMIT, VERSION_RANGE
-from gen_protocol import generate_protocol
+from gen_protocol import generate_protocols
 
 # finds the closest version that is below the given version
 def find_closest_below(versions, version):
@@ -110,13 +110,12 @@ def main():
         # just in case minecraft-data is even more retarded than i realize
         # if the previous version protocol is identical to this one, we can just skip it
         if prev_version is not None and protocols[prev_version] == protocol:
+            print(Fore.YELLOW + Style.BRIGHT + f"Skipping {version} due to being identical to {prev_version}")
             continue
 
         protocols[version] = protocol
 
-    # now iterate over all versions and packets, finding any that are not already generated
-    for version, protocol in protocols.items():
-        generate_protocol(version, protocol, protocols)
+    generate_protocols(protocols)
 
     print(Fore.GREEN + Style.BRIGHT + "Formatting")
     os.system("cargo fmt")
