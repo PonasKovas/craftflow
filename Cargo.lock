@@ -203,6 +203,7 @@ dependencies = [
 name = "craftflow-protocol-abstract"
 version = "0.1.0"
 dependencies = [
+ "craftflow-protocol-core",
  "craftflow-protocol-versions",
 ]
 

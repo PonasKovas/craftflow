@@ -16,6 +16,8 @@ pub fn generate_version_enum(
 	let mut packet_write_match_arms = String::new();
 	for (version_name, versions) in packet_versions {
 		let variant_name = version_name.to_uppercase();
+		let struct_name = format!("{}{}", enum_name, variant_name);
+
 		let versions_comment = versions
 			.iter()
 			.map(|v| v.to_string())
@@ -24,7 +26,7 @@ pub fn generate_version_enum(
 
 		enum_variants += &format!(
 			"/// This variant applies for {versions_comment} protocol versions.
-			{variant_name}({packet_name}::{version_name}::{enum_name}),\n"
+			{variant_name}({packet_name}::{version_name}::{struct_name}),\n"
 		);
 
 		let versions_pattern = versions
@@ -34,7 +36,7 @@ pub fn generate_version_enum(
 			.join(" | ");
 		packet_read_match_arms += &format!(
 			"{versions_pattern} => {{
-			    let (input, packet) = {packet_name}::{version_name}::{enum_name}::read(input)?;
+			    let (input, packet) = {packet_name}::{version_name}::{struct_name}::read(input)?;
 				Ok((input, Self::{variant_name}(packet)))
 			}},\n"
 		);

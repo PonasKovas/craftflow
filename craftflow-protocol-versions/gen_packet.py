@@ -16,9 +16,10 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
     compact_spec_json = json.dumps(spec, separators=(',', ':'))
 
     packet_name = snake_to_pascal(packet)
+    struct_name = packet_name + f"V{version:05}"
 
     prompt = prompt.replace("{{{packet_json}}}", compact_spec_json)
-    prompt = prompt.replace("{{{packet_name}}}", packet_name)
+    prompt = prompt.replace("{{{packet_name}}}", struct_name)
 
     # LOL.
     # i would have loaded this as json but gotta interpret it as a python dict
@@ -44,14 +45,14 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
 
     {response}
 
-    impl crate::IntoVersionEnum for {packet_name} {{
+    impl crate::IntoVersionEnum for {struct_name} {{
         type Packet = super::super::{packet_name};
 
     	fn into_version_enum(self) -> Self::Packet {{
             super::super::{packet_name}::V{version:05}(self)
         }}
     }}
-    impl crate::IntoPacketEnum for {packet_name} {{
+    impl crate::IntoPacketEnum for {struct_name} {{
         type State = super::super::super::{snake_to_pascal(state)};
 
     	fn into_packet_enum(self) -> Self::State {{
@@ -59,7 +60,7 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
             super::super::super::{snake_to_pascal(state)}::{packet_name}(packet)
         }}
     }}
-    impl crate::IntoStateEnum for {packet_name} {{
+    impl crate::IntoStateEnum for {struct_name} {{
         type Direction = super::super::super::super::{direction.upper()};
 
     	fn into_state_enum(self) -> Self::Direction {{

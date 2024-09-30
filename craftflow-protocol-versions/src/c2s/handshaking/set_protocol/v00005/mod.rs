@@ -3,13 +3,13 @@ use craftflow_protocol_core::datatypes::*;
 use craftflow_protocol_core::*;
 
 #[derive(Debug, PartialEq)]
-pub struct SetProtocol {
+pub struct SetProtocolV00005 {
 	pub protocol_version: VarInt,
 	pub server_host: String,
 	pub server_port: u16,
 	pub next_state: VarInt,
 }
-impl MCPWrite for SetProtocol {
+impl MCPWrite for SetProtocolV00005 {
 	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
 		let mut written_bytes = 0;
 
@@ -21,7 +21,7 @@ impl MCPWrite for SetProtocol {
 		Ok(written_bytes)
 	}
 }
-impl MCPRead for SetProtocol {
+impl MCPRead for SetProtocolV00005 {
 	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let (input, protocol_version) = VarInt::read(input)?;
 		let (input, server_host) = String::read(input)?;
@@ -40,14 +40,14 @@ impl MCPRead for SetProtocol {
 	}
 }
 
-impl crate::IntoVersionEnum for SetProtocol {
+impl crate::IntoVersionEnum for SetProtocolV00005 {
 	type Packet = super::super::SetProtocol;
 
 	fn into_version_enum(self) -> Self::Packet {
 		super::super::SetProtocol::V00005(self)
 	}
 }
-impl crate::IntoPacketEnum for SetProtocol {
+impl crate::IntoPacketEnum for SetProtocolV00005 {
 	type State = super::super::super::Handshaking;
 
 	fn into_packet_enum(self) -> Self::State {
@@ -55,7 +55,7 @@ impl crate::IntoPacketEnum for SetProtocol {
 		super::super::super::Handshaking::SetProtocol(packet)
 	}
 }
-impl crate::IntoStateEnum for SetProtocol {
+impl crate::IntoStateEnum for SetProtocolV00005 {
 	type Direction = super::super::super::super::C2S;
 
 	fn into_state_enum(self) -> Self::Direction {

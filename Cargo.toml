@@ -1,7 +1,8 @@
 [workspace]
 members = [
     "craftflow",
-    "craftflow-protocol", "craftflow-protocol-abstract",
+    "craftflow-protocol",
+    "craftflow-protocol-abstract",
     "craftflow-protocol-core",
     "craftflow-protocol-versions",
     "example",

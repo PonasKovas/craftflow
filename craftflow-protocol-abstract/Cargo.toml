@@ -4,4 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+craftflow-protocol-core = { path = "../craftflow-protocol-core" }
 craftflow-protocol-versions = { path = "../craftflow-protocol-versions" }
