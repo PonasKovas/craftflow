@@ -1,4 +1,4 @@
-use crate::{AbConstrResult, AbPacketNew, AbPacketWrite};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
 use craftflow_protocol_core::{datatypes::VarInt, Error, Result};
 use craftflow_protocol_versions::{
 	c2s::{
@@ -61,12 +61,14 @@ impl AbPacketWrite for AbHandshake {
 
 impl AbPacketNew for AbHandshake {
 	type Direction = C2S;
-	type Constructor = ();
+	type Constructor = NoConstructor<Self, C2S>;
 
-	fn construct(packet: Self::Direction) -> Result<AbConstrResult<Self, (), Self::Direction>> {
+	fn construct(
+		packet: Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
 		match packet {
 			C2S::Handshaking(Handshaking::SetProtocol(SetProtocol::V00005(packet))) => {
-				Ok(AbConstrResult::Done(Self {
+				Ok(ConstructorResult::Done(Self {
 					protocol_version: packet.protocol_version.0 as u32,
 					address: packet.server_host,
 					port: packet.server_port,
@@ -83,7 +85,7 @@ impl AbPacketNew for AbHandshake {
 					},
 				}))
 			}
-			_ => Ok(AbConstrResult::Ignore(((), packet))),
+			_ => Ok(ConstructorResult::Ignore(packet)),
 		}
 	}
 }
