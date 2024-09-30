@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 craftflow = { path = "../craftflow" }
-craftflow-protocol = { path = "../craftflow-protocol" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing-subscriber = { workspace = true }
