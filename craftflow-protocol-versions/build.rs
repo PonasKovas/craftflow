@@ -1,7 +1,9 @@
 // This build script generates packet enums for every version and state.
 
 #[path = "build/common.rs"]
-mod common;
+pub mod common;
+#[path = "build/gen_destructure_macro.rs"]
+mod gen_destructure_macro;
 #[path = "build/generate_packet_enum.rs"]
 mod generate_packet_enum;
 #[path = "build/generate_state_enum.rs"]
@@ -19,6 +21,7 @@ use std::{
 };
 
 use common::read_dir_sorted;
+use gen_destructure_macro::gen_destructure_macro;
 use generate_packet_enum::generate_packet_enum;
 use generate_state_enum::generate_state_enum;
 use generate_version_enum::generate_version_enum;
@@ -135,4 +138,10 @@ fn main() {
 		)
 		.unwrap();
 	}
+
+	fs::write(
+		Path::new(&env::var("OUT_DIR").unwrap()).join("enum_destructure_macro.rs"),
+		gen_destructure_macro(),
+	)
+	.unwrap();
 }

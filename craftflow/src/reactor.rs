@@ -13,13 +13,13 @@ use std::{
 /// Given the implementation of this trait, the handlers that the reactor will use for this event
 /// will be
 /// ```ignore
-/// Fn(&CTX, Event::Args) -> ControlFlow<Event::Return, Event::Args>
+/// Fn(&CTX, Event::Args) -> ControlFlow<Event::Return>
 /// ```
-/// Return `ControlFlow::Continue(Event::Args)` to continue reacting to the event with the next registered
+/// Return `ControlFlow::Continue(())` to continue reacting to the event with the next registered
 /// handler, or `ControlFlow::Break(Event::Return)` to stop the event and return.
 pub trait Event: Any {
 	/// The type of the arguments that the event will receive
-	type Args;
+	type Args<'a>;
 	/// The type of the return value of the event
 	type Return;
 }
@@ -30,20 +30,11 @@ pub trait Event: Any {
 /// The reactor is generic over the context type `CTX`, which is the type of the context that will be
 /// passed to the event handlers
 pub struct Reactor<CTX> {
-	// The `dyn Any` is actually a type erased `Box<dyn Fn(&CTX, Event::Args) -> ControlFlow<Event::Return, Event::Args>>`
+	// The `dyn Any` is actually a type erased `Box<dyn Fn(&CTX, Event::Args) -> ControlFlow<Event::Return>>`
 	// But we can't store it directly because Event is different for each event type
 	events: BTreeMap<TypeId, Vec<Box<dyn Any + Send + Sync>>>,
-	// events: BTreeMap<TypeId, Vec<Box<dyn Any + Send + Sync>>>,
 	_phantom: PhantomData<fn(&CTX)>,
 }
-
-// These are not automatically implemented because the Box<dyn Any> might be not Sync + Send
-// We can't mark it as Sync + Send there because then we can't downcast it
-// (downcast is only implemented for dyn Any, not dyn Any + Sync + Send)
-// But in reality we know that all event handlers are Sync + Send, because we have
-// bound checks for it in the add_handler method
-// unsafe impl<CTX> Sync for Reactor<CTX> {}
-// unsafe impl<CTX> Send for Reactor<CTX> {}
 
 impl<CTX: 'static> Reactor<CTX> {
 	/// Create a new empty reactor
@@ -56,7 +47,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	/// Register a handler for an event
 	pub fn add_handler<
 		E: Event,
-		F: Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args> + Sync + Send + 'static,
+		F: Fn(&CTX, E::Args<'_>) -> ControlFlow<E::Return> + Sync + Send + 'static,
 	>(
 		&mut self,
 		handler: F,
@@ -73,16 +64,14 @@ impl<CTX: 'static> Reactor<CTX> {
 	/// If the position is greater than the number of handlers, the handler will be added at the end
 	pub fn add_handler_at_pos<
 		E: Event,
-		F: Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args> + Sync + Send + 'static,
+		F: Fn(&CTX, E::Args<'_>) -> ControlFlow<E::Return> + Sync + Send + 'static,
 	>(
 		&mut self,
 		pos: usize,
 		handler: F,
 	) {
 		let closure = Box::new(handler)
-			as Box<
-				dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args> + Send + Sync + 'static,
-			>;
+			as Box<dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return> + Send + Sync + 'static>;
 
 		// // Erase the type of the closure so we can store it
 		let type_erased = Box::new(closure) as Box<dyn Any + Send + Sync + 'static>;
@@ -95,13 +84,12 @@ impl<CTX: 'static> Reactor<CTX> {
 		handlers.insert(pos, type_erased);
 	}
 	/// Trigger an event
-	pub fn event<E: Event>(&self, ctx: &CTX, mut args: E::Args) -> ControlFlow<E::Return, E::Args> {
+	pub fn event<E: Event>(&self, ctx: &CTX, mut args: E::Args<'_>) -> ControlFlow<E::Return> {
 		if let Some(handlers) = self.events.get(&TypeId::of::<E>()) {
 			for handler in handlers {
 				// Convert back to the real closure type
-				let closure: &Box<
-					dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return, E::Args> + Send + Sync,
-				> = handler.downcast_ref().unwrap();
+				let closure: &Box<dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return> + Send + Sync> =
+					handler.downcast_ref().unwrap();
 
 				args = closure(ctx, args)?;
 			}
@@ -125,14 +113,14 @@ mod tests {
 	fn test_reactor() {
 		struct MyEvent;
 		impl Event for MyEvent {
-			type Args = u32;
+			type Args<'a> = u32;
 			type Return = ();
 		}
 
 		struct MyEvent2;
 		impl Event for MyEvent2 {
-			type Args = ();
-			type Return = &'static str;
+			type Args<'a> = &'a str;
+			type Return = String;
 		}
 
 		let mut reactor = Reactor::<()>::new();
@@ -140,36 +128,36 @@ mod tests {
 		reactor.add_handler_at_pos::<MyEvent, _>(999, |_ctx, arg| {
 			println!("First handler: {}", arg);
 
-			ControlFlow::Continue(arg)
+			ControlFlow::Continue(())
 		});
 		reactor.add_handler_at_pos::<MyEvent, _>(0, |_ctx, mut arg| {
 			println!("Second handler: {}", arg);
 
 			arg *= 2;
 
-			ControlFlow::Continue(arg)
+			ControlFlow::Continue(())
 		});
 
-		reactor.add_handler::<MyEvent2, _>(|_ctx, ()| {
+		reactor.add_handler::<MyEvent2, _>(|_ctx, a| {
 			println!("first MyEvent2");
 
 			ControlFlow::Continue(())
 		});
-		reactor.add_handler_at_pos::<MyEvent2, _>(1, |_ctx, ()| {
+		reactor.add_handler_at_pos::<MyEvent2, _>(1, |_ctx, a| {
 			println!("second MyEvent2");
 
-			ControlFlow::Break("test")
+			ControlFlow::Break(format!("{a}-test"))
 		});
-		reactor.add_handler_at_pos::<MyEvent2, _>(2, |_ctx, ()| {
+		reactor.add_handler_at_pos::<MyEvent2, _>(2, |_ctx, a| {
 			println!("third MyEvent2");
 
-			ControlFlow::Break("this should not be reached")
+			ControlFlow::Break("this should not be reached".to_string())
 		});
 
 		assert_eq!(reactor.event::<MyEvent>(&(), 7), ControlFlow::Continue(14));
 		assert_eq!(
 			reactor.event::<MyEvent2>(&(), ()),
-			ControlFlow::Break("test")
+			ControlFlow::Break("123")
 		);
 	}
 }

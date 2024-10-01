@@ -1,37 +1,30 @@
-// //! Implementation of `Event` for all packets
-// //! `C2S` packet events will be emitted after a packet is received from the client
-// //! `S2C` packet events will be emitted before a packet is sent to the client
-// //! `Post<S2C>` events will be emitted AFTER a packet is sent to the client
+//! Implementation of `Event` for all packets
+//! `C2S` packet events will be emitted after a packet is received from the client
+//! `S2C` packet events will be emitted before a packet is sent to the client
+//! `Post<S2C>` events will be emitted AFTER a packet is sent to the client
 
-// use crate::{reactor::Event, CraftFlow};
-// use craftflow_protocol::{
-// 	legacy::{LegacyPing, LegacyPingResponse},
-// 	protocol::{C2S, S2C},
-// 	Packet,
-// };
-// use std::{marker::PhantomData, ops::ControlFlow};
+use crate::{reactor::Event, CraftFlow};
+use craftflow_protocol_versions::{IntoStateEnum, S2C};
+use std::{any::Any, marker::PhantomData, ops::ControlFlow};
 
-// impl<P: Packet + 'static> Event for P {
-// 	/// The arguments for this event are the connection ID and the packet
-// 	type Args = (u64, P);
-// 	/// In the case of S2C packets, if the event is stopped, the packet will not be sent
-// 	type Return = ();
-// }
+impl<P: IntoStateEnum<Direction = S2C> + Any> Event for P {
+	/// The arguments for this event are the connection ID and the packet
+	type Args<'a> = (u64, &'a mut P);
+	/// In the case of S2C packets, if the event is stopped, the packet will not be sent
+	type Return = ();
+}
 
-// /// `Post<Packet>` events are emitted after a packet is sent to the client
-// /// Contrary to the normal Packet events, which are emitted before the packet is sent
-// /// and can modify or stop the packet from being sent
-// pub struct Post<P: Packet<Direction = S2C>> {
-// 	_phantom: PhantomData<P>,
-// }
+/// `Post<Packet>` events are emitted after a packet is sent to the client
+/// Contrary to the normal Packet events, which are emitted before the packet is sent
+/// and can modify or stop the packet from being sent
+pub struct Post<P: IntoStateEnum<Direction = S2C>> {
+	_phantom: PhantomData<P>,
+}
 
-// impl<P: Packet<Direction = S2C> + 'static> Event for Post<P> {
-// 	type Args = (u64, P);
-// 	type Return = ();
-// }
-
-// // FUCK RUST MACROS AND FUCK ENUMS AND FUCK DYN ANY NOT SUPPORTING LIFETIMES
-// // FUCK YOU
+impl<P: IntoStateEnum<Direction = S2C> + Any> Event for Post<P> {
+	type Args<'a> = (u64, &'a mut P);
+	type Return = ();
+}
 
 // pub(super) fn trigger_c2s(craftflow: &CraftFlow, conn_id: u64, packet: C2S) {
 // 	fn inner<'a, P: Packet<Direction = C2S> + 'static>(

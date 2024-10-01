@@ -73,5 +73,34 @@ macro_rules! gen_direction_enum {
                 }
             }
         )*
+
+        // the generated macro is used internally in craftflow for the packet events
+        gen_direction_enum!{__gen_destructure_macro $direction, pub enum $name { $( $variant($struct) ),* } }
+	};
+	(__gen_destructure_macro S2C, pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
+        #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __destructure_s2c__ {
+            ($enum_value:ident -> $code:tt) => {
+                match $enum_value {
+                    $(
+                        $name::$variant(inner) => $code,
+                    )*
+                }
+            };
+        }
+	};
+	(__gen_destructure_macro C2S, pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
+        #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __destructure_c2s__ {
+            ($enum_value:ident -> $code:tt) => {
+                match $enum_value {
+                    $(
+                        $name::$variant(inner) => $code,
+                    )*
+                }
+            };
+        }
 	};
 }

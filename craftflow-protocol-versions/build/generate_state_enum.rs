@@ -11,7 +11,10 @@ pub fn generate_state_enum(direction: &str, states: &Vec<String>) -> String {
 	}
 
 	format!(
-		"pub enum {enum_name} {{
+		"pub use {direction}_enum::*;
+		mod {direction}_enum {{
+		use super::*;
+		pub enum {enum_name} {{
             {enum_variants}
         }}
 
@@ -22,6 +25,6 @@ pub fn generate_state_enum(direction: &str, states: &Vec<String>) -> String {
                 self
             }}
         }}
-        "
+        }}"
 	)
 }

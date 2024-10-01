@@ -3,7 +3,7 @@ pub enum C2S {
 	Concrete(craftflow_protocol_versions::C2S),
 }
 
-// pub enum S2C {
-// 	Abstract(craftflow_protocol_abstract::s2c::AbS2C),
-// 	Concrete(craftflow_protocol_versions::S2C),
-// }
+pub enum S2C {
+	Abstract(craftflow_protocol_abstract::s2c::AbS2C),
+	Concrete(craftflow_protocol_versions::S2C),
+}

@@ -58,7 +58,9 @@ pub fn generate_packet_enum(
 	}
 
 	format!(
-		"
+		"pub use {state}_enum::*;
+		mod {state}_enum {{
+		use super::*;
 		use craftflow_protocol_core::{{Result, MCPRead, MCPWrite, Error, datatypes::VarInt}};
 		use crate::{{PacketRead, PacketWrite}};
 
@@ -92,12 +94,12 @@ pub fn generate_packet_enum(
             }}
         }}
         impl crate::IntoStateEnum for {enum_name} {{
-            type Direction = super::{direction_enum_name};
+            type Direction = crate::{direction_enum_name};
 
            	fn into_state_enum(self) -> Self::Direction {{
-                super::{direction_enum_name}::{enum_name}(self)
+                super::super::{direction_enum_name}::{enum_name}(self)
             }}
         }}
-        "
+        }}"
 	)
 }

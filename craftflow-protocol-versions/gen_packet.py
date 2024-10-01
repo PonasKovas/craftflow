@@ -39,8 +39,12 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
 
     response = json.loads(response)["rust_code"]
 
+    print(f"Generated {direction} -> {state} -> {packet} -> {version:05} with an LLM")
+
     return f"""
+    #[allow(unused_imports)]
     use craftflow_protocol_core::*;
+    #[allow(unused_imports)]
     use craftflow_protocol_core::datatypes::*;
 
     {response}
