@@ -74,32 +74,54 @@ macro_rules! gen_direction_enum {
             }
         )*
 
-        // the generated macro is used internally in craftflow for the packet events
-        gen_direction_enum!{__gen_destructure_macro $direction, pub enum $name { $( $variant($struct) ),* } }
+        // everything below is for internal usage within craftflow
+
+        // the generated macro is used for the packet events
+        gen_direction_enum!{__gen_macros $direction, enum $name { $( $variant($struct) ),* } }
 	};
-	(__gen_destructure_macro S2C, pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
+	(__gen_macros S2C, enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __destructure_s2c__ {
             ($enum_value:ident -> $code:tt) => {
                 match $enum_value {
                     $(
-                        $name::$variant(inner) => $code,
+                        craftflow_protocol_abstract::$name::$variant(inner) => $code,
                     )*
                 }
             };
         }
+
+        #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __gen_impls_for_packets_s2c {
+            (impl $trait_name:ident for X $code:tt) => {
+                $(
+                    impl $trait_name for $crate::s2c::$struct $code
+                )*
+            };
+        }
 	};
-	(__gen_destructure_macro C2S, pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
+	(__gen_macros C2S, enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __destructure_c2s__ {
             ($enum_value:ident -> $code:tt) => {
                 match $enum_value {
                     $(
-                        $name::$variant(inner) => $code,
+                        craftflow_protocol_abstract::$name::$variant(inner) => $code,
                     )*
                 }
+            };
+        }
+
+        #[doc(hidden)]
+        #[macro_export]
+        macro_rules! __gen_impls_for_packets_c2s {
+            (impl $trait_name:ident for X $code:tt) => {
+                $(
+                    impl $trait_name for $crate::c2s::$struct $code
+                )*
             };
         }
 	};

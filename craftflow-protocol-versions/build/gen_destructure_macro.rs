@@ -11,17 +11,17 @@ pub fn gen_destructure_macro() -> String {
 		let direction_path = Path::new("src/").join(direction);
 		if direction_path.exists() {
 			for state in read_dir_sorted(&direction_path) {
-				let mut inner_state = String::new();
-
-				let state_name = state.file_name().into_string().unwrap();
-				let state_variant = snake_to_pascal_case(&state_name);
 				if state.file_type().unwrap().is_dir() {
-					for packet in read_dir_sorted(&state.path()) {
-						let mut inner_packet = String::new();
+					let mut inner_state = String::new();
 
-						let packet_name = packet.file_name().into_string().unwrap();
-						let packet_variant = snake_to_pascal_case(&packet_name);
+					let state_name = state.file_name().into_string().unwrap();
+					let state_variant = snake_to_pascal_case(&state_name);
+					for packet in read_dir_sorted(&state.path()) {
 						if packet.file_type().unwrap().is_dir() {
+							let mut inner_packet = String::new();
+
+							let packet_name = packet.file_name().into_string().unwrap();
+							let packet_variant = snake_to_pascal_case(&packet_name);
 							for version in read_dir_sorted(&packet.path()) {
 								if !version.file_type().unwrap().is_dir() {
 									continue;
@@ -34,21 +34,20 @@ pub fn gen_destructure_macro() -> String {
                                     "::craftflow_protocol_versions::{dir}::{state_name}::{packet_variant}::{version_variant}(inner) => $code,\n",
                                 );
 							}
+							inner_state += &format!(
+                                "::craftflow_protocol_versions::{direction}::{state_variant}::{packet_variant}(inner) => match inner {{
+                                    {inner_packet}
+                                }},\n",
+                            );
 						}
-
-						inner_state += &format!(
-                            "::craftflow_protocol_versions::{direction}::{state_variant}::{packet_variant}(inner) => match inner {{
-                                {inner_packet}
-                            }},\n",
-                        );
 					}
-				}
 
-				inner_direction += &format!(
-					"::craftflow_protocol_versions::{dir}::{state_variant}(inner) => match inner {{
+					inner_direction += &format!(
+						"::craftflow_protocol_versions::{dir}::{state_variant}(inner) => match inner {{
                         {inner_state}
                     }},\n",
-				);
+					);
+				}
 			}
 		}
 

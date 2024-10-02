@@ -4,7 +4,7 @@ mod packet_read_write;
 pub use into_traits::*;
 pub use packet_read_write::*;
 
-include!(concat!(env!("OUT_DIR"), "/enum_destructure_macro.rs"));
+include!(concat!(env!("OUT_DIR"), "/macros.rs"));
 
 ////////////////////////////////////////////////////////////////
 // automatically generated mods from the python script below: //

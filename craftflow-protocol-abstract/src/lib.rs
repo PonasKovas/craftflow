@@ -1,12 +1,22 @@
+//! It is intentional that the abstract packets are not grouped by the state of the connection.
+//! They abstract the state too, since there is a history of adding new states to the protocol.
+//!
+//! It is still checked (dynamically) that the concrete packets (into which abstract ones are converted to)
+//! are only used in the correct state.
+//!
+//! It is a responsibility of the user to ensure to use abstract packets in the correct state.
+
 pub mod c2s;
 mod packet_constructor;
 mod packet_new;
 mod packet_write;
 pub mod s2c;
 
+pub use c2s::AbC2S;
 pub use packet_constructor::*;
 pub use packet_new::*;
 pub use packet_write::*;
+pub use s2c::AbS2C;
 
 /// Returned by an abstract packet constructor to indicate the result of processing a packet
 pub enum ConstructorResult<D, C, I> {
