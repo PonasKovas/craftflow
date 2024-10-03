@@ -1,6 +1,6 @@
 use craftflow_protocol_core::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Hash, Copy, Eq, PartialOrd, Ord)]
 pub struct PingV00005 {
 	pub time: i64,
 }

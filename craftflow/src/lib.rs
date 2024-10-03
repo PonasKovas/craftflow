@@ -1,13 +1,14 @@
 #![feature(mapped_lock_guards)]
+#![feature(async_closure)]
 
-pub mod connection_handle;
+pub mod connection;
 pub mod modules;
 pub mod packet_events;
 mod packets;
 pub mod reactor;
 pub mod various_events;
 
-use connection_handle::ConnectionHandle;
+use connection::ConnectionHandle;
 use modules::Modules;
 use reactor::Reactor;
 use std::{

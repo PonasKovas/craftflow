@@ -1,4 +1,5 @@
-use craftflow_protocol_core::Result;
+use anyhow::Result;
+use std::ops::AsyncFnMut;
 
 /// A trait that allows an abstract packet to be written in a specific protocol version
 pub trait AbPacketWrite {
@@ -9,9 +10,9 @@ pub trait AbPacketWrite {
 
 	/// Given a protocol version, converts the abstract packet to one or multiple concrete packets and calls the `writer`
 	/// closure with them. The `writer` closure should handle writing the packet to the stream or whatever else you want.
-	fn convert_and_write(
+	async fn convert_and_write(
 		self,
 		protocol_version: u32,
-		writer: impl FnMut(Self::Direction) -> Result<()>,
+		writer: impl AsyncFnMut(Self::Direction) -> Result<()>,
 	) -> Result<()>;
 }

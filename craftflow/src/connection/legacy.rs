@@ -1,5 +1,6 @@
+mod response;
+
 use anyhow::bail;
-use craftflow_protocol::legacy::LegacyPingResponse;
 use std::time::Duration;
 use tokio::{
 	io::AsyncWriteExt,
@@ -7,11 +8,26 @@ use tokio::{
 	time::{sleep, timeout},
 };
 
+pub use response::LegacyPingResponse;
+
+use crate::reactor::Event;
+
 #[derive(PartialEq, Debug)]
 pub enum LegacyPingFormat {
 	Pre1_4, // Beta 1.8 to 1.3
 	Pre1_6, // 1.4 to 1.5
 	Pre1_7, // 1.6
+}
+
+/// This is a special packet with a different format that is sent by old clients to ping the server
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct LegacyPing;
+
+impl Event for LegacyPing {
+	/// Connection ID
+	type Args<'a> = u64;
+	/// The response to the legacy ping. `None` if should be ignored.
+	type Return = Option<LegacyPingResponse>;
 }
 
 /// Returns true if legacy ping detected

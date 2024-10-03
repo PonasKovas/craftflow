@@ -64,6 +64,7 @@ pub fn generate_packet_enum(
 		use craftflow_protocol_core::{{Result, MCPRead, MCPWrite, Error, datatypes::VarInt}};
 		use crate::{{PacketRead, PacketWrite}};
 
+		#[derive(Debug, PartialEq, Clone, Hash)]
 		pub enum {enum_name} {{
             {enum_variants}
         }}

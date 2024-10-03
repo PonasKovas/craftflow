@@ -1,7 +1,7 @@
 use craftflow_protocol_core::datatypes::*;
 use craftflow_protocol_core::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Hash)]
 pub struct SetProtocolV00005 {
 	pub protocol_version: VarInt,
 	pub server_host: String,

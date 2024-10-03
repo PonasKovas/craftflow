@@ -117,6 +117,11 @@ def main():
 
     generate_protocols(protocols)
 
+    # also set the supported version list for rust code
+    with open("src/supported_versions.rs", "w") as f:
+        f.write("pub const MIN_VERSION: u32 = " + str(VERSION_RANGE[0]) + ";\n")
+        f.write("pub const MAX_VERSION: u32 = " + str(VERSION_RANGE[1]) + ";\n")
+
     print(Fore.GREEN + Style.BRIGHT + "Formatting")
     os.system("cargo fmt")
 

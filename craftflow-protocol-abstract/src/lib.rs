@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 //! It is intentional that the abstract packets are not grouped by the state of the connection.
 //! They abstract the state too, since there is a history of adding new states to the protocol.
 //!
@@ -35,6 +37,13 @@ impl<D, C, I> ConstructorResult<D, C, I> {
 			Self::Done(d) => ConstructorResult::Done(d),
 			Self::Continue(c) => ConstructorResult::Continue(f(c)),
 			Self::Ignore(i) => ConstructorResult::Ignore(i),
+		}
+	}
+	/// Unwraps the `Done` variant, panicking if it's not `Done`
+	pub fn assume_done(self) -> D {
+		match self {
+			Self::Done(d) => d,
+			_ => panic!("ConstructorResult::assume_done: not Done"),
 		}
 	}
 }

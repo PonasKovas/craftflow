@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use craftflow_protocol_core::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
 pub struct PingV00005 {
 	pub time: i64,
 }

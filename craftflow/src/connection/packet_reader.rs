@@ -1,16 +1,13 @@
-use super::{compression::CompressionGetter, encryption::Decryptor, ConnState};
-use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
-use craftflow_protocol::{
-	datatypes::VarInt,
-	protocol::{
-		c2s::{self, ConfigurationPacket, HandshakePacket, LoginPacket, PlayPacket, StatusPacket},
-		C2S,
-	},
-	Error, MCPRead,
+use super::ConnState;
+use aes::cipher::{generic_array::GenericArray, BlockDecryptMut, KeyIvInit};
+use craftflow_protocol_core::{datatypes::VarInt, Error, MCPRead};
+use craftflow_protocol_versions::{
+	c2s::{Handshaking, Status},
+	IntoStateEnum, PacketRead, C2S,
 };
 use std::{
 	io::Write,
-	sync::{Arc, OnceLock},
+	sync::{Arc, OnceLock, RwLock},
 };
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 
@@ -20,15 +17,16 @@ pub(crate) struct PacketReader {
 	pub(crate) stream: OwnedReadHalf,
 	pub(crate) buffer: Vec<u8>,
 	pub(crate) decompression_buffer: Vec<u8>,
-	pub(crate) state: ConnState,
-	pub(crate) decryptor: Decryptor,
-	pub(crate) compression: CompressionGetter,
+	pub(crate) state: Arc<RwLock<ConnState>>,
+	pub(crate) encryption_secret: Arc<OnceLock<[u8; 16]>>,
+	pub(crate) decryptor: Option<cfb8::Decryptor<aes::Aes128>>,
+	pub(crate) compression: Arc<OnceLock<usize>>,
 	pub(crate) protocol_version: Arc<OnceLock<u32>>,
 }
 
 impl PacketReader {
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet(&mut self) -> craftflow_protocol::Result<C2S> {
+	pub(crate) async fn read_packet(&mut self) -> craftflow_protocol_core::Result<C2S> {
 		// wait for the length of the next packet
 		let packet_len = self.read_varint_at_pos(0).await?;
 
@@ -43,7 +41,7 @@ impl PacketReader {
 			)));
 		}
 
-		let should_decompress = match self.compression.enabled() {
+		let should_decompress = match self.compression() {
 			None => None,
 			Some(threshold) => {
 				// read the uncompressed data length
@@ -95,27 +93,16 @@ impl PacketReader {
 		}
 
 		// Parse the packet
-		let (remaining, packet) = match self.state {
+		let (remaining, packet) = match *self.state.read().unwrap() {
 			ConnState::Handshake => {
-				let (input, packet) = HandshakePacket::read(protocol_version, packet_bytes)?;
-				(input, packet.into())
+				let (input, packet) = Handshaking::read_packet(packet_bytes, protocol_version)?;
+				(input, packet.into_state_enum())
 			}
 			ConnState::Status => {
-				let (input, packet) = StatusPacket::read(protocol_version, packet_bytes)?;
-				(input, packet.into())
+				let (input, packet) = Status::read_packet(packet_bytes, protocol_version)?;
+				(input, packet.into_state_enum())
 			}
-			ConnState::Login => {
-				let (input, packet) = LoginPacket::read(protocol_version, packet_bytes)?;
-				(input, packet.into())
-			}
-			ConnState::Configuration => {
-				let (input, packet) = ConfigurationPacket::read(protocol_version, packet_bytes)?;
-				(input, packet.into())
-			}
-			ConnState::Play => {
-				let (input, packet) = PlayPacket::read(protocol_version, packet_bytes)?;
-				(input, packet.into())
-			}
+			_ => todo!(),
 		};
 
 		if remaining.len() != 0 {
@@ -129,25 +116,25 @@ impl PacketReader {
 		self.buffer.drain(..total_packet_len);
 
 		// match certain special packets that change the state
-		match &packet {
-			C2S::Login(c2s::LoginPacket::LoginAcknowledged { packet: _ }) => {
-				self.state = ConnState::Configuration;
-			}
-			C2S::Configuration(c2s::ConfigurationPacket::AcknowledgeFinishConfiguration {
-				packet: _,
-			}) => {
-				self.state = ConnState::Play;
-			}
-			_ => {}
-		}
+		// match &packet {
+		// 	C2S::Login(c2s::LoginPacket::LoginAcknowledged { packet: _ }) => {
+		// 		self.state = ConnState::Configuration;
+		// 	}
+		// 	C2S::Configuration(c2s::ConfigurationPacket::AcknowledgeFinishConfiguration {
+		// 		packet: _,
+		// 	}) => {
+		// 		self.state = ConnState::Play;
+		// 	}
+		// 	_ => {}
+		// }
 
 		Ok(packet)
 	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	/// without removing the bytes from the buffer
-	async fn read_varint_at_pos(&mut self, pos: usize) -> craftflow_protocol::Result<VarInt> {
+	async fn read_varint_at_pos(&mut self, pos: usize) -> craftflow_protocol_core::Result<VarInt> {
 		loop {
-			match VarInt::read(self.get_protocol_version(), &self.buffer[pos..]) {
+			match VarInt::read(&self.buffer[pos..]) {
 				Ok((_input, varint)) => break Ok(varint),
 				Err(e) => {
 					// if its not an IO error that means the data is invalid
@@ -175,11 +162,12 @@ impl PacketReader {
 		}
 
 		// Instantly decrypt the bytes we just read if encryption is enabled
-		self.decryptor.if_enabled(|dec| {
+		self.if_encryption_enabled(|dec| {
 			for i in 0..n {
-				dec.decrypt_block_mut(GenericArray::from_mut_slice(&mut temp[i..(i + 1)])); // stupid ass cryptography crate with outdated ass generics
-				                                                                // FUCK GENERIC ARRAY
-				                                                                // hopefully mr compiler will optimize 🥺
+				dec.decrypt_block_mut(GenericArray::from_mut_slice(&mut temp[i..(i + 1)]));
+				// stupid ass cryptography crate with outdated ass generics
+				// FUCK GENERIC ARRAY
+				// hopefully mr compiler will optimize 🥺
 			}
 		});
 
@@ -187,14 +175,26 @@ impl PacketReader {
 
 		Ok(n)
 	}
+	fn compression(&self) -> Option<usize> {
+		self.compression.get().map(|t| *t)
+	}
 	fn get_protocol_version(&self) -> u32 {
-		match self.protocol_version.get() {
-			Some(v) => *v,
+		// if protocol version is not set, we are in the handshake state,
+		// before receiving the handshake packet
+		self.protocol_version.get().map(|v| *v).unwrap_or(0)
+	}
+	fn if_encryption_enabled(&mut self, f: impl FnOnce(&mut cfb8::Decryptor<aes::Aes128>)) {
+		match &mut self.decryptor {
+			Some(dec) => f(dec),
 			None => {
-				// if protocol version is not set, we are in the handshake state, before receiving the handshake packet
-				// so in order to read the first packet (which should really be the same for all versions)
-				// we just use whatever version we support
-				craftflow_protocol::protocol::SUPPORTED_PROTOCOL_VERSIONS[0]
+				// check if maybe the secret was set
+				if let Some(secret) = self.encryption_secret.get() {
+					let mut dec = cfb8::Decryptor::<aes::Aes128>::new(secret.into(), secret.into());
+
+					f(&mut dec);
+
+					self.decryptor = Some(dec);
+				}
 			}
 		}
 	}

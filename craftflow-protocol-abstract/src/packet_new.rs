@@ -1,5 +1,5 @@
 use crate::ConstructorResult;
-use craftflow_protocol_core::Result;
+use anyhow::Result;
 
 /// A trait for abstract packet types that allows to try to start constructing them from a concrete packet
 pub trait AbPacketNew {

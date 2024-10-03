@@ -15,7 +15,8 @@
                 Do not make any assumptions about the packet that are not provided in the specification. If you make any unprovided
                 assumptions or write anything more than is requested of you, you will be fired. All types that are used but not given a
                 definition are ALREADY DEFINED and have MCPRead and MCPWrite traits implemented for them. Do not import anything,
-                everything you need is already imported.
+                everything you need is already imported. Derive essential traits for all types (Debug, PartialEq, Clone, Hash, PartialOrd,
+                Ord and Eq if possible).
                 VarInt can be constructed with VarInt(n) where n is i32, and inner number accesed with varint.0
                 Same for VarLong, but with i64.
                 UUID is just u128.
@@ -34,18 +35,18 @@
     },
     {
         "role": "assistant",
-        "content": """{"rust_code": "#[derive(Debug, PartialEq)]
+        "content": """{"rust_code": "#[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
         pub struct PacketUpdateAttributes {
             pub entity_id: i32,
             pub properties: Vec<Property>,
         }
-        #[derive(Debug, PartialEq)]
+        #[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
         pub struct Property {
             pub key: String,
             pub value: f64
             pub modifiers: Vec<PropertyModifier>,
         }
-        #[derive(Debug, PartialEq)]
+        #[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
         pub struct PropertyModifier {
             pub uuid: u128,
             pub amount: f64

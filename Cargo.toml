@@ -4,7 +4,7 @@ members = [
     "craftflow-protocol-abstract",
     "craftflow-protocol-core",
     "craftflow-protocol-versions",
-    "example",
+    # "example",
     # "modules/*",
 ]
 resolver = "2"

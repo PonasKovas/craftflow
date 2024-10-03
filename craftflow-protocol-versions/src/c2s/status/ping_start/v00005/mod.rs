@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use craftflow_protocol_core::*;
 
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Hash, Clone, Copy, Eq, PartialOrd, Ord)]
 pub struct PingStartV00005;
 impl MCPWrite for PingStartV00005 {
 	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {

@@ -8,14 +8,14 @@ macro_rules! gen_direction_enum {
 		impl crate::AbPacketWrite for $name {
             type Direction = craftflow_protocol_versions::$direction;
 
-            fn convert_and_write(
-                self,
-                protocol_version: u32,
-                writer: impl FnMut(Self::Direction) -> craftflow_protocol_core::Result<()>,
-            ) -> craftflow_protocol_core::Result<()> {
+            async fn convert_and_write(
+          		self,
+          		protocol_version: u32,
+          		writer: impl std::ops::AsyncFnMut(Self::Direction) -> anyhow::Result<()>,
+           	) -> anyhow::Result<()> {
                 match self {
                     $(
-                        $name::$variant(inner) => inner.convert_and_write(protocol_version, writer),
+                        $name::$variant(inner) => inner.convert_and_write(protocol_version, writer).await,
                     )*
                 }
             }
@@ -27,7 +27,7 @@ macro_rules! gen_direction_enum {
 
             fn construct(
                 mut packet: Self::Direction,
-            ) -> craftflow_protocol_core::Result<crate::ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+            ) -> anyhow::Result<crate::ConstructorResult<Self, Self::Constructor, Self::Direction>> {
 
 
                 $(
@@ -35,24 +35,44 @@ macro_rules! gen_direction_enum {
                         crate::ConstructorResult::Done(inner) => return Ok(crate::ConstructorResult::Done(Self::$variant(inner))),
                         crate::ConstructorResult::Continue(inner) => {
                             // A constructor wrapper that converts the result to the enum variant
+                            #[repr(transparent)]
                             struct __ConstructorWrapper(<$struct as crate::AbPacketNew>::Constructor);
                             impl crate::AbPacketConstructor for __ConstructorWrapper {
                                 type Direction = craftflow_protocol_versions::$direction;
                                 type AbPacket = $name;
 
                                 fn next_packet(
-                              		self,
+                              		self: Box<Self>,
                               		packet: Self::Direction,
-                               	) -> craftflow_protocol_core::Result<
-                                    crate::ConstructorResult<Self::AbPacket, Self, (Self, Self::Direction)>
+                               	) -> anyhow::Result<
+                                    crate::ConstructorResult<
+                                        Self::AbPacket,
+                                        Box<dyn crate::AbPacketConstructor<
+                                            AbPacket = Self::AbPacket,
+                                            Direction = Self::Direction
+                                        > + Send + Sync>,
+                                        (Box<dyn crate::AbPacketConstructor<
+                                            AbPacket = Self::AbPacket,
+                                            Direction = Self::Direction
+                                        > + Send + Sync>, Self::Direction)>
                                 > {
-                                    match self.0.next_packet(packet)? {
+                                    // its safe because the newtype is repr(transparent)
+                                    // this shenanigan is needed because we can't return Self if it's not Sized
+                                    // which forces us to use Box<Self> in the signature
+                                    let inner = unsafe {
+                                        Box::from_raw(Box::into_raw(self) as *mut <$struct as crate::AbPacketNew>::Constructor)
+                                    };
+                                    match crate::AbPacketConstructor::next_packet(inner, packet)? {
                                         crate::ConstructorResult::Done(inner) =>
                                             Ok(crate::ConstructorResult::Done($name::$variant(inner))),
                                         crate::ConstructorResult::Continue(inner) =>
-                                            Ok(crate::ConstructorResult::Continue(Self(inner))),
+                                            Ok(crate::ConstructorResult::Continue(unsafe {
+                                                Box::from_raw(Box::into_raw(inner) as *mut Self)
+                                            })),
                                         crate::ConstructorResult::Ignore((inner, packet)) =>
-                                            Ok(crate::ConstructorResult::Ignore((Self(inner), packet))),
+                                            Ok(crate::ConstructorResult::Ignore((unsafe {
+                                                Box::from_raw(Box::into_raw(inner) as *mut Self)
+                                            }, packet))),
                                     }
                                 }
                             }

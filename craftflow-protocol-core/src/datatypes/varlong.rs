@@ -5,7 +5,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
 /// A Minecraft Protocol VarLong
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash)]
 pub struct VarLong(pub i64);
 
 impl VarLong {

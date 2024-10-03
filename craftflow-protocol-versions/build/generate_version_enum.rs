@@ -58,6 +58,7 @@ pub fn generate_version_enum(
 		use super::*;
 		use craftflow_protocol_core::{{Result, MCPRead, MCPWrite, Error}};
 
+		#[derive(Debug, PartialEq, Clone, Hash)]
 		pub enum {enum_name} {{
                 {enum_variants}
         }}

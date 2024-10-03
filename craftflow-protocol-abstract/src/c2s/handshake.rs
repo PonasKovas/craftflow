@@ -1,5 +1,6 @@
 use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
-use craftflow_protocol_core::{datatypes::VarInt, Error, Result};
+use anyhow::{bail, Result};
+use craftflow_protocol_core::datatypes::VarInt;
 use craftflow_protocol_versions::{
 	c2s::{
 		handshaking::{set_protocol::v00005::SetProtocolV00005, SetProtocol},
@@ -7,7 +8,9 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
+use std::ops::AsyncFnMut;
 
+#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbHandshake {
 	/// The protocol version that the client is using
 	pub protocol_version: u32,
@@ -20,6 +23,7 @@ pub struct AbHandshake {
 }
 
 /// The next state that the client wants to switch to
+#[derive(Debug, PartialEq, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
 pub enum NextState {
 	Status,
 	Login,
@@ -31,10 +35,10 @@ pub enum NextState {
 impl AbPacketWrite for AbHandshake {
 	type Direction = C2S;
 
-	fn convert_and_write(
+	async fn convert_and_write(
 		self,
 		protocol_version: u32,
-		mut writer: impl FnMut(Self::Direction) -> Result<()>,
+		mut writer: impl AsyncFnMut(Self::Direction) -> Result<()>,
 	) -> Result<()> {
 		// The Handshake packet is identical in all protocol versions
 		writer(
@@ -56,6 +60,7 @@ impl AbPacketWrite for AbHandshake {
 			}
 			.into_state_enum(),
 		)
+		.await
 	}
 }
 
@@ -77,10 +82,7 @@ impl AbPacketNew for AbHandshake {
 						2 => NextState::Login,
 						3 => NextState::Transfer,
 						_ => {
-							return Err(Error::InvalidData(format!(
-								"Invalid next state {}",
-								packet.next_state.0
-							)))
+							bail!("Invalid next state {}", packet.next_state.0)
 						}
 					},
 				}))

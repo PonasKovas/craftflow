@@ -1,6 +1,6 @@
 use craftflow_protocol_core::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 pub struct ServerInfoV00005 {
 	pub response: String,
 }
