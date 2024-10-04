@@ -11,11 +11,11 @@ async fn main() -> anyhow::Result<()> {
 	let mut craftflow = CraftFlow::new();
 
 	SimplePing::new()
-		.set_description(
-			text!("This is a craftflow server! ", color = "gold")
-				+ text!("CONNECT ", bold, color = "aqua")
-				+ text!("NOW!", bold, color = "green"),
-		)
+		.set_description(text!(
+			"                ♦ CraftFlow ♦                ",
+			color = "white",
+			bold
+		))
 		.register(&mut craftflow);
 
 	// Login::default().register(&mut craftflow);
