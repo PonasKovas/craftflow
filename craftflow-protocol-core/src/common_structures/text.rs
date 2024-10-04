@@ -239,7 +239,7 @@ impl Default for TextContent {
 ///
 /// Usage:
 /// ```rust
-/// # use craftflow_protocol::text;
+/// # use craftflow_protocol_core::text;
 /// let example = text!("Hello, world!");
 /// let some_formatting = text!("This text will be bold and italic", bold, italic = true, underlined = false);
 /// let colors = text!("This text will be red", color = "red");
