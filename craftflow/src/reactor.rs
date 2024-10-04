@@ -175,7 +175,7 @@ mod tests {
 		assert_eq!(reactor.event::<MyEvent>(&(), 7), ControlFlow::Continue(14));
 		assert_eq!(
 			reactor.event::<MyEvent2>(&(), "my event2 test string"),
-			ControlFlow::Break("123".to_string())
+			ControlFlow::Break("my event2 test string-test".to_string())
 		);
 	}
 }
