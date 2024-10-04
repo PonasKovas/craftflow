@@ -35,10 +35,10 @@ pub(super) async fn writer_task(
 								write_concrete(&craftflow, conn_id, &mut writer, packet).await
 							},
 						)
-						.await;
+						.await?;
 				}
 				S2CPacket::Concrete(packet) => {
-					write_concrete(&craftflow, conn_id, &mut writer, packet).await;
+					write_concrete(&craftflow, conn_id, &mut writer, packet).await?;
 				}
 			}
 

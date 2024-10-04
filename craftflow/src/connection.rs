@@ -1,6 +1,6 @@
 mod add;
 mod connection_task;
-mod legacy;
+pub mod legacy;
 mod packet_reader;
 mod packet_writer;
 

@@ -149,5 +149,4 @@ impl PacketWriter {
 			.get()
 			.expect("protocol version should be set by the time we try to send packets")
 	}
-	fn if_encryption_enabled(&mut self, f: impl FnOnce(&mut cfb8::Encryptor<aes::Aes128>)) {}
 }
