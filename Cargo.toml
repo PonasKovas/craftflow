@@ -4,8 +4,8 @@ members = [
     "craftflow-protocol-abstract",
     "craftflow-protocol-core",
     "craftflow-protocol-versions",
-    # "example",
-    # "modules/*",
+    "example",
+    "modules/simple-ping",
 ]
 resolver = "2"
 

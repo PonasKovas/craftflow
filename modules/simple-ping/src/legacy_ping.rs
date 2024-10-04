@@ -1,27 +1,19 @@
 use crate::SimplePing;
-use craftflow::CraftFlow;
-use craftflow_protocol::{
-	datatypes::{text::TextContent, Text},
-	legacy::{LegacyPing, LegacyPingResponse},
-};
+use craftflow::{connection::legacy::LegacyPingResponse, CraftFlow};
+use craftflow_protocol_core::common_structures::{text::TextContent, Text};
 use std::ops::ControlFlow;
 
-pub fn legacy_ping(
-	cf: &CraftFlow,
-	(conn_id, request): (u64, LegacyPing),
-) -> ControlFlow<(), (u64, LegacyPing)> {
+pub fn legacy_ping(cf: &CraftFlow, _conn_id: u64) -> ControlFlow<Option<LegacyPingResponse>, u64> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway
-	let online_players = cf.connections().len() as i32; // more or less
+	let online_players = cf.connections().len() as i32; // more or less. (less)
 	let max_players = 1000; // todo after implementing max connections
 	let description = &cf.modules.get::<SimplePing>().server_description;
 
-	cf.get(conn_id).send(
+	ControlFlow::Break(Some(
 		LegacyPingResponse::new(protocol_version, online_players, max_players)
 			.set_version(format!("§f§lCraftFlow"))
 			.set_description(text_to_legacy(description)),
-	);
-
-	ControlFlow::Continue((conn_id, request))
+	))
 }
 
 /// Converts a `Text` to a simple string that can be understood by legacy clients

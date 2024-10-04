@@ -1,11 +1,12 @@
 use craftflow::CraftFlow;
-use craftflow_protocol::protocol::{c2s::status::Ping, s2c::status::Pong};
+use craftflow_protocol_abstract::{c2s::AbStatusPing, s2c::AbStatusPong};
 use std::ops::ControlFlow;
 
-pub fn ping(cf: &CraftFlow, (conn_id, request): (u64, Ping)) -> ControlFlow<(), (u64, Ping)> {
-	cf.get(conn_id).send(Pong {
-		payload: request.payload,
-	});
+pub fn ping<'a>(
+	cf: &'a CraftFlow,
+	(conn_id, request): (u64, &'a mut AbStatusPing),
+) -> ControlFlow<(), (u64, &'a mut AbStatusPing)> {
+	cf.get(conn_id).send(AbStatusPong { id: request.id });
 
 	cf.disconnect(conn_id);
 

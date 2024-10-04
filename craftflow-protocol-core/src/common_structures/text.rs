@@ -247,14 +247,14 @@ impl Default for TextContent {
 #[macro_export]
 macro_rules! text {
     ($text:expr $(, $key:ident $(= $value:expr)? )* ) => {
-        $crate::datatypes::text::Text::Object(::std::boxed::Box::new(
-        	$crate::datatypes::text::TextObject {
-	            content: $crate::datatypes::text::TextContent::Text {
+        $crate::common_structures::text::Text::Object(::std::boxed::Box::new(
+        	$crate::common_structures::text::TextObject {
+	            content: $crate::common_structures::text::TextContent::Text {
 					text: $text.to_string()
 				},
 	            extra: ::std::vec::Vec::new(),
 	            $($key: text!(@format $key $(= $value)?),)*
-	            ..<$crate::datatypes::text::TextObject as ::std::default::Default>::default()
+	            ..<$crate::common_structures::text::TextObject as ::std::default::Default>::default()
          	}
         ))
     };

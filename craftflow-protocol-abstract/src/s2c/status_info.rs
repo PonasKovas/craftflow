@@ -21,9 +21,11 @@ pub struct AbStatusInfo {
 	/// The version info about the server (string name, and protocol version)
 	pub version: Version,
 	/// Player information, such as online/max and sample
+	#[serde(default)]
 	pub players: Option<Players>,
 	/// The MOTD of the server
-	pub description: Text,
+	#[serde(default)]
+	pub description: Option<Text>,
 	/// The favicon of the server, if any. This should be the raw PNG data.
 	/// It must be exactly 64x64 pixels.
 	#[serde(with = "favicon")]
@@ -37,7 +39,8 @@ pub struct AbStatusInfo {
 pub struct Version {
 	/// The text name of the version of the server.
 	/// This has no logical significance, only for display.
-	pub name: Text,
+	/// You can use legacy formatting here (§c, §l, etc.)
+	pub name: String,
 	/// The protocol version of the server. If this doesn't match the client,
 	/// the client will show "outdated server" or "outdated client" in the server list.
 	pub protocol: u32,

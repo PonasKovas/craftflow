@@ -8,6 +8,8 @@
 //!
 //! It is a responsibility of the user to ensure to use abstract packets in the correct state.
 
+pub use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
+
 pub mod c2s;
 mod packet_constructor;
 mod packet_new;

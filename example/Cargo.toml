@@ -5,9 +5,10 @@ edition = "2021"
 
 [dependencies]
 craftflow = { path = "../craftflow" }
+craftflow-protocol-core = { path = "../craftflow-protocol-core" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing = { workspace = true }
 simple-ping = { path = "../modules/simple-ping" }
-login = { path = "../modules/login" }
+# login = { path = "../modules/login" }
