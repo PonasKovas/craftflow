@@ -10,9 +10,10 @@ pub mod various_events;
 
 use connection::ConnectionHandle;
 use modules::Modules;
-use reactor::Reactor;
+use reactor::{Event, Reactor};
 use std::{
 	collections::HashMap,
+	ops::ControlFlow,
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
 use tokio::net::TcpListener;

@@ -47,7 +47,10 @@ impl<CTX: 'static> Reactor<CTX> {
 	/// Register a handler for an event
 	pub fn add_handler<
 		E: Event,
-		F: Fn(&CTX, E::Args<'_>) -> ControlFlow<E::Return> + Sync + Send + 'static,
+		F: for<'a> Fn(&'a CTX, E::Args<'a>) -> ControlFlow<E::Return, E::Args<'a>>
+			+ Sync
+			+ Send
+			+ 'static,
 	>(
 		&mut self,
 		handler: F,
@@ -64,14 +67,22 @@ impl<CTX: 'static> Reactor<CTX> {
 	/// If the position is greater than the number of handlers, the handler will be added at the end
 	pub fn add_handler_at_pos<
 		E: Event,
-		F: Fn(&CTX, E::Args<'_>) -> ControlFlow<E::Return> + Sync + Send + 'static,
+		F: for<'a> Fn(&'a CTX, E::Args<'a>) -> ControlFlow<E::Return, E::Args<'a>>
+			+ Sync
+			+ Send
+			+ 'static,
 	>(
 		&mut self,
 		pos: usize,
 		handler: F,
 	) {
 		let closure = Box::new(handler)
-			as Box<dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return> + Send + Sync + 'static>;
+			as Box<
+				dyn for<'a> Fn(&'a CTX, E::Args<'a>) -> ControlFlow<E::Return, E::Args<'a>>
+					+ Send
+					+ Sync
+					+ 'static,
+			>;
 
 		// // Erase the type of the closure so we can store it
 		let type_erased = Box::new(closure) as Box<dyn Any + Send + Sync + 'static>;
@@ -84,12 +95,19 @@ impl<CTX: 'static> Reactor<CTX> {
 		handlers.insert(pos, type_erased);
 	}
 	/// Trigger an event
-	pub fn event<E: Event>(&self, ctx: &CTX, mut args: E::Args<'_>) -> ControlFlow<E::Return> {
+	pub fn event<'a, E: Event>(
+		&self,
+		ctx: &'a CTX,
+		mut args: E::Args<'a>,
+	) -> ControlFlow<E::Return, E::Args<'a>> {
 		if let Some(handlers) = self.events.get(&TypeId::of::<E>()) {
 			for handler in handlers {
 				// Convert back to the real closure type
-				let closure: &Box<dyn Fn(&CTX, E::Args) -> ControlFlow<E::Return> + Send + Sync> =
-					handler.downcast_ref().unwrap();
+				let closure: &Box<
+					dyn for<'b> Fn(&'b CTX, E::Args<'b>) -> ControlFlow<E::Return, E::Args<'b>>
+						+ Send
+						+ Sync,
+				> = handler.downcast_ref().unwrap();
 
 				args = closure(ctx, args)?;
 			}
@@ -128,20 +146,20 @@ mod tests {
 		reactor.add_handler_at_pos::<MyEvent, _>(999, |_ctx, arg| {
 			println!("First handler: {}", arg);
 
-			ControlFlow::Continue(())
+			ControlFlow::Continue(arg)
 		});
 		reactor.add_handler_at_pos::<MyEvent, _>(0, |_ctx, mut arg| {
 			println!("Second handler: {}", arg);
 
 			arg *= 2;
 
-			ControlFlow::Continue(())
+			ControlFlow::Continue(arg)
 		});
 
 		reactor.add_handler::<MyEvent2, _>(|_ctx, a| {
 			println!("first MyEvent2");
 
-			ControlFlow::Continue(())
+			ControlFlow::Continue(a)
 		});
 		reactor.add_handler_at_pos::<MyEvent2, _>(1, |_ctx, a| {
 			println!("second MyEvent2");
@@ -156,8 +174,8 @@ mod tests {
 
 		assert_eq!(reactor.event::<MyEvent>(&(), 7), ControlFlow::Continue(14));
 		assert_eq!(
-			reactor.event::<MyEvent2>(&(), ()),
-			ControlFlow::Break("123")
+			reactor.event::<MyEvent2>(&(), "my event2 test string"),
+			ControlFlow::Break("123".to_string())
 		);
 	}
 }

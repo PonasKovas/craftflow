@@ -23,7 +23,7 @@ macro_rules! gen_direction_enum {
 
         impl crate::AbPacketNew for $name {
             type Direction = craftflow_protocol_versions::$direction;
-            type Constructor = Box<dyn crate::AbPacketConstructor<Direction = Self::Direction, AbPacket = Self>>;
+            type Constructor = Box<dyn crate::AbPacketConstructor<Direction = Self::Direction, AbPacket = Self> + Send + Sync>;
 
             fn construct(
                 mut packet: Self::Direction,
@@ -103,10 +103,10 @@ macro_rules! gen_direction_enum {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __destructure_s2c__ {
-            ($enum_value:ident -> $code:tt) => {
+            ($enum_value:ident -> $inner:ident $code:tt) => {
                 match $enum_value {
                     $(
-                        craftflow_protocol_abstract::$name::$variant(inner) => $code,
+                        craftflow_protocol_abstract::$name::$variant($inner) => $code,
                     )*
                 }
             };
@@ -126,10 +126,10 @@ macro_rules! gen_direction_enum {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __destructure_c2s__ {
-            ($enum_value:ident -> $code:tt) => {
+            ($enum_value:ident -> $inner:ident $code:tt) => {
                 match $enum_value {
                     $(
-                        craftflow_protocol_abstract::$name::$variant(inner) => $code,
+                        craftflow_protocol_abstract::$name::$variant($inner) => $code,
                     )*
                 }
             };

@@ -58,27 +58,33 @@ impl<P: IntoStateEnum<Direction = S2C> + Any> Event for Post<P> {
 	type Return = ();
 }
 
+// Helper function that triggers a packet event
+fn helper<'a, E>(
+	craftflow: &'a CraftFlow,
+	conn_id: u64,
+	packet: &'a mut E,
+) -> ControlFlow<E::Return>
+where
+	E: Event<Args<'a> = (u64, &'a mut E)>,
+{
+	craftflow.reactor.event::<E>(craftflow, (conn_id, packet))?;
+	ControlFlow::Continue(())
+}
+
 pub(super) fn trigger_c2s(
 	craftflow: &CraftFlow,
 	conn_id: u64,
 	packet: &mut C2SPacket,
 ) -> ControlFlow<()> {
-	fn helper<'a, T>(craftflow: &CraftFlow, conn_id: u64, packet: &mut C2SPacket) -> ControlFlow<()>
-	where
-		T: Event<Args<'a> = (u64, &'a mut T)>,
-	{
-		craftflow.trigger_event::<T>(conn_id, packet)
-	}
-
 	match packet {
 		C2SPacket::Abstract(p) => {
-			craftflow_protocol_abstract::__destructure_c2s__!(p -> {
-				helper(craftflow, conn_id, p)
+			craftflow_protocol_abstract::__destructure_c2s__!(p -> inner {
+				helper(craftflow, conn_id, inner)
 			})
 		}
 		C2SPacket::Concrete(p) => {
-			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> {
-				helper(craftflow, conn_id, p)
+			craftflow_protocol_versions::__destructure_packet_enum__!(direction=C2S, p -> inner {
+				helper(craftflow, conn_id, inner)
 			})
 		}
 	}
@@ -89,22 +95,16 @@ pub(super) fn trigger_s2c_pre(
 	conn_id: u64,
 	packet: &mut S2CPacket,
 ) -> ControlFlow<()> {
-	fn helper<'a, T>(craftflow: &CraftFlow, conn_id: u64, packet: &mut S2CPacket) -> ControlFlow<()>
-	where
-		T: Event<Args<'a> = (u64, &'a mut T)>,
-	{
-		craftflow.trigger_event::<T>(conn_id, packet)
-	}
-
 	match packet {
 		S2CPacket::Abstract(p) => {
-			// craftflow_protocol_abstract::__destructure_s2c__!(p -> {
-			// 	helper(craftflow, conn_id, p)
+			// craftflow_protocol_abstract::__destructure_s2c__!(p -> inner {
+			// 	helper(craftflow, conn_id, inner)
 			// })
+			ControlFlow::Continue(())
 		}
 		S2CPacket::Concrete(p) => {
-			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> {
-				helper(craftflow, conn_id, p)
+			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> inner {
+				helper(craftflow, conn_id, inner)
 			})
 		}
 	}
@@ -115,22 +115,16 @@ pub(super) fn trigger_s2c_post(
 	conn_id: u64,
 	packet: &mut S2CPacket,
 ) -> ControlFlow<()> {
-	fn helper<'a, T>(craftflow: &CraftFlow, conn_id: u64, packet: &mut S2CPacket) -> ControlFlow<()>
-	where
-		T: Event<Args<'a> = (u64, &'a mut T)>,
-	{
-		craftflow.trigger_event::<Post<T>>(conn_id, packet)
-	}
-
 	match packet {
 		S2CPacket::Abstract(p) => {
 			// craftflow_protocol_abstract::__destructure_s2c__!(p -> {
 			// 	helper(craftflow, conn_id, p)
 			// })
+			ControlFlow::Continue(())
 		}
 		S2CPacket::Concrete(p) => {
-			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> {
-				helper(craftflow, conn_id, p)
+			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> inner {
+				helper(craftflow, conn_id, inner)
 			})
 		}
 	}

@@ -12,8 +12,9 @@ pub(super) async fn reader_task(
 	conn_id: u64,
 	mut reader: PacketReader,
 ) -> anyhow::Result<()> {
-	let mut constructors: Vec<Box<dyn AbPacketConstructor<Direction = C2S, AbPacket = AbC2S>>> =
-		Vec::new();
+	let mut constructors: Vec<
+		Box<dyn AbPacketConstructor<Direction = C2S, AbPacket = AbC2S> + Send + Sync>,
+	> = Vec::new();
 
 	'read_packet: loop {
 		let packet = reader.read_packet().await?;

@@ -1,4 +1,7 @@
-use crate::common::{read_dir_sorted, snake_to_pascal_case};
+use crate::{
+	common::{read_dir_sorted, snake_to_pascal_case},
+	parse_packet_info::{parse_packet_info, PacketInfo},
+};
 use std::path::Path;
 
 pub fn gen_destructure_macro() -> String {
@@ -27,11 +30,18 @@ pub fn gen_destructure_macro() -> String {
 									continue;
 								}
 
+								// we only need defined versions, not re-exports, since they dont have variants in the packet enum
+								let packet_info =
+									parse_packet_info(version.path().join("packet_info"));
+								if let PacketInfo::ReExported { .. } = packet_info {
+									continue;
+								}
+
 								let version_name = version.file_name().into_string().unwrap();
 								let version_variant = snake_to_pascal_case(&version_name);
 
 								inner_packet += &format!(
-                                    "::craftflow_protocol_versions::{dir}::{state_name}::{packet_variant}::{version_variant}(inner) => $code,\n",
+                                    "::craftflow_protocol_versions::{direction}::{state_name}::{packet_variant}::{version_variant}($inner) => $code,\n",
                                 );
 							}
 							inner_state += &format!(
@@ -52,7 +62,7 @@ pub fn gen_destructure_macro() -> String {
 		}
 
 		inner += &format!(
-			"(direction={dir}, $enum_value:ident -> $code:tt) => {{
+			"(direction={dir}, $enum_value:ident -> $inner:ident $code:tt) => {{
                 match $enum_value {{
                     {inner_direction}
                 }}
