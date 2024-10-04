@@ -1,5 +1,4 @@
 use crate::{Error, MCPRead, MCPWrite};
-use crab_nbt::serde::{de::from_bytes_unnamed, ser::to_bytes_unnamed};
 use serde::{de::DeserializeOwned, Serialize};
 use std::io::Write;
 

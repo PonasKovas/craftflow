@@ -4,24 +4,16 @@ pub mod legacy;
 mod packet_reader;
 mod packet_writer;
 
-use crate::{packets::S2CPacket, CraftFlow};
+use crate::packets::S2CPacket;
 use connection_task::connection_task;
 use craftflow_protocol_abstract::AbS2C;
 use craftflow_protocol_versions::{IntoStateEnum, S2C};
-use futures::FutureExt;
-use packet_reader::PacketReader;
-use packet_writer::PacketWriter;
 use std::{
 	fmt::Display,
-	io::Cursor,
 	net::IpAddr,
-	sync::{Arc, Mutex, OnceLock, RwLock},
+	sync::{Arc, OnceLock, RwLock},
 };
-use tokio::{
-	net::TcpStream,
-	spawn,
-	sync::mpsc::{self, UnboundedSender},
-};
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::error;
 
 /// A handle to a client connection.
@@ -40,6 +32,16 @@ pub struct ConnectionHandle {
 	protocol_version: Arc<OnceLock<u32>>,
 	// the state of the connection. Certain packets change this
 	state: Arc<RwLock<ConnState>>,
+}
+
+// Used to track the state of the connection
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ConnState {
+	Handshake,
+	Status,
+	Login,
+	Configuration,
+	Play,
 }
 
 /// Guarantees that packets are sent in a row without any other packets in between them
@@ -127,16 +129,6 @@ impl ConnectionHandle {
 	pub fn id(&self) -> u64 {
 		self.id
 	}
-}
-
-// Used to track the state of the connection
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum ConnState {
-	Handshake,
-	Status,
-	Login,
-	Configuration,
-	Play,
 }
 
 impl Display for ConnectionHandle {

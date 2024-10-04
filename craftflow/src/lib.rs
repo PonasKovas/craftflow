@@ -8,12 +8,13 @@ mod packets;
 pub mod reactor;
 pub mod various_events;
 
+pub use packets::{C2SPacket, S2CPacket};
+
 use connection::ConnectionHandle;
 use modules::Modules;
-use reactor::{Event, Reactor};
+use reactor::Reactor;
 use std::{
 	collections::HashMap,
-	ops::ControlFlow,
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
 use tokio::net::TcpListener;

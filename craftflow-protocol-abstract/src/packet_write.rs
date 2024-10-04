@@ -10,6 +10,7 @@ pub trait AbPacketWrite {
 
 	/// Given a protocol version, converts the abstract packet to one or multiple concrete packets and calls the `writer`
 	/// closure with them. The `writer` closure should handle writing the packet to the stream or whatever else you want.
+	#[allow(async_fn_in_trait)]
 	async fn convert_and_write(
 		self,
 		protocol_version: u32,
