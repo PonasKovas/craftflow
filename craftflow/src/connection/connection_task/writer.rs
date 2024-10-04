@@ -28,14 +28,11 @@ pub(super) async fn writer_task(
 			match packet.clone() {
 				S2CPacket::Abstract(ab_packet) => {
 					// Construct concrete packets from this abstract packet
-					ab_packet
-						.convert_and_write(
-							*writer.protocol_version.get().unwrap(),
-							async |packet| {
-								write_concrete(&craftflow, conn_id, &mut writer, packet).await
-							},
-						)
-						.await?;
+					let concrete_packets =
+						ab_packet.convert(*writer.protocol_version.get().unwrap())?;
+					for packet in concrete_packets {
+						write_concrete(&craftflow, conn_id, &mut writer, packet).await?;
+					}
 				}
 				S2CPacket::Concrete(packet) => {
 					write_concrete(&craftflow, conn_id, &mut writer, packet).await?;

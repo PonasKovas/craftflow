@@ -166,7 +166,7 @@ mod tests {
 
 			ControlFlow::Break(format!("{a}-test"))
 		});
-		reactor.add_handler_at_pos::<MyEvent2, _>(2, |_ctx, a| {
+		reactor.add_handler_at_pos::<MyEvent2, _>(2, |_ctx, _a| {
 			println!("third MyEvent2");
 
 			ControlFlow::Break("this should not be reached".to_string())

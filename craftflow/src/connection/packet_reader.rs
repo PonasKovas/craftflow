@@ -2,7 +2,7 @@ use super::ConnState;
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut, KeyIvInit};
 use craftflow_protocol_core::{datatypes::VarInt, Error, MCPRead};
 use craftflow_protocol_versions::{
-	c2s::{Handshaking, Status},
+	c2s::{handshaking::SetProtocol, Handshaking, Status},
 	IntoStateEnum, PacketRead, C2S,
 };
 use std::{
@@ -114,19 +114,6 @@ impl PacketReader {
 
 		// remove the bytes from the buffer
 		self.buffer.drain(..total_packet_len);
-
-		// match certain special packets that change the state
-		// match &packet {
-		// 	C2S::Login(c2s::LoginPacket::LoginAcknowledged { packet: _ }) => {
-		// 		self.state = ConnState::Configuration;
-		// 	}
-		// 	C2S::Configuration(c2s::ConfigurationPacket::AcknowledgeFinishConfiguration {
-		// 		packet: _,
-		// 	}) => {
-		// 		self.state = ConnState::Play;
-		// 	}
-		// 	_ => {}
-		// }
 
 		Ok(packet)
 	}

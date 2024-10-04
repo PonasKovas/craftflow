@@ -7,17 +7,17 @@ macro_rules! gen_direction_enum {
 
 		impl crate::AbPacketWrite for $name {
             type Direction = craftflow_protocol_versions::$direction;
+            type Iter = Box<dyn Iterator<Item = Self::Direction> + Send + Sync>;
 
-            async fn convert_and_write(
+            fn convert(
           		self,
           		protocol_version: u32,
-          		writer: impl std::ops::AsyncFnMut(Self::Direction) -> anyhow::Result<()>,
-           	) -> anyhow::Result<()> {
-                match self {
+           	) -> anyhow::Result<Self::Iter> {
+                Ok(match self {
                     $(
-                        $name::$variant(inner) => inner.convert_and_write(protocol_version, writer).await,
+                        $name::$variant(inner) => Box::new(inner.convert(protocol_version)?),
                     )*
-                }
+                })
             }
         }
 

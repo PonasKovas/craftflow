@@ -1,3 +1,4 @@
+pub mod common_structures;
 pub mod datatypes;
 
 use std::io::{self, Write};
@@ -38,7 +39,7 @@ impl Error {
 	}
 }
 
-trait Context {
+pub trait Context {
 	fn with_context(self, context: impl FnOnce() -> String) -> Self;
 }
 

@@ -8,8 +8,9 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use std::ops::AsyncFnMut;
+use std::iter::{once, Once};
 
+/// The initial packet that a client should send to the server.
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbHandshake {
 	/// The protocol version that the client is using
@@ -28,20 +29,17 @@ pub enum NextState {
 	Status,
 	Login,
 	/// This is sent when the client is being transferred here from another server
-	/// Only available since 1.20.5 version. If unsure of server version, use `Login` instead.
+	/// Only available since 1.20.5 version. Will be replaced with [`Login`] in older versions.
 	Transfer,
 }
 
 impl AbPacketWrite for AbHandshake {
 	type Direction = C2S;
+	type Iter = Once<Self::Direction>;
 
-	async fn convert_and_write(
-		self,
-		protocol_version: u32,
-		mut writer: impl AsyncFnMut(Self::Direction) -> Result<()>,
-	) -> Result<()> {
+	fn convert(self, protocol_version: u32) -> Result<Self::Iter> {
 		// The Handshake packet is identical in all protocol versions
-		writer(
+		Ok(once(
 			SetProtocolV00005 {
 				protocol_version: VarInt(self.protocol_version as i32),
 				server_host: self.address,
@@ -59,8 +57,7 @@ impl AbPacketWrite for AbHandshake {
 				}),
 			}
 			.into_state_enum(),
-		)
-		.await
+		))
 	}
 }
 

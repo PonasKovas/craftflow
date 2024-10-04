@@ -99,10 +99,9 @@ pub(super) fn trigger_s2c_pre(
 ) -> ControlFlow<()> {
 	match packet {
 		S2CPacket::Abstract(p) => {
-			// craftflow_protocol_abstract::__destructure_s2c__!(p -> inner {
-			// 	helper(craftflow, conn_id, inner)
-			// })
-			ControlFlow::Continue(())
+			craftflow_protocol_abstract::__destructure_s2c__!(p -> inner {
+				helper(craftflow, conn_id, inner)
+			})
 		}
 		S2CPacket::Concrete(p) => {
 			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> inner {
@@ -119,10 +118,9 @@ pub(super) fn trigger_s2c_post(
 ) -> ControlFlow<()> {
 	match packet {
 		S2CPacket::Abstract(p) => {
-			// craftflow_protocol_abstract::__destructure_s2c__!(p -> {
-			// 	helper(craftflow, conn_id, p)
-			// })
-			ControlFlow::Continue(())
+			craftflow_protocol_abstract::__destructure_s2c__!(p -> inner {
+				helper(craftflow, conn_id, inner)
+			})
 		}
 		S2CPacket::Concrete(p) => {
 			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> inner {
