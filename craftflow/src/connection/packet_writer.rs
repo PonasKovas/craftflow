@@ -2,7 +2,7 @@ use super::ConnState;
 use aes::cipher::{generic_array::GenericArray, BlockEncryptMut, KeyIvInit};
 use anyhow::bail;
 use craftflow_protocol_core::{datatypes::VarInt, MCPWrite};
-use craftflow_protocol_versions::{PacketWrite, S2C};
+use craftflow_protocol_versions::{PacketWrite, MAX_VERSION, MIN_VERSION, S2C};
 use flate2::write::ZlibEncoder;
 use std::{
 	io::Cursor,
@@ -143,10 +143,23 @@ impl PacketWriter {
 	fn compression(&self) -> Option<usize> {
 		self.compression.get().map(|t| *t)
 	}
-	fn get_protocol_version(&self) -> u32 {
-		*self
+	pub(crate) fn get_protocol_version(&self) -> u32 {
+		let real_version = *self
 			.protocol_version
 			.get()
-			.expect("protocol version should be set by the time we try to send packets")
+			.expect("protocol version should be set by the time we try to send packets");
+
+		// If the state is STATUS, we want to respond even if the version is not supported.
+		if *self.state.read().unwrap() == ConnState::Status {
+			if MIN_VERSION > real_version {
+				return MIN_VERSION;
+			} else if MAX_VERSION < real_version {
+				return MAX_VERSION;
+			} else {
+				return real_version;
+			}
+		}
+
+		real_version
 	}
 }

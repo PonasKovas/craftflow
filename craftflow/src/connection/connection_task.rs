@@ -56,47 +56,45 @@ pub(super) async fn connection_task(
 
 	// we will read the handshake in this task before splitting into two tasks
 	// so we know the next state for both tasks
-	let next_state = {
-		let handshake = match timeout(Duration::from_secs(5), reader.read_packet()).await {
-			Ok(p) => p.context("reading handshake packet")?,
-			Err(_) => bail!("timed out"),
-		};
 
-		let handshake_ab = AbHandshake::construct(handshake.clone())
-			.unwrap()
-			.assume_done();
+	let handshake = match timeout(Duration::from_secs(5), reader.read_packet()).await {
+		Ok(p) => p.context("reading handshake packet")?,
+		Err(_) => bail!("timed out"),
+	};
 
-		// set the client protocol version
-		let client_version = handshake_ab.protocol_version;
-		let next_state = handshake_ab.next_state;
-		// unless the next_state is status, the protocol version must be supported
-		if next_state != NextState::Status {
+	let handshake_ab = AbHandshake::construct(handshake.clone())
+		.unwrap()
+		.assume_done();
+
+	// set the client protocol version
+	let client_version = handshake_ab.protocol_version;
+	protocol_version
+		.set(client_version)
+		.expect("client protocol version already set");
+
+	let next_state = match handshake_ab.next_state {
+		NextState::Status => ConnState::Status,
+		NextState::Login | NextState::Transfer => {
+			// for these states, check if the client protocol version is actually supported
 			if !(MIN_VERSION <= client_version && client_version >= MAX_VERSION) {
 				bail!("unsupported protocol version");
 			}
-		}
 
-		protocol_version
-			.set(client_version)
-			.expect("client protocol version already set");
-
-		// trigger the handshake event
-		if trigger_c2s(&craftflow, conn_id, &mut C2SPacket::Concrete(handshake)).is_continue() {
-			trigger_c2s(
-				&craftflow,
-				conn_id,
-				&mut C2SPacket::Abstract(handshake_ab.into()),
-			);
-		}
-
-		match next_state {
-			NextState::Status => ConnState::Status,
-			NextState::Login | NextState::Transfer => ConnState::Login,
+			ConnState::Login
 		}
 	};
 
 	// update the state of the reader and writer
 	*state.write().unwrap() = next_state;
+
+	// trigger the handshake event
+	if trigger_c2s(&craftflow, conn_id, &mut C2SPacket::Concrete(handshake)).is_continue() {
+		trigger_c2s(
+			&craftflow,
+			conn_id,
+			&mut C2SPacket::Abstract(handshake_ab.into()),
+		);
+	}
 
 	// now we can finally split into two tasks
 	// spawn a task to handle writing packets

@@ -2,8 +2,8 @@ use super::ConnState;
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut, KeyIvInit};
 use craftflow_protocol_core::{datatypes::VarInt, Error, MCPRead};
 use craftflow_protocol_versions::{
-	c2s::{handshaking::SetProtocol, Handshaking, Status},
-	IntoStateEnum, PacketRead, C2S,
+	c2s::{Handshaking, Status},
+	IntoStateEnum, PacketRead, C2S, MIN_VERSION,
 };
 use std::{
 	io::Write,
@@ -165,10 +165,25 @@ impl PacketReader {
 	fn compression(&self) -> Option<usize> {
 		self.compression.get().map(|t| *t)
 	}
-	fn get_protocol_version(&self) -> u32 {
-		// if protocol version is not set, we are in the handshake state,
-		// before receiving the handshake packet
-		self.protocol_version.get().map(|v| *v).unwrap_or(0)
+	pub(crate) fn get_protocol_version(&self) -> u32 {
+		match self.protocol_version.get() {
+			Some(&v) => {
+				// If the state is Status, then still give MIN_VERSION instead of real,
+				// because we might not support the real version, but status
+				// should be the same (or compatible) for all versions and we still want to respond.
+				if *self.state.read().unwrap() == ConnState::Status {
+					MIN_VERSION
+				} else {
+					v
+				}
+			}
+			None => {
+				// if protocol version is not set, we are in the handshake state,
+				// before receiving the handshake packet
+				// so just set to the minimal supported version so we can read the handshake
+				MIN_VERSION
+			}
+		}
 	}
 	fn if_encryption_enabled(&mut self, f: impl FnOnce(&mut cfb8::Decryptor<aes::Aes128>)) {
 		match &mut self.decryptor {

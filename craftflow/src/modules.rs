@@ -5,16 +5,8 @@ use std::{
 
 /// A registry of all modules.
 pub struct Modules {
-	inner: BTreeMap<TypeId, Box<dyn Any>>,
+	inner: BTreeMap<TypeId, Box<dyn Any + Send + Sync>>,
 }
-
-// These are not automatically implemented because the Box<dyn Any> might be not Sync + Send
-// We can't mark it as Sync + Send there because then we can't downcast it
-// (downcast is only implemented for dyn Any, not dyn Any + Sync + Send)
-// But in reality we know that all modules are Sync + Send, because we have
-// bound checks for it in the module registration method
-unsafe impl Sync for Modules {}
-unsafe impl Send for Modules {}
 
 impl Modules {
 	/// Creates a new empty module registry.

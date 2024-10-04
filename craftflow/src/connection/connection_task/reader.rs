@@ -3,6 +3,7 @@ use crate::{
 	CraftFlow,
 };
 use craftflow_protocol_abstract::{AbC2S, AbPacketConstructor, AbPacketNew, ConstructorResult};
+use craftflow_protocol_core::Context;
 use craftflow_protocol_versions::C2S;
 use std::sync::Arc;
 use tracing::error;
@@ -17,7 +18,12 @@ pub(super) async fn reader_task(
 	> = Vec::new();
 
 	'read_packet: loop {
-		let packet = reader.read_packet().await?;
+		let packet = reader.read_packet().await.with_context(|| {
+			format!(
+				"reading concrete packet (state {:?})",
+				reader.state.read().unwrap()
+			)
+		})?;
 
 		let mut packet = C2SPacket::Concrete(packet);
 		// trigger concrete packet event

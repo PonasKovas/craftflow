@@ -1,5 +1,6 @@
 mod response;
 
+use crate::reactor::Event;
 use anyhow::bail;
 use std::time::Duration;
 use tokio::{
@@ -9,8 +10,6 @@ use tokio::{
 };
 
 pub use response::LegacyPingResponse;
-
-use crate::reactor::Event;
 
 #[derive(PartialEq, Debug)]
 pub enum LegacyPingFormat {

@@ -28,8 +28,7 @@ pub(super) async fn writer_task(
 			match packet.clone() {
 				S2CPacket::Abstract(ab_packet) => {
 					// Construct concrete packets from this abstract packet
-					let concrete_packets =
-						ab_packet.convert(*writer.protocol_version.get().unwrap())?;
+					let concrete_packets = ab_packet.convert(writer.get_protocol_version())?;
 					for packet in concrete_packets {
 						write_concrete(&craftflow, conn_id, &mut writer, packet).await?;
 					}
