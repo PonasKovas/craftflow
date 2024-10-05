@@ -8,4 +8,5 @@ C2S_PACKETS = {
 }
 S2C_PACKETS = {
     "status": ["server_info", "ping"],
+    "login": ["disconnect", "encryption_begin", "success", "compress", "login_plugin_request"],
 }

@@ -1,6 +1,7 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
 use std::{fmt::Debug, io::Write, marker::PhantomData};
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Array<LEN, T> {
 	pub data: Vec<T>,
 	_phantom: PhantomData<LEN>,

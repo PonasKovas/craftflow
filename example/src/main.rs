@@ -12,7 +12,7 @@ async fn main() -> anyhow::Result<()> {
 
 	SimplePing::new()
 		.set_description(text!(
-			"                ♦ CraftFlow ♦                ",
+			"                ♦ CraftFlow ♦",
 			color = "white",
 			bold
 		))

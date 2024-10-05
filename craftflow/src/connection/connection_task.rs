@@ -10,13 +10,16 @@ use super::{
 use crate::{
 	packet_events::trigger_c2s,
 	packets::{C2SPacket, S2CPacket},
+	various_events::UnsupportedClientVersion,
 	CraftFlow,
 };
 use anyhow::{bail, Context};
 use craftflow_protocol_abstract::{
 	c2s::{handshake::NextState, AbHandshake},
-	AbPacketNew,
+	s2c::AbLoginDisconnect,
+	AbPacketNew, AbPacketWrite,
 };
+use craftflow_protocol_core::text;
 use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
 use reader::reader_task;
 use std::{
@@ -72,20 +75,38 @@ pub(super) async fn connection_task(
 		.set(client_version)
 		.expect("client protocol version already set");
 
-	let next_state = match handshake_ab.next_state {
-		NextState::Status => ConnState::Status,
+	match handshake_ab.next_state {
+		NextState::Status => {
+			// update the state of the reader and writer
+			*state.write().unwrap() = ConnState::Status;
+		}
 		NextState::Login | NextState::Transfer => {
+			// update the state of the reader and writer
+			*state.write().unwrap() = ConnState::Login;
+
 			// for these states, check if the client protocol version is actually supported
 			if !(MIN_VERSION <= client_version && client_version <= MAX_VERSION) {
-				bail!("unsupported protocol version");
+				let message = match craftflow
+					.reactor
+					.event::<UnsupportedClientVersion>(&craftflow, conn_id)
+				{
+					ControlFlow::Continue(_) => {
+						text!("Version not supported.", color = "white", bold)
+					}
+					ControlFlow::Break(message) => message,
+				};
+
+				writer
+					.send(
+						&AbLoginDisconnect { message }
+							.convert(client_version)?
+							.next()
+							.unwrap(),
+					)
+					.await?;
 			}
-
-			ConnState::Login
 		}
-	};
-
-	// update the state of the reader and writer
-	*state.write().unwrap() = next_state;
+	}
 
 	// trigger the handshake event
 	if trigger_c2s(&craftflow, conn_id, &mut C2SPacket::Concrete(handshake)).is_continue() {

@@ -29,6 +29,9 @@ impl PacketWriter {
 			S2C::Status(p) if state == ConnState::Status => {
 				self.write_unchecked(p).await?;
 			}
+			S2C::Login(p) if state == ConnState::Login => {
+				self.write_unchecked(p).await?;
+			}
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",
