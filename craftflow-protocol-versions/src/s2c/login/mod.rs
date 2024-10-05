@@ -9,3 +9,8 @@ pub mod success;
 include!(concat!(env!("OUT_DIR"), "/s2c/login/success_enum.rs"));
 pub mod compress;
 include!(concat!(env!("OUT_DIR"), "/s2c/login/compress_enum.rs"));
+pub mod login_plugin_request;
+include!(concat!(
+	env!("OUT_DIR"),
+	"/s2c/login/login_plugin_request_enum.rs"
+));

@@ -15,7 +15,7 @@ pub fn generate_state_enum(direction: &str, states: &Vec<String>) -> String {
 		mod {direction}_enum {{
 		use super::*;
 
-		#[derive(Debug, PartialEq, Clone, Hash)]
+		#[derive(Debug, PartialEq, Clone)]
 		pub enum {enum_name} {{
             {enum_variants}
         }}
