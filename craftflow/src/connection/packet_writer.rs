@@ -41,17 +41,6 @@ impl PacketWriter {
 			}
 		}
 
-		// // match certain special packets that change the state
-		// match packet {
-		// 	S2C::Login(s2c::LoginPacket::LoginSuccess { packet: _ }) => {
-		// 		self.state = ConnState::Configuration;
-		// 	}
-		// 	S2C::Configuration(s2c::ConfigurationPacket::FinishConfiguration { packet: _ }) => {
-		// 		self.state = ConnState::Play;
-		// 	}
-		// 	_ => {}
-		// }
-
 		Ok(())
 	}
 

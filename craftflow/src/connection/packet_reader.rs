@@ -2,7 +2,7 @@ use super::ConnState;
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut, KeyIvInit};
 use craftflow_protocol_core::{datatypes::VarInt, Error, MCPRead};
 use craftflow_protocol_versions::{
-	c2s::{Handshaking, Status},
+	c2s::{Handshaking, Login, Status},
 	IntoStateEnum, PacketRead, C2S, MIN_VERSION,
 };
 use std::{
@@ -100,6 +100,10 @@ impl PacketReader {
 			}
 			ConnState::Status => {
 				let (input, packet) = Status::read_packet(packet_bytes, protocol_version)?;
+				(input, packet.into_state_enum())
+			}
+			ConnState::Login => {
+				let (input, packet) = Login::read_packet(packet_bytes, protocol_version)?;
 				(input, packet.into_state_enum())
 			}
 			_ => todo!(),
