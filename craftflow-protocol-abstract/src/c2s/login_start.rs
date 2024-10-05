@@ -1,5 +1,6 @@
 use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
 use anyhow::Result;
+use craftflow_protocol_core::datatypes::Array;
 use craftflow_protocol_versions::{
 	c2s::{
 		login::{
@@ -46,18 +47,18 @@ impl AbPacketWrite for AbLoginStart {
 			759 => LoginStartV00759 {
 				username: self.username,
 				signature: self.signature.map(|s| v00759::Signature {
-					timestamp: todo!(),
-					public_key: todo!(),
-					signature: todo!(),
+					timestamp: s.timestamp,
+					public_key: Array::new(s.public_key),
+					signature: Array::new(s.signature),
 				}),
 			}
 			.into_state_enum(),
 			760 => LoginStartV00760 {
 				username: self.username,
 				signature: self.signature.map(|s| v00760::Signature {
-					timestamp: todo!(),
-					public_key: todo!(),
-					signature: todo!(),
+					timestamp: s.timestamp,
+					public_key: Array::new(s.public_key),
+					signature: Array::new(s.signature),
 				}),
 				player_uuid: self.uuid,
 			}
