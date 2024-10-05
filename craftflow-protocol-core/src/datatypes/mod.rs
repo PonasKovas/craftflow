@@ -17,6 +17,7 @@ mod varlong;
 
 pub use array::Array;
 pub use buffer::Buffer;
+pub use nbt::{AnonymousNbt, Nbt};
 pub use rest_buffer::RestBuffer;
 pub use top_bit_set_array::TopBitSetArray;
 pub use varint::VarInt;

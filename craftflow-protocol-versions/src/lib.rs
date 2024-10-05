@@ -2,6 +2,9 @@ mod into_traits;
 mod packet_read_write;
 mod supported_versions;
 
+#[cfg(test)]
+mod test_prompt_example;
+
 pub use into_traits::*;
 pub use packet_read_write::*;
 pub use supported_versions::*;

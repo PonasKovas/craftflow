@@ -1,6 +1,7 @@
 use crate::{MCPRead, MCPWrite, Result};
 use std::io::Write;
 
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct RestBuffer(pub Vec<u8>);
 
 impl MCPRead for RestBuffer {

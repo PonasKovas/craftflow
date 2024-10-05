@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct EntityInformation {
 	pub entity_id: i32,
 	pub entity_type: VarInt,
@@ -20,7 +20,7 @@ pub struct Position {
 	pub y: i16,
 }
 
-#[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Information {
 	pub inventory: Array<u8, VarInt>,
 	pub priority: f32,
@@ -28,7 +28,7 @@ pub struct Information {
 	pub plugin_data: RestBuffer,
 }
 
-#[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum WorldStatus {
 	V1(String),
 	V2 { velocity: f64, jumped: bool },
@@ -45,16 +45,41 @@ impl MCPWrite for EntityInformation {
 		written_bytes += self.blob.write(output)?;
 		written_bytes += self.entity_uuid.write(output)?;
 		written_bytes += self.is_player.write(output)?;
+		written_bytes += self.position.write(output)?;
+		written_bytes += self.information.write(output)?;
+		written_bytes += self.extra_data.write(output)?;
+		written_bytes += self.associated_data.write(output)?;
+		written_bytes += self.block_nbt.write(output)?;
 
+		Ok(written_bytes)
+	}
+}
+impl MCPWrite for Position {
+	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
 		let mut position_bitfield = 0i64;
-		position_bitfield |= (self.position.x & 0x3FFFFFF) << 38;
-		position_bitfield |= (self.position.z & 0x3FFFFFF) << 12;
-		position_bitfield |= (self.position.y & 0xFFF) << 0;
-		written_bytes += position_bitfield.write(output)?;
+		position_bitfield |= (self.x as i64 & 0x3FFFFFF) << 38;
+		position_bitfield |= (self.z as i64 & 0x3FFFFFF) << 12;
+		position_bitfield |= (self.y as i64 & 0xFFF) << 0;
 
-		written_bytes += self.information.inventory.write(output)?;
-		written_bytes += self.information.priority.write(output)?;
-		match &self.information.world_status {
+		position_bitfield.write(output)
+	}
+}
+impl MCPWrite for Information {
+	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
+		let mut written_bytes = 0;
+		written_bytes += self.inventory.write(output)?;
+		written_bytes += self.priority.write(output)?;
+		written_bytes += self.world_status.write(output)?;
+		written_bytes += self.plugin_data.write(output)?;
+
+		Ok(written_bytes)
+	}
+}
+impl MCPWrite for WorldStatus {
+	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
+		let mut written_bytes = 0;
+
+		match self {
 			WorldStatus::V1(s) => {
 				written_bytes += VarInt(0).write(output)?;
 				written_bytes += s.write(output)?;
@@ -69,50 +94,87 @@ impl MCPWrite for EntityInformation {
 				written_bytes += VarInt(2).write(output)?;
 			}
 		}
-		written_bytes += self.information.plugin_data.write(output)?;
-
-		written_bytes += self.extra_data.write(output)?;
-		written_bytes += self.associated_data.write(output)?;
-		written_bytes += self.block_nbt.write(output)?;
 
 		Ok(written_bytes)
 	}
 }
+
 impl MCPRead for EntityInformation {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, entity_id) = i32::read(input)?;
-		let (mut input, properties_len) = i32::read(input)?;
-		let mut properties = Vec::new();
-		for _ in 0..properties_len {
-			let (i, key) = String::read(input)?;
-			let (i, value) = f64::read(input)?;
-			let (i, modifiers_len) = i16::read(input)?;
-			let mut modifiers = Vec::new();
-			for _ in 0..modifiers_len {
-				let (ii, uuid) = u128::read(input)?;
-				let (ii, amount) = f64::read(input)?;
-				let (ii, operation) = i8::read(input)?;
-				modifiers.push(PropertyModifier {
-					uuid,
-					amount,
-					operation,
-				});
-				i = ii;
-			}
-			properties.push(Property {
-				key,
-				value,
-				modifiers,
-			});
-			input = i;
-		}
+		let (input, entity_type) = VarInt::read(input)?;
+		let (input, entity_num) = VarLong::read(input)?;
+		let (input, blob) = Buffer::read(input)?;
+		let (input, entity_uuid) = u128::read(input)?;
+		let (input, is_player) = Option::<String>::read(input)?;
+		let (input, position) = Position::read(input)?;
+		let (input, information) = Information::read(input)?;
+		let (input, extra_data) = TopBitSetArray::<i32>::read(input)?;
+		let (input, associated_data) = Nbt::read(input)?;
+		let (input, block_nbt) = AnonymousNbt::read(input)?;
 
 		Ok((
 			input,
 			Self {
 				entity_id,
-				properties,
+				entity_type,
+				entity_num,
+				blob,
+				entity_uuid,
+				is_player,
+				position,
+				information,
+				extra_data,
+				associated_data,
+				block_nbt,
 			},
 		))
+	}
+}
+impl MCPRead for Position {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+		let (input, position_bitfield) = i64::read(input)?;
+
+		let x = (position_bitfield >> 38) as i32 & 0x3FFFFFF;
+		let z = (position_bitfield >> 12) as i32 & 0x3FFFFFF;
+		let y = (position_bitfield >> 0) as i16 & 0xFFF;
+
+		Ok((input, Self { x, z, y }))
+	}
+}
+impl MCPRead for Information {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+		let (input, inventory) = Array::<u8, VarInt>::read(input)?;
+		let (input, priority) = f32::read(input)?;
+		let (input, world_status) = WorldStatus::read(input)?;
+		let (input, plugin_data) = RestBuffer::read(input)?;
+
+		Ok((
+			input,
+			Self {
+				inventory,
+				priority,
+				world_status,
+				plugin_data,
+			},
+		))
+	}
+}
+impl MCPRead for WorldStatus {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+		let (input, variant) = VarInt::read(input)?;
+
+		match variant.0 {
+			0 => {
+				let (input, s) = String::read(input)?;
+				Ok((input, Self::V1(s)))
+			}
+			1 => {
+				let (input, velocity) = f64::read(input)?;
+				let (input, jumped) = bool::read(input)?;
+				Ok((input, Self::V2 { velocity, jumped }))
+			}
+			_ => Ok((input, Self::Default)),
+		}
 	}
 }

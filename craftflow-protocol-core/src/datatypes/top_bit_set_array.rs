@@ -3,6 +3,7 @@ use std::io::{self, Write};
 
 /// Serializes elements sequentially, setting the first bit of the last element to 1 to indicate that
 /// its the last element.
+#[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Eq, Ord)]
 pub struct TopBitSetArray<T>(pub Vec<T>);
 
 /// Wraps a `Write` and always writes the first bit as 1.

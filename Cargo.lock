@@ -136,9 +136,9 @@ dependencies = [
 
 [[package]]
 name = "crab_nbt"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c96903b871ec16aba7522a22bd2e7b2626ebab14353b7ea349bb35e68f7e0c1f"
+checksum = "46c3a0a3cb9f82082cbf4ea3b9475ebf978a926e32230a4bf0d865cc1dd76e96"
 dependencies = [
  "bytes",
  "cesu8",
