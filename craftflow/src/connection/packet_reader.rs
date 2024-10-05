@@ -61,18 +61,18 @@ impl PacketReader {
 			}
 		};
 
+		let protocol_version = self.get_protocol_version();
+
 		// now get the actual packet byte slice without the length prefixes
-		let mut packet_bytes: &[u8] = loop {
+		let mut packet_bytes: &mut [u8] = loop {
 			// check if we have enough bytes
 			if self.buffer.len() >= total_packet_len {
-				break &self.buffer[packet_start..total_packet_len];
+				break &mut self.buffer[packet_start..total_packet_len];
 			}
 
 			// otherwise read more
 			self.read().await?;
 		};
-
-		let protocol_version = self.get_protocol_version();
 
 		if let Some(decompressed_length) = should_decompress {
 			// decompress the packet bytes and make sure the length is correct
@@ -89,7 +89,7 @@ impl PacketReader {
 				)));
 			}
 
-			packet_bytes = &self.decompression_buffer[..];
+			packet_bytes = &mut self.decompression_buffer[..];
 		}
 
 		// Parse the packet
@@ -121,7 +121,7 @@ impl PacketReader {
 	/// without removing the bytes from the buffer
 	async fn read_varint_at_pos(&mut self, pos: usize) -> craftflow_protocol_core::Result<VarInt> {
 		loop {
-			match VarInt::read(&self.buffer[pos..]) {
+			match VarInt::read(&mut self.buffer[pos..]) {
 				Ok((_input, varint)) => break Ok(varint),
 				Err(e) => {
 					// if its not an IO error that means the data is invalid

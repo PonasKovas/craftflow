@@ -13,7 +13,7 @@ impl MCPWrite for DisconnectV00005 {
 	}
 }
 impl MCPRead for DisconnectV00005 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, reason) = String::read(input)?;
 		Ok((input, Self { reason }))
 	}

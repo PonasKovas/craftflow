@@ -21,7 +21,7 @@ impl MCPWrite for SetProtocolV00005 {
 	}
 }
 impl MCPRead for SetProtocolV00005 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, protocol_version) = VarInt::read(input)?;
 		let (input, server_host) = String::read(input)?;
 		let (input, server_port) = u16::read(input)?;

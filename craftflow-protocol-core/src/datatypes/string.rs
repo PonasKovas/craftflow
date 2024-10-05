@@ -4,7 +4,7 @@ use core::str;
 use std::io::Write;
 
 impl MCPRead for String {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (mut input, len) = VarInt::read(input)?;
 		let len = len.0 as usize;
 
@@ -19,15 +19,15 @@ impl MCPRead for String {
 		}
 
 		let s = match str::from_utf8(&input[..len]) {
-			Ok(s) => s,
+			Ok(s) => s.to_owned(),
 			Err(e) => {
 				return Err(Error::InvalidData(format!("string not valid UTF-8: {e}")));
 			}
 		};
 
-		input = &input[len..];
+		input = &mut input[len..];
 
-		Ok((input, s.to_owned()))
+		Ok((input, s))
 	}
 }
 

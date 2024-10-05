@@ -21,7 +21,7 @@ impl MCPWrite for EncryptionBeginV00047 {
 	}
 }
 impl MCPRead for EncryptionBeginV00047 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, server_id) = String::read(input)?;
 		let (input, public_key) = Buffer::<VarInt>::read(input)?;
 		let (input, verify_token) = Buffer::<VarInt>::read(input)?;

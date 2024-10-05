@@ -17,7 +17,7 @@ impl MCPWrite for SuccessV00005 {
 	}
 }
 impl MCPRead for SuccessV00005 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, uuid) = String::read(input)?;
 		let (input, username) = String::read(input)?;
 		Ok((input, Self { uuid, username }))

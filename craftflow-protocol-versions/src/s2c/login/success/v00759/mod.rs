@@ -36,7 +36,7 @@ impl MCPWrite for SuccessV00759 {
 	}
 }
 impl MCPRead for SuccessV00759 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, uuid) = u128::read(input)?;
 		let (input, username) = String::read(input)?;
 		let (mut input, properties_len) = VarInt::read(input)?;

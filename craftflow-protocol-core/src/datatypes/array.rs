@@ -21,7 +21,7 @@ where
 	LEN: TryInto<usize> + Debug + Copy,
 	// copy just makes stuff easier here, and I assume there wont be a type that isnt Copy
 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let mut data = Vec::new();
 
 		let (mut input, len) = LEN::read(input)?;

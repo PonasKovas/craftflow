@@ -13,11 +13,18 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
     with open('packet_prompt.py', 'r') as file:
         prompt = file.read()
 
+    with open('prompt_example_spec.json', 'r') as file:
+        example_spec = json.dumps(json.load(file), separators=(',', ':'))
+    with open('prompt_example_code.rs', 'r') as file:
+        example_code = file.read()
+
     compact_spec_json = json.dumps(spec, separators=(',', ':'))
 
     packet_name = snake_to_pascal(packet)
     struct_name = packet_name + f"V{version:05}"
 
+    prompt = prompt.replace("{{{example_spec}}}", example_spec)
+    prompt = prompt.replace("{{{example_code}}}", example_code)
     prompt = prompt.replace("{{{packet_json}}}", compact_spec_json)
     prompt = prompt.replace("{{{packet_name}}}", struct_name)
 

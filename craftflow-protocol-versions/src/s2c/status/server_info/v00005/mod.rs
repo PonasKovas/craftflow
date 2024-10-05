@@ -10,7 +10,7 @@ impl MCPWrite for ServerInfoV00005 {
 	}
 }
 impl MCPRead for ServerInfoV00005 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, response) = String::read(input)?;
 		Ok((input, Self { response }))
 	}

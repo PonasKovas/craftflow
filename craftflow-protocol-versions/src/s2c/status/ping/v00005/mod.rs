@@ -10,7 +10,7 @@ impl MCPWrite for PingV00005 {
 	}
 }
 impl MCPRead for PingV00005 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, time) = i64::read(input)?;
 		Ok((input, Self { time }))
 	}

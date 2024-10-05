@@ -13,7 +13,7 @@ impl MCPWrite for CompressV00047 {
 	}
 }
 impl MCPRead for CompressV00047 {
-	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, threshold) = VarInt::read(input)?;
 		Ok((input, Self { threshold }))
 	}

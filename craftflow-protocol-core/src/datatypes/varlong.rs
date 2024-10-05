@@ -28,7 +28,7 @@ impl VarLong {
 }
 
 impl MCPRead for VarLong {
-	fn read(mut input: &[u8]) -> Result<(&[u8], Self)> {
+	fn read(mut input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i64; // The VarInt being constructed
 
@@ -39,7 +39,8 @@ impl MCPRead for VarLong {
 			}
 
 			// Read a byte
-			let byte = input.read_u8()?;
+			let byte = input.as_ref().read_u8()?;
+			input = &mut input[1..];
 
 			// Extract the 7 lower bits (the data bits) and cast to i32
 			let value = (byte & 0b0111_1111) as i64;
@@ -120,7 +121,7 @@ mod tests {
 	#[test]
 	fn varlong_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			let (_, result) = VarLong::read(&mut &case.1[..]).unwrap();
+			let (_, result) = VarLong::read(&mut case.1.to_vec()[..]).unwrap();
 			assert_eq!(result.0, case.0, "{i}");
 		}
 	}
