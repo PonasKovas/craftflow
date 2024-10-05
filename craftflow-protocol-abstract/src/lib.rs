@@ -1,13 +1,3 @@
-#![feature(async_closure)]
-
-//! It is intentional that the abstract packets are not grouped by the state of the connection.
-//! They abstract the state too, since there is a history of adding new states to the protocol.
-//!
-//! It is still checked (dynamically) that the concrete packets (into which abstract ones are converted to)
-//! are only used in the correct state.
-//!
-//! It is a responsibility of the user to ensure to use abstract packets in the correct state.
-
 pub use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
 
 pub mod c2s;
