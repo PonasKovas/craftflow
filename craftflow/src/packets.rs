@@ -1,13 +1,13 @@
 use craftflow_protocol_abstract::{c2s::AbC2S, s2c::AbS2C};
 use craftflow_protocol_versions::{C2S, S2C};
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum C2SPacket {
 	Abstract(AbC2S),
 	Concrete(C2S),
 }
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum S2CPacket {
 	Abstract(AbS2C),
 	Concrete(S2C),
