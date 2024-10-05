@@ -76,7 +76,7 @@ pub(super) async fn connection_task(
 		NextState::Status => ConnState::Status,
 		NextState::Login | NextState::Transfer => {
 			// for these states, check if the client protocol version is actually supported
-			if !(MIN_VERSION <= client_version && client_version >= MAX_VERSION) {
+			if !(MIN_VERSION <= client_version && client_version <= MAX_VERSION) {
 				bail!("unsupported protocol version");
 			}
 
