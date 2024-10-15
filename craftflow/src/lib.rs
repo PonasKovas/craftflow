@@ -26,7 +26,7 @@ pub struct CraftFlow {
 	pub reactor: Reactor<CraftFlow>,
 }
 
-pub struct Connections {
+struct Connections {
 	connections: HashMap<u64, ConnectionHandle>,
 	next_conn_id: u64,
 }
