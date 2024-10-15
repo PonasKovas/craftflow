@@ -3,13 +3,14 @@
 //! `S2C` packet events will be emitted before a packet is sent to the client
 //! `Post<S2C>` events will be emitted AFTER a packet is sent to the client
 
+// This is the slop file that contains the macro slop that generates the trait slop that is the event system
+
 use crate::{
 	packets::{C2SPacket, S2CPacket},
 	reactor::Event,
 	CraftFlow,
 };
-use craftflow_protocol_versions::{IntoStateEnum, S2C};
-use std::{any::Any, marker::PhantomData, ops::ControlFlow};
+use std::ops::ControlFlow;
 
 // All of these Event implementations could have been done without any of this macro slop
 // if rust wasnt a retarded language and allowed to specify mutually exclusive traits or negative bounds
@@ -48,14 +49,28 @@ craftflow_protocol_abstract::__gen_impls_for_packets_c2s! {
 /// `Post<Packet>` events are emitted after a packet is sent to the client
 /// Contrary to the normal Packet events, which are emitted before the packet is sent
 /// and can modify or stop the packet from being sent
-pub struct Post<P: IntoStateEnum<Direction = S2C>> {
-	_phantom: PhantomData<P>,
+pub struct Post<P> {
+	pub packet: P,
 }
 
-impl<P: IntoStateEnum<Direction = S2C> + Any> Event for Post<P> {
-	/// The arguments for this event are the connection ID and the packet
-	type Args<'a> = (u64, &'a mut P);
-	type Return = ();
+// POST Concrete packets
+craftflow_protocol_versions::__gen_impls_for_packets__! {
+	impl Event for Post<X> {
+		/// The arguments for this event are the connection ID and the packet
+		type Args<'a> = (u64, &'a mut Self);
+		/// For S2C packets, if the event is stopped, the packet will not be sent
+		type Return = ();
+	}
+}
+
+// POST Abstract S2C packets
+craftflow_protocol_abstract::__gen_impls_for_packets_s2c! {
+	impl Event for Post<X> {
+		/// The arguments for this event are the connection ID and the packet
+		type Args<'a> = (u64, &'a mut Self);
+		/// In the case of S2C packets, if the event is stopped, the packet will not be sent
+		type Return = ();
+	}
 }
 
 // Helper function that triggers a packet event

@@ -1,24 +1,35 @@
 use crate::{Login, VERIFY_TOKEN};
 use craftflow::CraftFlow;
-use craftflow_protocol::protocol::{c2s::login::EncryptionResponse, s2c::login::LoginSuccess};
+use craftflow_protocol_abstract::{c2s::AbLoginEncryption, s2c::AbLoginSuccess};
 use rsa::Pkcs1v15Encrypt;
 use std::ops::ControlFlow;
 use tracing::error;
 
-pub fn encryption_response(
+pub fn encryption_response<'a>(
 	cf: &CraftFlow,
-	(conn_id, request): (u64, EncryptionResponse),
-) -> ControlFlow<(), (u64, EncryptionResponse)> {
+	(conn_id, request): (u64, &'a mut AbLoginEncryption),
+) -> ControlFlow<(), (u64, &'a mut AbLoginEncryption)> {
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
 		match (
 			rsa_key.decrypt(Pkcs1v15Encrypt, &request.shared_secret),
-			rsa_key.decrypt(Pkcs1v15Encrypt, &request.verify_token),
+			request
+				.verify_token
+				.as_ref()
+				.map(|t| rsa_key.decrypt(Pkcs1v15Encrypt, &t))
+				.transpose(),
 		) {
 			(Ok(decrypted_shared_secret), Ok(decrypted_verification_token)) => {
 				// Check if the verification token is correct
-				if &decrypted_verification_token != VERIFY_TOKEN.as_bytes()
-					|| decrypted_shared_secret.len() != 16
-				{
+				if let Some(token) = decrypted_verification_token {
+					if &token != VERIFY_TOKEN.as_bytes() {
+						error!("{} sent bad encryption response", cf.get(conn_id));
+						cf.disconnect(conn_id);
+
+						return ControlFlow::Break(());
+					}
+				}
+
+				if decrypted_shared_secret.len() != 16 {
 					error!("{} sent bad encryption response", cf.get(conn_id));
 					cf.disconnect(conn_id);
 
@@ -52,14 +63,14 @@ pub fn encryption_response(
 				};
 
 				// And finish the login process
-				cf.get(conn_id).send(LoginSuccess {
-					uuid,
+				cf.get(conn_id).send(AbLoginSuccess {
+					uuid: uuid.unwrap_or(0),
 					username,
 					properties: Vec::new(),
-					strict_error_handling: false,
 				});
 			}
 			_ => {
+				// couldnt decrypt the shared secret or verify token
 				error!("{} sent bad encryption response", cf.get(conn_id));
 				cf.disconnect(conn_id);
 			}

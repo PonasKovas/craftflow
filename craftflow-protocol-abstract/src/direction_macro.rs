@@ -120,6 +120,12 @@ macro_rules! gen_direction_enum {
                     impl $trait_name for $crate::s2c::$struct $code
                 )*
             };
+            // Instead of making this slop 50x more complicated, we just handle the specific case we need
+            (impl $trait_name:ident for Post<X> $code:tt) => {
+                $(
+                    impl $trait_name for Post<$crate::s2c::$struct> $code
+                )*
+            };
         }
 	};
 	(__gen_macros C2S, enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {

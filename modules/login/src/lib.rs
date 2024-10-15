@@ -3,9 +3,9 @@ mod login_start;
 mod set_compression;
 
 use craftflow::{packet_events::Post, various_events::Disconnect, CraftFlow};
-use craftflow_protocol::protocol::{
-	c2s::login::{EncryptionResponse, LoginStart},
-	s2c::login::SetCompression,
+use craftflow_protocol_abstract::{
+	c2s::{AbLoginEncryption, AbLoginStart},
+	s2c::AbLoginCompress,
 };
 use encryption_response::encryption_response;
 use login_start::login_start;
@@ -20,7 +20,7 @@ pub struct Login {
 	pub rsa_key: Option<RsaPrivateKey>,
 	pub compression_threshold: Option<usize>,
 	// The usernames and UUIDs that the client sends in the LoginStart packet
-	pub player_names_uuids: RwLock<BTreeMap<u64, (String, u128)>>,
+	pub player_names_uuids: RwLock<BTreeMap<u64, (String, Option<u128>)>>,
 }
 
 const VERIFY_TOKEN: &str = "craftflow easter egg! 🐇🐰 :D";
@@ -67,13 +67,15 @@ impl Login {
 	pub fn register(self, craftflow: &mut CraftFlow) {
 		craftflow.modules.register(self);
 
-		craftflow.reactor.add_handler::<LoginStart, _>(login_start);
 		craftflow
 			.reactor
-			.add_handler::<Post<SetCompression>, _>(set_compression::set_compression);
+			.add_handler::<AbLoginStart, _>(login_start);
 		craftflow
 			.reactor
-			.add_handler::<EncryptionResponse, _>(encryption_response);
+			.add_handler::<Post<AbLoginCompress>, _>(set_compression::set_compression);
+		craftflow
+			.reactor
+			.add_handler::<AbLoginEncryption, _>(encryption_response);
 
 		craftflow
 			.reactor

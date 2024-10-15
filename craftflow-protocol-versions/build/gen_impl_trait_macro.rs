@@ -6,6 +6,7 @@ use std::path::Path;
 
 pub fn gen_impl_trait_macro() -> String {
 	let mut inner = String::new();
+	let mut inner_post = String::new();
 
 	for direction in ["c2s", "s2c"] {
 		let direction_path = Path::new("src/").join(direction);
@@ -35,6 +36,13 @@ impl $trait for ::craftflow_protocol_versions::{direction}::{state_name}::{packe
 								",
 								    pkt_struct = snake_to_pascal_case(&packet_name) + &version_name.to_uppercase(),
                                 );
+								if direction == "s2c" {
+									inner_post += &format!("
+impl $trait for Post<::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct}> $code
+    								",
+    								    pkt_struct = snake_to_pascal_case(&packet_name) + &version_name.to_uppercase(),
+                                    );
+								}
 							}
 						}
 					}
@@ -49,6 +57,8 @@ impl $trait for ::craftflow_protocol_versions::{direction}::{state_name}::{packe
 		#[macro_export]
 		macro_rules! __gen_impls_for_packets__ {{
 		    (impl $trait:ident for X $code:tt) => {{ {inner} }};
+			// Instead of making this slop 50x more complicated, we just handle the specific case we need
+		    (impl $trait:ident for Post<X> $code:tt) => {{ {inner_post} }};
 		}}"
 	)
 }
