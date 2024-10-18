@@ -18,3 +18,5 @@ include!(concat!(
 	env!("OUT_DIR"),
 	"/c2s/configuration/keep_alive_enum.rs"
 ));
+pub mod pong;
+include!(concat!(env!("OUT_DIR"), "/c2s/configuration/pong_enum.rs"));
