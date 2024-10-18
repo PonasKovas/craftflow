@@ -6,7 +6,7 @@ C2S_PACKETS = {
     "handshaking": ["set_protocol"],
     "status": ["ping_start", "ping"],
     "login": ["login_start", "encryption_begin"],
-    # "configuration": [""],
+    "configuration": ["settings"],
 }
 S2C_PACKETS = {
     "status": ["server_info", "ping"],
