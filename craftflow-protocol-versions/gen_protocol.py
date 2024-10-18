@@ -4,6 +4,7 @@ from colorama import Fore, Style
 
 from conf import C2S_PACKETS, S2C_PACKETS
 from gen_packet import gen_packet
+from gen_types import gen_types
 
 def get_packet_spec(protocol, direction: str, state: str, packet: str):
     if state not in protocol:
@@ -143,3 +144,4 @@ def generate_protocols_direction(all_protocols, direction: str):
 def generate_protocols(all_protocols):
     generate_protocols_direction(all_protocols, "c2s")
     generate_protocols_direction(all_protocols, "s2c")
+    gen_types(all_protocols)
