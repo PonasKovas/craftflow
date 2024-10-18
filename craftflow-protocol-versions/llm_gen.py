@@ -27,7 +27,7 @@ def llm_gen(name, spec) -> str:
 
     response = openai_client.chat.completions.create(
         messages=prompt,
-        model="gpt-4o-mini",
+        model="gpt-4o",
         seed=0,
         temperature=0,
         response_format={ "type": "json_object" },

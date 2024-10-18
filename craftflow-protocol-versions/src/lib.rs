@@ -18,3 +18,4 @@ pub mod c2s;
 include!(concat!(env!("OUT_DIR"), "/c2s_enum.rs"));
 pub mod s2c;
 include!(concat!(env!("OUT_DIR"), "/s2c_enum.rs"));
+pub mod types;

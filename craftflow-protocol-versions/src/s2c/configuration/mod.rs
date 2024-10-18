@@ -40,3 +40,5 @@ include!(concat!(
 	env!("OUT_DIR"),
 	"/s2c/configuration/feature_flags_enum.rs"
 ));
+pub mod tags;
+include!(concat!(env!("OUT_DIR"), "/s2c/configuration/tags_enum.rs"));
