@@ -35,3 +35,8 @@ include!(concat!(
 	env!("OUT_DIR"),
 	"/s2c/configuration/add_resource_pack_enum.rs"
 ));
+pub mod feature_flags;
+include!(concat!(
+	env!("OUT_DIR"),
+	"/s2c/configuration/feature_flags_enum.rs"
+));

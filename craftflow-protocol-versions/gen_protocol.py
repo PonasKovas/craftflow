@@ -70,8 +70,13 @@ def generate_protocols_direction(all_protocols, direction: str):
 
     for state, packets in states.items():
         for packet in packets:
-            # find all versions that have an identical packet (both spec and id)
+            # find all versions that have an identical packet
+            # format:
+            # [ [{packet_id: 0x00, version: 145}, {packet_id: 0x00, version: 156}] ]
             identical_versions = []
+            # basically group identical versions together, while still allowing them to have different
+            # packet ids.
+
             for v, p in all_protocols.items():
                 spec = get_packet_spec(p, direction, state, packet)
                 if spec is None:
@@ -83,10 +88,9 @@ def generate_protocols_direction(all_protocols, direction: str):
                 found = False
                 for v_list in identical_versions:
                     # each list must have at least one version
-                    spec2 = get_packet_spec(all_protocols[v_list[0]], direction, state, packet)
-                    id2 = get_packet_id(all_protocols[v_list[0]], direction, state, packet)
-                    if spec == spec2 and packet_id == id2:
-                        v_list.append(v)
+                    spec2 = get_packet_spec(all_protocols[v_list[0]["version"]], direction, state, packet)
+                    if spec == spec2:
+                        v_list.append({ "version": v, "packet_id": packet_id })
                         found = True
                         break
 
@@ -94,11 +98,14 @@ def generate_protocols_direction(all_protocols, direction: str):
                     continue
 
                 # no identical packet found - add a new list
-                identical_versions.append([v])
+                identical_versions.append([{ "version": v, "packet_id": packet_id }])
 
             # now we can generate the groups of identical packets
             for group in identical_versions:
-                for v in group:
+                for i, v in enumerate(group):
+                    packet_id = v["packet_id"]
+                    v = v["version"]
+
                     # check if already generated
                     if os.path.exists(f"src/{direction}/{state}/{packet}/v{v:05}/"):
                         continue
@@ -107,9 +114,8 @@ def generate_protocols_direction(all_protocols, direction: str):
 
                     # if this is the first version in the group, generate the packet
                     # otherwise just re-export
-                    if v == group[0]:
+                    if i == 0:
                         spec = get_packet_spec(all_protocols[v], direction, state, packet)
-                        id = get_packet_id(all_protocols[v], direction, state, packet)
 
                         # use the LLM to generate the packet definition
                         code = gen_packet(spec, direction, state, packet, v)
@@ -118,17 +124,19 @@ def generate_protocols_direction(all_protocols, direction: str):
                             f.write(code)
 
                         # add some info for the build.rs for generating enums
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_info", "w") as f:
-                            f.write(f"packet_id={id}")
+                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
+                            f.write(f"{packet_id}")
                     else:
                         # re-export the first version
 
                         with open(f"src/{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
-                            f.write(f"pub use crate::{direction}::{state}::{packet}::v{group[0]:05}::*;\n")
+                            f.write(f"pub use crate::{direction}::{state}::{packet}::v{group[0]['version']:05}::*;\n")
 
                         # add some info for the build.rs for generating enums
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_info", "w") as f:
-                            f.write(f"reexport=v{group[0]:05}")
+                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_reexport", "w") as f:
+                            f.write(f"v{group[0]['version']:05}")
+                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
+                            f.write(f"{packet_id}")
 
 
 # all_protocols must be ordered by version ascending
