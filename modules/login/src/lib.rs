@@ -1,3 +1,10 @@
+#![doc(
+	html_favicon_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+#![doc(
+	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+
 mod encryption_response;
 mod login_start;
 mod set_compression;

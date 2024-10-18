@@ -1,5 +1,10 @@
 #![feature(mapped_lock_guards)]
-#![feature(async_closure)]
+#![doc(
+	html_favicon_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+#![doc(
+	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
 
 pub mod connection;
 pub mod modules;

@@ -1,3 +1,10 @@
+#![doc(
+	html_favicon_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+#![doc(
+	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+
 mod legacy_ping;
 mod ping;
 mod status;

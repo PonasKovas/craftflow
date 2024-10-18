@@ -1,3 +1,10 @@
+#![doc(
+	html_favicon_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+#![doc(
+	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
+)]
+
 pub use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
 
 pub mod c2s;
