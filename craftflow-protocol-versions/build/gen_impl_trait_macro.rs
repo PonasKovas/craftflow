@@ -1,6 +1,6 @@
 use crate::{
 	common::{read_dir_sorted, snake_to_pascal_case},
-	parse_packet_info::{parse_packet_info, PacketInfo},
+	parse_packet_info::parse_packet_info,
 };
 use std::path::Path;
 
@@ -23,9 +23,8 @@ pub fn gen_impl_trait_macro() -> String {
 								}
 
 								// check if this is not a re-export
-								let packet_info =
-									parse_packet_info(version.path().join("packet_info"));
-								if let PacketInfo::ReExported { .. } = packet_info {
+								let packet_info = parse_packet_info(version.path());
+								if packet_info.reexport.is_some() {
 									continue;
 								}
 

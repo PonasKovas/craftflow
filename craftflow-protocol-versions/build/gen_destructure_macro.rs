@@ -1,6 +1,6 @@
 use crate::{
 	common::{read_dir_sorted, snake_to_pascal_case},
-	parse_packet_info::{parse_packet_info, PacketInfo},
+	parse_packet_info::parse_packet_info,
 };
 use std::path::Path;
 
@@ -31,9 +31,8 @@ pub fn gen_destructure_macro() -> String {
 								}
 
 								// we only need defined versions, not re-exports, since they dont have variants in the packet enum
-								let packet_info =
-									parse_packet_info(version.path().join("packet_info"));
-								if let PacketInfo::ReExported { .. } = packet_info {
+								let packet_info = parse_packet_info(version.path());
+								if packet_info.reexport.is_some() {
 									continue;
 								}
 

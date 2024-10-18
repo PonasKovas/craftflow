@@ -1,11 +1,10 @@
-use crate::common::snake_to_pascal_case;
-use std::collections::BTreeMap;
+use crate::{common::snake_to_pascal_case, Packet};
 
 pub fn generate_version_enum(
 	direction: &str,
 	state: &str,
 	packet_name: &str,
-	packet_versions: &BTreeMap<String, Vec<u32>>,
+	packet_versions: &Packet,
 ) -> String {
 	let enum_name = snake_to_pascal_case(packet_name);
 	let state_enum_name = snake_to_pascal_case(state);
@@ -14,13 +13,13 @@ pub fn generate_version_enum(
 	let mut enum_variants = String::new();
 	let mut packet_read_match_arms = String::new();
 	let mut packet_write_match_arms = String::new();
-	for (version_name, versions) in packet_versions {
+	for (version_name, versions) in &packet_versions.version_variants {
 		let variant_name = version_name.to_uppercase();
 		let struct_name = format!("{}{}", enum_name, variant_name);
 
 		let versions_comment = versions
 			.iter()
-			.map(|v| v.to_string())
+			.map(|(v, _id)| v.to_string())
 			.collect::<Vec<_>>()
 			.join(", ");
 
@@ -31,7 +30,7 @@ pub fn generate_version_enum(
 
 		let versions_pattern = versions
 			.iter()
-			.map(|v| v.to_string())
+			.map(|(v, _id)| v.to_string())
 			.collect::<Vec<_>>()
 			.join(" | ");
 		packet_read_match_arms += &format!(
