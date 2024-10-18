@@ -1,4 +1,3 @@
-
 #[allow(unused_imports)]
 use craftflow_protocol_core::datatypes::*;
 #[allow(unused_imports)]
@@ -6,31 +5,20 @@ use craftflow_protocol_core::*;
 
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
 pub struct FeatureFlagsV00764 {
-	pub features: Vec<String>,
+	pub features: Array<VarInt, String>,
 }
 
 impl MCPWrite for FeatureFlagsV00764 {
 	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
-		let mut written_bytes = 0;
-		written_bytes += VarInt(self.features.len() as i32).write(output)?;
-		for feature in &self.features {
-			written_bytes += feature.write(output)?;
-		}
-		Ok(written_bytes)
+		self.features.write(output)
 	}
 }
 
 impl MCPRead for FeatureFlagsV00764 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let (input, VarInt(count)) = VarInt::read(input)?;
-		let mut features = Vec::with_capacity(count as usize);
-		let mut current_input = input;
-		for _ in 0..count {
-			let (next_input, feature) = String::read(current_input)?;
-			features.push(feature);
-			current_input = next_input;
-		}
-		Ok((current_input, Self { features }))
+		let (input, features) = Array::<VarInt, String>::read(input)?;
+
+		Ok((input, Self { features }))
 	}
 }
 
