@@ -20,3 +20,8 @@ include!(concat!(
 ));
 pub mod pong;
 include!(concat!(env!("OUT_DIR"), "/c2s/configuration/pong_enum.rs"));
+pub mod resource_pack_receive;
+include!(concat!(
+	env!("OUT_DIR"),
+	"/c2s/configuration/resource_pack_receive_enum.rs"
+));
