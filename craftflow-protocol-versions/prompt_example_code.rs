@@ -11,6 +11,7 @@ pub struct EntityInformation {
 	pub extra_data: TopBitSetArray<i32>,
 	pub associated_data: Nbt,
 	pub block_nbt: AnonymousNbt,
+	pub history: Array<VarInt, VarInt>,
 }
 
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
@@ -50,6 +51,7 @@ impl MCPWrite for EntityInformation {
 		written_bytes += self.extra_data.write(output)?;
 		written_bytes += self.associated_data.write(output)?;
 		written_bytes += self.block_nbt.write(output)?;
+		written_bytes += self.history.write(output)?;
 
 		Ok(written_bytes)
 	}
@@ -112,6 +114,7 @@ impl MCPRead for EntityInformation {
 		let (input, extra_data) = TopBitSetArray::<i32>::read(input)?;
 		let (input, associated_data) = Nbt::read(input)?;
 		let (input, block_nbt) = AnonymousNbt::read(input)?;
+		let (input, history) = Array::read(input)?;
 
 		Ok((
 			input,
@@ -127,6 +130,7 @@ impl MCPRead for EntityInformation {
 				extra_data,
 				associated_data,
 				block_nbt,
+				history,
 			},
 		))
 	}

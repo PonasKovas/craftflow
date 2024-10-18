@@ -17,6 +17,8 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
     use craftflow_protocol_core::*;
     #[allow(unused_imports)]
     use craftflow_protocol_core::datatypes::*;
+    #[allow(unused_imports)]
+    use craftflow_protocol_core::types::v{version:05}::*;
 
     {response}
 

@@ -125,6 +125,16 @@
     {
       "name": "blockNbt",
       "type": "anonymousNbt"
+    },
+    {
+      "name": "history",
+      "type": [
+        "array",
+        {
+          "countType": "varint",
+          "type": "varint"
+        }
+      ]
     }
   ]
 ]
