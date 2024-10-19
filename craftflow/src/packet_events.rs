@@ -51,7 +51,6 @@ craftflow_protocol_abstract::__gen_impls_for_packets_c2s! {
 /// `Post<Packet>` events are emitted after a packet is sent to the client
 /// Contrary to the normal Packet events, which are emitted before the packet is sent
 /// and can modify or stop the packet from being sent
-#[repr(transparent)]
 pub struct Post<P> {
 	pub packet: P,
 }
@@ -60,7 +59,7 @@ pub struct Post<P> {
 craftflow_protocol_versions::__gen_impls_for_packets__! {
 	impl Event for Post<X> {
 		/// The arguments for this event are the connection ID and the packet
-		type Args<'a> = (u64, &'a mut Self);
+		type Args<'a> = (u64, &'a mut X);
 		/// For S2C packets, if the event is stopped, the packet will not be sent
 		type Return = ();
 	}
@@ -127,23 +126,12 @@ fn helper_post<'a, E>(
 	packet: &'a mut E,
 ) -> ControlFlow<<Post<E> as Event>::Return>
 where
-	Post<E>: Event<Args<'a> = (u64, &'a mut Post<E>)>,
+	Post<E>: Event<Args<'a> = (u64, &'a mut E)>,
 {
 	trace!("{} event, ", std::any::type_name::<Post<E>>());
-
-	// since we only have a reference here and we need to construct &mut Post<packet>
-	// we are gonna need to resort to some unsafe shenanigans
-	// this is safe because Post is repr(transparent)
-	//
-	// Preferably we would have the Post events just take the inner event as an argument instead
-	// of enclosed in the useless post, but that would require to add a lot of complexity to the macro slop
-	// and we are not gonna do that
-	craftflow.reactor.event::<Post<E>>(
-		craftflow,
-		(conn_id, unsafe {
-			std::mem::transmute::<&mut E, &mut Post<E>>(packet)
-		}),
-	)?;
+	craftflow
+		.reactor
+		.event::<Post<E>>(craftflow, (conn_id, packet))?;
 	ControlFlow::Continue(())
 }
 

@@ -29,7 +29,7 @@ pub enum NextState {
 	Status,
 	Login,
 	/// This is sent when the client is being transferred here from another server
-	/// Only available since 1.20.5 version. Will be replaced with [`Login`] in older versions.
+	/// Only available since 1.20.5 version. Will be replaced with [`NextState::Login`] in older versions.
 	Transfer,
 }
 

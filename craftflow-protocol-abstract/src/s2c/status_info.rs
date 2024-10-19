@@ -14,7 +14,7 @@ use std::{
 	iter::{once, Once},
 };
 
-/// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`] packet
+/// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`][crate::c2s::AbStatusRequestInfo] packet
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AbStatusInfo {
