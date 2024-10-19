@@ -1,4 +1,5 @@
 pub mod conf_disconnect;
+pub mod conf_finish;
 pub mod conf_plugin;
 pub mod login_compress;
 pub mod login_disconnect;
@@ -9,6 +10,7 @@ pub mod status_info;
 pub mod status_pong;
 
 pub use conf_disconnect::AbConfDisconnect;
+pub use conf_finish::AbConfFinish;
 pub use conf_plugin::AbConfPlugin;
 pub use login_compress::AbLoginCompress;
 pub use login_disconnect::AbLoginDisconnect;
@@ -34,5 +36,6 @@ gen_direction_enum! {
 		LoginPlugin(AbLoginPlugin),
 		ConfPlugin(AbConfPlugin),
 		ConfDisconnect(AbConfDisconnect),
+		ConfFinish(AbConfFinish),
 	}
 }
