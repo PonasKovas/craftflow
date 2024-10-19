@@ -59,6 +59,7 @@ impl ConnectionHandle {
 			lock.connections.insert(
 				id,
 				Self {
+					craftflow: Arc::clone(&craftflow),
 					id,
 					ip: peer_ip,
 					packet_sender: RwLock::new(packet_sender_in),

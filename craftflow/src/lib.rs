@@ -9,11 +9,8 @@
 pub mod connection;
 pub mod modules;
 pub mod packet_events;
-mod packets;
 pub mod reactor;
 pub mod various_events;
-
-pub use packets::{C2SPacket, S2CPacket};
 
 use connection::ConnectionHandle;
 use modules::Modules;

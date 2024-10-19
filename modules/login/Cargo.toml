@@ -7,6 +7,7 @@ edition = "2021"
 craftflow = { path = "../../craftflow/" }
 craftflow-protocol-core = { path = "../../craftflow-protocol-core/" }
 craftflow-protocol-abstract = { path = "../../craftflow-protocol-abstract/" }
+craftflow-protocol-versions = { path = "../../craftflow-protocol-versions/" }
 rsa = "0.9.6"
 rand = "0.8.5"
 rsa-der = "0.3.0"

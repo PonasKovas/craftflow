@@ -1,5 +1,6 @@
 use crate::{
-	connection::packet_reader::PacketReader, packet_events::trigger_c2s, packets::C2SPacket,
+	connection::packet_reader::PacketReader,
+	packet_events::{trigger_c2s_abstract, trigger_c2s_concrete},
 	CraftFlow,
 };
 use craftflow_protocol_abstract::{AbC2S, AbPacketConstructor, AbPacketNew, ConstructorResult};
@@ -18,23 +19,20 @@ pub(super) async fn reader_task(
 	> = Vec::new();
 
 	'read_packet: loop {
-		let packet = reader.read_packet().await.with_context(|| {
+		let mut packet = reader.read_packet().await.with_context(|| {
 			format!(
 				"reading concrete packet (state {:?})",
 				reader.state.read().unwrap()
 			)
 		})?;
 
-		let mut packet = C2SPacket::Concrete(packet);
 		// trigger concrete packet event
-		if trigger_c2s(&craftflow, conn_id, &mut packet).is_break() {
+		if trigger_c2s_concrete(&craftflow, conn_id, &mut packet).is_break() {
 			continue;
 		}
 
 		// try to construct abstract packet
-		let abstr = 'abstr: {
-			let mut packet = packet.assume_concrete();
-
+		let mut abstr = 'abstr: {
 			// check all already started constructors
 			for i in (0..constructors.len()).rev() {
 				let constr = constructors.remove(i);
@@ -66,6 +64,6 @@ pub(super) async fn reader_task(
 			}
 		};
 
-		trigger_c2s(&craftflow, conn_id, &mut C2SPacket::Abstract(abstr));
+		trigger_c2s_abstract(&craftflow, conn_id, &mut abstr);
 	}
 }

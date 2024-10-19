@@ -1,15 +1,16 @@
 //! Implementation of `Event` for all packets
-//! `C2S` packet events will be emitted after a packet is received from the client
-//! `S2C` packet events will be emitted before a packet is sent to the client
-//! `Post<S2C>` events will be emitted AFTER a packet is sent to the client
+//! [`C2S`] packet events will be emitted after a concrete packet is received from the client
+//! [`AbC2S`] packet events will be emitted after an abstract packet is received from the client
+//! [`S2C`] packet events will be emitted before a concrete packet is sent to the client
+//! [`AbS2C`] packet events will be emitted before an abstract packet is sent to the client
+//! [`Post<S2C>`] events will be emitted AFTER a concrete packet is sent to the client
 
-// This is the slop file that contains the macro slop that generates the trait slop that is the event system
+// This is the slop file that uses macro slop to generate matching and impl blocks slop
+// for the purpose of the `Event` trait slop
 
-use crate::{
-	packets::{C2SPacket, S2CPacket},
-	reactor::Event,
-	CraftFlow,
-};
+use crate::{reactor::Event, CraftFlow};
+use craftflow_protocol_abstract::{AbC2S, AbS2C};
+use craftflow_protocol_versions::{C2S, S2C};
 use std::ops::ControlFlow;
 
 // All of these Event implementations could have been done without any of this macro slop
@@ -49,6 +50,7 @@ craftflow_protocol_abstract::__gen_impls_for_packets_c2s! {
 /// `Post<Packet>` events are emitted after a packet is sent to the client
 /// Contrary to the normal Packet events, which are emitted before the packet is sent
 /// and can modify or stop the packet from being sent
+#[repr(transparent)]
 pub struct Post<P> {
 	pub packet: P,
 }
@@ -59,16 +61,6 @@ craftflow_protocol_versions::__gen_impls_for_packets__! {
 		/// The arguments for this event are the connection ID and the packet
 		type Args<'a> = (u64, &'a mut Self);
 		/// For S2C packets, if the event is stopped, the packet will not be sent
-		type Return = ();
-	}
-}
-
-// POST Abstract S2C packets
-craftflow_protocol_abstract::__gen_impls_for_packets_s2c! {
-	impl Event for Post<X> {
-		/// The arguments for this event are the connection ID and the packet
-		type Args<'a> = (u64, &'a mut Self);
-		/// In the case of S2C packets, if the event is stopped, the packet will not be sent
 		type Return = ();
 	}
 }
@@ -88,59 +80,75 @@ where
 
 // More macro slop below
 
-pub(super) fn trigger_c2s(
+pub(super) fn trigger_c2s_concrete(
 	craftflow: &CraftFlow,
 	conn_id: u64,
-	packet: &mut C2SPacket,
+	packet: &mut C2S,
 ) -> ControlFlow<()> {
-	match packet {
-		C2SPacket::Abstract(p) => {
-			craftflow_protocol_abstract::__destructure_c2s__!(p -> inner {
-				helper(craftflow, conn_id, inner)
-			})
-		}
-		C2SPacket::Concrete(p) => {
-			craftflow_protocol_versions::__destructure_packet_enum__!(direction=C2S, p -> inner {
-				helper(craftflow, conn_id, inner)
-			})
-		}
-	}
+	craftflow_protocol_versions::__destructure_packet_enum__!(direction=C2S, packet -> inner {
+		helper(craftflow, conn_id, inner)
+	})
+}
+pub(super) fn trigger_c2s_abstract(
+	craftflow: &CraftFlow,
+	conn_id: u64,
+	packet: &mut AbC2S,
+) -> ControlFlow<()> {
+	craftflow_protocol_abstract::__destructure_c2s__!(packet -> inner {
+		helper(craftflow, conn_id, inner)
+	})
 }
 
-pub(super) fn trigger_s2c_pre(
+pub(super) fn trigger_s2c_concrete_pre(
 	craftflow: &CraftFlow,
 	conn_id: u64,
-	packet: &mut S2CPacket,
+	packet: &mut S2C,
 ) -> ControlFlow<()> {
-	match packet {
-		S2CPacket::Abstract(p) => {
-			craftflow_protocol_abstract::__destructure_s2c__!(p -> inner {
-				helper(craftflow, conn_id, inner)
-			})
-		}
-		S2CPacket::Concrete(p) => {
-			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> inner {
-				helper(craftflow, conn_id, inner)
-			})
-		}
-	}
+	craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, packet -> inner {
+		helper(craftflow, conn_id, inner)
+	})
+}
+pub(super) fn trigger_s2c_abstract_pre(
+	craftflow: &CraftFlow,
+	conn_id: u64,
+	packet: &mut AbS2C,
+) -> ControlFlow<()> {
+	craftflow_protocol_abstract::__destructure_s2c__!(packet -> inner {
+		helper(craftflow, conn_id, inner)
+	})
 }
 
-pub(super) fn trigger_s2c_post(
+// Special helper fn for POST events
+fn helper_post<'a, E>(
+	craftflow: &'a CraftFlow,
+	conn_id: u64,
+	packet: &'a mut E,
+) -> ControlFlow<<Post<E> as Event>::Return>
+where
+	Post<E>: Event<Args<'a> = (u64, &'a mut Post<E>)>,
+{
+	// since we only have a reference here and we need to construct &mut Post<packet>
+	// we are gonna need to resort to some unsafe shenanigans
+	// this is safe because Post is repr(transparent)
+	//
+	// Preferably we would have the Post events just take the inner event as an argument instead
+	// of enclosed in the useless post, but that would require to add a lot of complexity to the macro slop
+	// and we are not gonna do that
+	craftflow.reactor.event::<Post<E>>(
+		craftflow,
+		(conn_id, unsafe {
+			std::mem::transmute::<&mut E, &mut Post<E>>(packet)
+		}),
+	)?;
+	ControlFlow::Continue(())
+}
+
+pub(super) fn trigger_s2c_concrete_post(
 	craftflow: &CraftFlow,
 	conn_id: u64,
-	packet: &mut S2CPacket,
+	packet: &mut S2C,
 ) -> ControlFlow<()> {
-	match packet {
-		S2CPacket::Abstract(p) => {
-			craftflow_protocol_abstract::__destructure_s2c__!(p -> inner {
-				helper(craftflow, conn_id, inner)
-			})
-		}
-		S2CPacket::Concrete(p) => {
-			craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, p -> inner {
-				helper(craftflow, conn_id, inner)
-			})
-		}
-	}
+	craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, packet -> inner {
+		helper_post(craftflow, conn_id, inner)
+	})
 }

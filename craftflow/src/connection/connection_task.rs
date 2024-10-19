@@ -8,8 +8,7 @@ use super::{
 	ConnState,
 };
 use crate::{
-	packet_events::trigger_c2s,
-	packets::{C2SPacket, S2CPacket},
+	packet_events::{trigger_c2s_abstract, trigger_c2s_concrete},
 	various_events::UnsupportedClientVersion,
 	CraftFlow,
 };
@@ -20,7 +19,7 @@ use craftflow_protocol_abstract::{
 	AbPacketNew, AbPacketWrite,
 };
 use craftflow_protocol_core::text;
-use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
+use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION, S2C};
 use reader::reader_task;
 use std::{
 	ops::ControlFlow,
@@ -37,7 +36,7 @@ pub(super) async fn connection_task(
 	conn_id: u64,
 	mut reader: PacketReader,
 	mut writer: PacketWriter,
-	packet_sender: UnboundedReceiver<S2CPacket>,
+	packet_sender: UnboundedReceiver<S2C>,
 	protocol_version: Arc<OnceLock<u32>>,
 	state: Arc<RwLock<ConnState>>,
 ) -> anyhow::Result<()> {
@@ -60,7 +59,7 @@ pub(super) async fn connection_task(
 	// we will read the handshake in this task before splitting into two tasks
 	// so we know the next state for both tasks
 
-	let handshake = match timeout(Duration::from_secs(5), reader.read_packet()).await {
+	let mut handshake = match timeout(Duration::from_secs(5), reader.read_packet()).await {
 		Ok(p) => p.context("reading handshake packet")?,
 		Err(_) => bail!("timed out"),
 	};
@@ -100,6 +99,7 @@ pub(super) async fn connection_task(
 					.send(
 						&AbLoginDisconnect { message }
 							.convert(client_version)?
+							.assume()
 							.next()
 							.unwrap(),
 					)
@@ -109,11 +109,14 @@ pub(super) async fn connection_task(
 	}
 
 	// trigger the handshake event
-	if trigger_c2s(&craftflow, conn_id, &mut C2SPacket::Concrete(handshake)).is_continue() {
-		trigger_c2s(
+	if trigger_c2s_concrete(&craftflow, conn_id, &mut handshake).is_continue() {
+		trigger_c2s_abstract(
 			&craftflow,
 			conn_id,
-			&mut C2SPacket::Abstract(handshake_ab.into()),
+			&mut AbHandshake::construct(handshake.clone())
+				.unwrap()
+				.assume_done()
+				.into(),
 		);
 	}
 

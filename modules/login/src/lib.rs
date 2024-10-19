@@ -10,10 +10,8 @@ mod login_start;
 mod set_compression;
 
 use craftflow::{packet_events::Post, various_events::Disconnect, CraftFlow};
-use craftflow_protocol_abstract::{
-	c2s::{AbLoginEncryption, AbLoginStart},
-	s2c::AbLoginCompress,
-};
+use craftflow_protocol_abstract::c2s::{AbLoginEncryption, AbLoginStart};
+use craftflow_protocol_versions::s2c::login::compress::v00765::CompressV00047;
 use encryption_response::encryption_response;
 use login_start::login_start;
 use rsa::RsaPrivateKey;
@@ -79,7 +77,7 @@ impl Login {
 			.add_handler::<AbLoginStart, _>(login_start);
 		craftflow
 			.reactor
-			.add_handler::<Post<AbLoginCompress>, _>(set_compression::set_compression);
+			.add_handler::<Post<CompressV00047>, _>(set_compression::set_compression);
 		craftflow
 			.reactor
 			.add_handler::<AbLoginEncryption, _>(encryption_response);

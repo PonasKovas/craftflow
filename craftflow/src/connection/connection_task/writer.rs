@@ -1,11 +1,8 @@
 use crate::{
 	connection::packet_writer::PacketWriter,
-	packet_events::{trigger_s2c_post, trigger_s2c_pre},
-	packets::S2CPacket,
+	packet_events::{trigger_s2c_concrete_post, trigger_s2c_concrete_pre},
 	CraftFlow,
 };
-use anyhow::Result;
-use craftflow_protocol_abstract::AbPacketWrite;
 use craftflow_protocol_versions::S2C;
 use std::sync::Arc;
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -15,7 +12,7 @@ pub(super) async fn writer_task(
 	craftflow: Arc<CraftFlow>,
 	conn_id: u64,
 	mut writer: PacketWriter,
-	mut packet_sender: UnboundedReceiver<S2CPacket>,
+	mut packet_sender: UnboundedReceiver<S2C>,
 ) -> anyhow::Result<()> {
 	loop {
 		let mut packet = match packet_sender.recv().await {
@@ -24,37 +21,10 @@ pub(super) async fn writer_task(
 		};
 
 		// trigger the packet event, and actually send it if it was not cancelled
-		if trigger_s2c_pre(&craftflow, conn_id, &mut packet).is_continue() {
-			match packet.clone() {
-				S2CPacket::Abstract(ab_packet) => {
-					// Construct concrete packets from this abstract packet
-					let concrete_packets = ab_packet.convert(writer.get_protocol_version())?;
-					for packet in concrete_packets {
-						write_concrete(&craftflow, conn_id, &mut writer, packet).await?;
-					}
-				}
-				S2CPacket::Concrete(packet) => {
-					write_concrete(&craftflow, conn_id, &mut writer, packet).await?;
-				}
-			}
+		if trigger_s2c_concrete_pre(&craftflow, conn_id, &mut packet).is_continue() {
+			writer.send(&packet).await?;
 
-			let _ = trigger_s2c_post(&craftflow, conn_id, &mut packet);
+			let _ = trigger_s2c_concrete_post(&craftflow, conn_id, &mut packet);
 		}
 	}
-}
-
-async fn write_concrete(
-	craftflow: &CraftFlow,
-	conn_id: u64,
-	writer: &mut PacketWriter,
-	packet: S2C,
-) -> Result<()> {
-	let mut packet = S2CPacket::Concrete(packet);
-	if trigger_s2c_pre(&craftflow, conn_id, &mut packet).is_continue() {
-		let concrete = packet.assume_concrete();
-		writer.send(&concrete).await?;
-		packet = S2CPacket::Concrete(concrete);
-	}
-	let _ = trigger_s2c_post(&craftflow, conn_id, &mut packet);
-	Ok(())
 }

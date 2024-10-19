@@ -1,6 +1,7 @@
 use craftflow::CraftFlow;
 use craftflow_protocol_abstract::c2s::AbLoginStart;
 use craftflow_protocol_core::text;
+use login::Login;
 use simple_ping::SimplePing;
 
 #[tokio::main]
@@ -26,7 +27,7 @@ async fn main() -> anyhow::Result<()> {
 			std::ops::ControlFlow::Continue((conn_id, packet))
 		});
 
-	// Login::default().register(&mut craftflow);
+	Login::default().register(&mut craftflow);
 
 	craftflow.run().await
 }

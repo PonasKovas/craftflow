@@ -2,4 +2,4 @@
   <img src="assets/icon.png" width="256" />
 </p>
 
-<h1 align="center">Craftflow</h1>
+<h1 align="center">CraftFlow</h1>
