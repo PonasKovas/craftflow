@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_core::datatypes::Array;
 use craftflow_protocol_versions::{
@@ -38,8 +38,8 @@ impl AbPacketWrite for AbLoginStart {
 	type Direction = C2S;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<Self::Iter> {
-		Ok(once(match protocol_version {
+	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
+		let pkt = match protocol_version {
 			5..759 => LoginStartV00005 {
 				username: self.username,
 			}
@@ -73,8 +73,10 @@ impl AbPacketWrite for AbLoginStart {
 				player_uuid: self.uuid.unwrap_or(0),
 			}
 			.into_state_enum(),
-			_ => unimplemented!(),
-		}))
+			_ => return Ok(WriteResult::Unsupported),
+		};
+
+		Ok(WriteResult::Success(once(pkt)))
 	}
 }
 

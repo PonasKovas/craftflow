@@ -12,10 +12,13 @@ macro_rules! gen_direction_enum {
             fn convert(
           		self,
           		protocol_version: u32,
-           	) -> anyhow::Result<Self::Iter> {
+           	) -> anyhow::Result<crate::WriteResult<Self::Iter>> {
                 Ok(match self {
                     $(
-                        $name::$variant(inner) => Box::new(inner.convert(protocol_version)?),
+                        $name::$variant(inner) => match inner.convert(protocol_version)? {
+                            crate::WriteResult::Success(iter) => crate::WriteResult::Success(Box::new(iter)),
+                            crate::WriteResult::Unsupported => crate::WriteResult::Unsupported,
+                        },
                     )*
                 })
             }

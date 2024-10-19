@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_core::common_structures::Text;
 use craftflow_protocol_versions::{
@@ -20,15 +20,15 @@ impl AbPacketWrite for AbLoginDisconnect {
 	type Direction = S2C;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, _protocol_version: u32) -> Result<Self::Iter> {
+	fn convert(self, _protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		// This packet is identical in all protocol versions
 
-		Ok(once(
+		Ok(WriteResult::Success(once(
 			DisconnectV00005 {
 				reason: serde_json::to_string(&self.message)?,
 			}
 			.into_state_enum(),
-		))
+		)))
 	}
 }
 

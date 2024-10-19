@@ -1,6 +1,4 @@
-use std::iter::{once, Once};
-
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	s2c::{
@@ -9,6 +7,7 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
+use std::iter::{once, Once};
 
 /// Response to the [`AbStatusPing`][super::AbStatusPing] packet.
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
@@ -21,15 +20,15 @@ impl AbPacketWrite for AbStatusPong {
 	type Direction = S2C;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, _protocol_version: u32) -> Result<Self::Iter> {
+	fn convert(self, _protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		// This packet is identical in all protocol versions
 
-		Ok(once(
+		Ok(WriteResult::Success(once(
 			PingV00005 {
 				time: self.id as i64,
 			}
 			.into_state_enum(),
-		))
+		)))
 	}
 }
 

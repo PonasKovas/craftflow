@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	c2s::{
@@ -17,9 +17,11 @@ impl AbPacketWrite for AbStatusRequestInfo {
 	type Direction = C2S;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, _protocol_version: u32) -> Result<Self::Iter> {
+	fn convert(self, _protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		// This packet is identical in all protocol versions
-		Ok(once(PingStartV00005.into_state_enum()))
+		Ok(WriteResult::Success(once(
+			PingStartV00005.into_state_enum(),
+		)))
 	}
 }
 

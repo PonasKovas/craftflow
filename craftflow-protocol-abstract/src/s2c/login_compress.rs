@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_core::datatypes::VarInt;
 use craftflow_protocol_versions::{
@@ -22,7 +22,7 @@ impl AbPacketWrite for AbLoginCompress {
 	type Direction = S2C;
 	type Iter = IntoIter<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<Self::Iter> {
+	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		let pkt = match protocol_version {
 			..47 => {
 				// compression doesn't exist for this version.
@@ -36,7 +36,7 @@ impl AbPacketWrite for AbLoginCompress {
 			),
 		};
 
-		Ok(pkt.into_iter())
+		Ok(WriteResult::Success(pkt.into_iter()))
 	}
 }
 

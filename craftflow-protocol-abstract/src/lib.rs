@@ -29,6 +29,15 @@ pub enum ConstructorResult<D, C, I> {
 	Ignore(I),
 }
 
+/// Returned by an abstract packet writer to indicate whether the packet can be written for
+/// the given protocol version
+pub enum WriteResult<T> {
+	/// The writer successfully converted the abstract packet to concrete packets
+	Success(T),
+	/// This abstract packet has no implementation for the given protocol version
+	Unsupported,
+}
+
 impl<D, C, I> ConstructorResult<D, C, I> {
 	/// Maps the inner value of the `Continue` variant
 	pub fn map_continue<T>(self, f: impl FnOnce(C) -> T) -> ConstructorResult<D, T, I> {
@@ -43,6 +52,16 @@ impl<D, C, I> ConstructorResult<D, C, I> {
 		match self {
 			Self::Done(d) => d,
 			_ => panic!("ConstructorResult::assume_done: not Done"),
+		}
+	}
+}
+
+impl<T> WriteResult<T> {
+	/// Unwraps the `Success` variant, panicking if it's `Unsupported`
+	pub fn assume(self) -> T {
+		match self {
+			Self::Success(inner) => inner,
+			_ => panic!("WriteResult::assume: not Success"),
 		}
 	}
 }

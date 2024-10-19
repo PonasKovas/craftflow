@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	s2c::{
@@ -34,7 +34,7 @@ impl AbPacketWrite for AbLoginSuccess {
 	type Direction = S2C;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<Self::Iter> {
+	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		let pkt = match protocol_version {
 			5..735 => SuccessV00005 {
 				uuid: format!(
@@ -53,7 +53,7 @@ impl AbPacketWrite for AbLoginSuccess {
 				username: self.username,
 			}
 			.into_state_enum(),
-			_ => SuccessV00759 {
+			759.. => SuccessV00759 {
 				uuid: self.uuid,
 				username: self.username,
 				properties: self
@@ -67,9 +67,10 @@ impl AbPacketWrite for AbLoginSuccess {
 					.collect(),
 			}
 			.into_state_enum(),
+			_ => return Ok(WriteResult::Unsupported),
 		};
 
-		Ok(once(pkt))
+		Ok(WriteResult::Success(once(pkt)))
 	}
 }
 

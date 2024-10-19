@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::{bail, Result};
 use craftflow_protocol_core::datatypes::VarInt;
 use craftflow_protocol_versions::{
@@ -37,9 +37,9 @@ impl AbPacketWrite for AbHandshake {
 	type Direction = C2S;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<Self::Iter> {
+	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		// The Handshake packet is identical in all protocol versions
-		Ok(once(
+		Ok(WriteResult::Success(once(
 			SetProtocolV00005 {
 				protocol_version: VarInt(self.protocol_version as i32),
 				server_host: self.address,
@@ -57,7 +57,7 @@ impl AbPacketWrite for AbHandshake {
 				}),
 			}
 			.into_state_enum(),
-		))
+		)))
 	}
 }
 
