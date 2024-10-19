@@ -3,12 +3,12 @@ use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Nbt {
-	inner: crab_nbt::Nbt,
+	pub inner: crab_nbt::Nbt,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnonymousNbt {
-	inner: crab_nbt::Nbt,
+	pub inner: crab_nbt::Nbt,
 }
 
 /// Wraps a Write to count the bytes written, since the Nbt parser doesn't return this info

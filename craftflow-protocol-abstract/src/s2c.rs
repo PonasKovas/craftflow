@@ -3,6 +3,7 @@ pub mod conf_finish;
 pub mod conf_keepalive;
 pub mod conf_ping;
 pub mod conf_plugin;
+pub mod conf_registry;
 pub mod login_compress;
 pub mod login_disconnect;
 pub mod login_encryption_begin;
