@@ -32,6 +32,9 @@ impl PacketWriter {
 			S2C::Login(p) if state == ConnState::Login => {
 				self.write_unchecked(p).await?;
 			}
+			S2C::Configuration(p) if state == ConnState::Configuration => {
+				self.write_unchecked(p).await?;
+			}
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",
@@ -54,8 +57,8 @@ impl PacketWriter {
 
 		let protocol_version = self.get_protocol_version();
 
-		// leave some space at the start of the buffer so we can prefix with the lengths
-		self.buffer.get_mut().extend([0u8; 10]);
+		// leave space at the start of the buffer for two potential varints (length and uncompressed length)
+		self.buffer.get_mut().extend([0u8; 5 * 2]);
 		self.buffer.set_position(10);
 
 		// Write the packet to the buffer (applying compression if enabled)

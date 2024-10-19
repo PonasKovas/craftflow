@@ -43,7 +43,7 @@ pub fn generate_packet_enum(
 
 				packet_read_match_arms += &format!(
 					"({versions_pattern}, {packet_id}) => {{
-    			    let (input, packet) = {state}::{variant_name}::read_packet(input, {first_version})?;
+    			    let (input, packet) = {state}::{variant_name}::read_packet(input, {first_version}).with_context(|| format!(\"packet id {packet_id}\"))?;
     				Ok((input, Self::{variant_name}(packet)))
     			}},\n"
 				);
@@ -52,7 +52,7 @@ pub fn generate_packet_enum(
 					"{versions_pattern} => {{
 				    let mut written = 0;
                     written += VarInt({packet_id}).write(output)?;
-                    written += packet.write_packet(output, {first_version})?;
+                    written += packet.write_packet(output, {first_version}).with_context(|| format!(\"packet id {packet_id}\"))?;
                     Ok(written)
                 }},\n"
 				);
@@ -75,7 +75,7 @@ pub fn generate_packet_enum(
 		"pub use {state}_enum::*;
 		mod {state}_enum {{
 		use super::*;
-		use craftflow_protocol_core::{{Result, MCPRead, MCPWrite, Error, datatypes::VarInt}};
+		use craftflow_protocol_core::{{Context, Result, MCPRead, MCPWrite, Error, datatypes::VarInt}};
 		use crate::{{PacketRead, PacketWrite}};
 
 		#[derive(Debug, PartialEq, Clone)]

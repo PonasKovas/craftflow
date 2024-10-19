@@ -1,9 +1,9 @@
 //! Implementation of `Event` for all packets
-//! [`C2S`] packet events will be emitted after a concrete packet is received from the client
-//! [`AbC2S`] packet events will be emitted after an abstract packet is received from the client
-//! [`S2C`] packet events will be emitted before a concrete packet is sent to the client
-//! [`AbS2C`] packet events will be emitted before an abstract packet is sent to the client
-//! [`Post<S2C>`] events will be emitted AFTER a concrete packet is sent to the client
+//!  - [`C2S`] packet events will be emitted after a concrete packet is received from the client
+//!  - [`AbC2S`] packet events will be emitted after an abstract packet is received from the client
+//!  - [`S2C`] packet events will be emitted before a concrete packet is sent to the client
+//!  - [`AbS2C`] packet events will be emitted before an abstract packet is sent to the client
+//!  - [`Post<S2C>`] events will be emitted AFTER a concrete packet is sent to the client
 
 // This is the slop file that uses macro slop to generate matching and impl blocks slop
 // for the purpose of the `Event` trait slop
@@ -12,6 +12,7 @@ use crate::{reactor::Event, CraftFlow};
 use craftflow_protocol_abstract::{AbC2S, AbS2C};
 use craftflow_protocol_versions::{C2S, S2C};
 use std::ops::ControlFlow;
+use tracing::trace;
 
 // All of these Event implementations could have been done without any of this macro slop
 // if rust wasnt a retarded language and allowed to specify mutually exclusive traits or negative bounds
@@ -74,6 +75,7 @@ fn helper<'a, E>(
 where
 	E: Event<Args<'a> = (u64, &'a mut E)>,
 {
+	trace!("{} event, ", std::any::type_name::<E>());
 	craftflow.reactor.event::<E>(craftflow, (conn_id, packet))?;
 	ControlFlow::Continue(())
 }
@@ -127,6 +129,8 @@ fn helper_post<'a, E>(
 where
 	Post<E>: Event<Args<'a> = (u64, &'a mut Post<E>)>,
 {
+	trace!("{} event, ", std::any::type_name::<Post<E>>());
+
 	// since we only have a reference here and we need to construct &mut Post<packet>
 	// we are gonna need to resort to some unsafe shenanigans
 	// this is safe because Post is repr(transparent)

@@ -29,8 +29,10 @@ pub struct AbStatusInfo {
 	/// The favicon of the server, if any. This should be the raw PNG data.
 	/// It must be exactly 64x64 pixels.
 	#[serde(with = "favicon")]
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub favicon: Option<Cow<'static, [u8]>>,
 	#[serde(default)]
+	#[serde(skip_serializing_if = "std::ops::Not::not")]
 	pub enforces_secure_chat: bool,
 }
 
