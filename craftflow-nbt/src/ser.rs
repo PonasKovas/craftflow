@@ -11,7 +11,7 @@ pub(crate) mod string;
 pub(crate) mod tag;
 
 /// Serializes any value in the NBT format and returns the number of bytes written.
-pub fn serialize<W: Write, S>(writer: W, value: &S) -> Result<usize, Error>
+pub fn to_writer<W: Write, S>(writer: W, value: &S) -> Result<usize, Error>
 where
 	S: Serialize,
 {
@@ -23,7 +23,7 @@ where
 }
 
 /// Serializes any value with a name in the NBT format and returns the number of bytes written.
-pub fn serialize_named<W: Write, S>(writer: W, name: &str, value: &S) -> Result<usize, Error>
+pub fn to_writer_named<W: Write, S>(writer: W, name: &str, value: &S) -> Result<usize, Error>
 where
 	S: Serialize,
 {
@@ -43,7 +43,7 @@ mod tests {
 	fn test_serialize() {
 		fn inner_test<T: Serialize + std::fmt::Debug>(value: T, expected_bytes: Vec<u8>) {
 			let mut buffer = Vec::new();
-			let bytes_written = serialize(&mut buffer, &value).unwrap();
+			let bytes_written = to_writer(&mut buffer, &value).unwrap();
 
 			assert_eq!(bytes_written, buffer.len(), "written bytes doesnt match");
 			assert_eq!(buffer, expected_bytes, "{value:?}");
@@ -142,7 +142,7 @@ mod tests {
 	#[test]
 	fn test_named_serialize() {
 		let mut buffer = Vec::new();
-		let bytes_written = serialize_named(&mut buffer, "root", &123u16).unwrap();
+		let bytes_written = to_writer_named(&mut buffer, "root", &123u16).unwrap();
 
 		assert_eq!(bytes_written, buffer.len(), "written bytes doesnt match");
 		#[rustfmt::skip]

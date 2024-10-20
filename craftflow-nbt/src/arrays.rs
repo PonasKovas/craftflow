@@ -51,7 +51,7 @@ impl_array_type! {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{serialize, tag::Tag};
+	use crate::{tag::Tag, to_writer};
 	use serde::Serialize;
 
 	#[test]
@@ -65,7 +65,7 @@ mod tests {
 		const BYTES: [u8; 5] = [1, 2, 3, 4, 5];
 		let mut buffer = Vec::new();
 
-		let bytes_written = serialize(
+		let bytes_written = to_writer(
 			&mut buffer,
 			&Test {
 				bytes: BYTES.to_vec(),
@@ -103,7 +103,7 @@ mod tests {
 		const BYTES: [u8; 4] = [1, 2, 3, 4];
 		let mut buffer = Vec::new();
 
-		let bytes_written = serialize(
+		let bytes_written = to_writer(
 			&mut buffer,
 			&Test {
 				bytes: IntArray(BYTES.to_vec()),
@@ -140,7 +140,7 @@ mod tests {
 		const BYTES: [u8; 4] = [1, 2, 3, 4];
 		let mut buffer = Vec::new();
 
-		let bytes_written = serialize(
+		let bytes_written = to_writer(
 			&mut buffer,
 			&Test {
 				bytes: LongArray(BYTES.to_vec()),
