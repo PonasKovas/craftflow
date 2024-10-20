@@ -1,7 +1,11 @@
 use thiserror::Error;
 
+/// The result type used in this crate
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// The error type used in this crate.
+///
+/// Either IO Error or invalid data
 #[derive(Error, Debug)]
 pub enum Error {
 	#[error("IO error: {0}")]

@@ -1,3 +1,5 @@
+//! Provides a choice to serialize sequences as `ByteArray`, `IntArray` or `LongArray`.
+
 use serde::{Serialize, Serializer};
 
 // Sequences are wrapped in newtype structs with these names when serializing
