@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "craftflow",
+    "craftflow-nbt",
     "craftflow-protocol-abstract",
     "craftflow-protocol-core",
     "craftflow-protocol-versions",
@@ -24,3 +25,4 @@ base64 = "0.22.1"
 futures = "0.3.30"
 thiserror = "1.0"
 crab_nbt = { version = "0.2.4", features = ["serde"] }
+cesu8 = "1.1.0"

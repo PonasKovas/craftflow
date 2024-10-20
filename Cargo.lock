@@ -176,6 +176,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "craftflow-nbt"
+version = "0.1.0"
+dependencies = [
+ "cesu8",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "craftflow-protocol-abstract"
 version = "0.1.0"
 dependencies = [
