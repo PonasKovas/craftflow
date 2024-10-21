@@ -11,7 +11,7 @@ mod error;
 pub(crate) mod ser;
 pub(crate) mod tag;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 pub use de::{from_slice, from_slice_named};
 pub use error::{Error, Result};

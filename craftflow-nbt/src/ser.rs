@@ -38,7 +38,7 @@ where
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::tag::Tag;
+	use crate::{tag::Tag, tests::display_byte_buffer};
 
 	#[test]
 	fn test_serialize() {
@@ -46,7 +46,13 @@ mod tests {
 			let mut buffer = Vec::new();
 			let bytes_written = to_writer(&mut buffer, &value).unwrap();
 
-			assert_eq!(bytes_written, buffer.len(), "written bytes doesnt match");
+			assert_eq!(
+				bytes_written,
+				buffer.len(),
+				"[{}]\n\n[{}]",
+				display_byte_buffer(&buffer),
+				display_byte_buffer(&expected_bytes)
+			);
 			assert_eq!(buffer, expected_bytes, "{value:?}");
 		}
 

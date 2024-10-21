@@ -2,18 +2,18 @@ use super::any::AnyDeserializer;
 use crate::{de::read_ext::ByteRead, tag::Tag, Error};
 use serde::de::{DeserializeSeed, MapAccess};
 
-pub struct CompoundDeserializer<'de> {
-	input: &'de [u8],
+pub struct CompoundDeserializer<'a, 'de> {
+	input: &'a mut &'de [u8],
 	tag: Option<Tag>, // is set when key is read, reset when value read
 }
 
-impl<'de> CompoundDeserializer<'de> {
-	pub fn new(input: &'de [u8]) -> Self {
+impl<'a, 'de> CompoundDeserializer<'a, 'de> {
+	pub fn new(input: &'a mut &'de [u8]) -> Self {
 		Self { input, tag: None }
 	}
 }
 
-impl<'de> MapAccess<'de> for CompoundDeserializer<'de> {
+impl<'a, 'de> MapAccess<'de> for CompoundDeserializer<'a, 'de> {
 	type Error = Error;
 
 	fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
@@ -27,11 +27,12 @@ impl<'de> MapAccess<'de> for CompoundDeserializer<'de> {
 		self.tag = Some(tag);
 
 		let mut serializer = AnyDeserializer {
-			input: self.input,
+			input: *self.input,
 			tag: Some(Tag::String),
 		};
 		let r = seed.deserialize(&mut serializer);
-		self.input = serializer.input;
+
+		*self.input = serializer.input;
 		r.map(Some)
 	}
 	fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
@@ -44,11 +45,11 @@ impl<'de> MapAccess<'de> for CompoundDeserializer<'de> {
 			.ok_or(Error::InvalidData(format!("compound value without key")))?;
 
 		let mut serializer = AnyDeserializer {
-			input: self.input,
+			input: *self.input,
 			tag: Some(tag),
 		};
 		let r = seed.deserialize(&mut serializer);
-		self.input = serializer.input;
+		*self.input = serializer.input;
 		r
 	}
 }

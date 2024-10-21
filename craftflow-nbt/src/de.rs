@@ -39,7 +39,7 @@ mod tests {
 		) {
 			let result = from_slice::<'a, T>(bytes).unwrap();
 
-			assert_eq!(result, expected_value, "{expected_value:?}");
+			assert_eq!(result, expected_value);
 		}
 
 		inner_test(&[Tag::End as u8], None::<()>);

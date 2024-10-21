@@ -30,7 +30,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 	// Maps
 	//
 
-	fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+	fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
 		let mut written = 0;
 		match self.expecting {
 			None => {

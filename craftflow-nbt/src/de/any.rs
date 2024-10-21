@@ -226,9 +226,9 @@ impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
 		self,
 		_name: &'static str,
 		_len: usize,
-		visitor: V,
+		_visitor: V,
 	) -> Result<V::Value, Self::Error> {
-		self.deserialize_seq(visitor)
+		Err(Error::InvalidData(format!("tuples are not supported")))
 	}
 	fn deserialize_map<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
 		let tag = self.tag()?;
@@ -237,7 +237,7 @@ impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
 				"Expected compound tag, found {tag}"
 			)));
 		}
-		visitor.visit_map(CompoundDeserializer::new(self.input))
+		visitor.visit_map(CompoundDeserializer::new(&mut self.input))
 	}
 	fn deserialize_struct<V: Visitor<'de>>(
 		self,

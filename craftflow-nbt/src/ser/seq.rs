@@ -37,6 +37,12 @@ impl<'a, W: Write> SeqSerializer<'a, W> {
 			length_prefix_written: false,
 		}
 	}
+	pub fn final_len(&self) -> usize {
+		match self.length {
+			Length::Known(len) => len,
+			Length::Unknown { counter, .. } => counter,
+		}
+	}
 }
 
 impl Length {
@@ -59,7 +65,14 @@ impl<'a, W: Write> SerializeSeq for SeqSerializer<'a, W> {
 	where
 		T: ?Sized + serde::Serialize,
 	{
-		let tag = value.serialize(TagSerializer)?;
+		let tag = match value.serialize(TagSerializer)? {
+			Some(t) => t,
+			None => {
+				// if there is no tag, that means the value can not be serialized
+				// so we just skip this entry
+				return Ok(());
+			}
+		};
 
 		match &self.tag {
 			Some(seq_tag) => {
@@ -117,6 +130,11 @@ impl<'a, W: Write> SerializeSeq for SeqSerializer<'a, W> {
 		Ok(())
 	}
 	fn end(mut self) -> Result<Self::Ok, Self::Error> {
+		// make sure that if the tag was TAG_END or not set at all, the length is 0
+		if matches!(self.tag, Some(Tag::End) | None) && self.final_len() != 0 {
+			return Err(Error::InvalidData(format!("sequence of unsupported tags")));
+		}
+
 		match self.length {
 			Length::Known(len) => {
 				if len == 0 {

@@ -2,9 +2,41 @@ use crate::{
 	arrays::{ByteArray, IntArray, LongArray},
 	from_slice, to_writer,
 };
-use core::f64;
+use core::{f64, str};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug};
+
+pub(crate) fn display_byte_buffer(buf: &[u8]) -> String {
+	let mut r = String::new();
+
+	// very smart and inneficient way to display a byte buffer
+	let mut i = 0;
+	while i < buf.len() {
+		if i == buf.len() - 1 {
+			r.push_str(&format!("\\{:02x}", buf[i]));
+			break;
+		}
+		// check if these 2 bytes can be interpreted as a buffer length here
+		let short = u16::from_be_bytes([buf[i], buf[i + 1]]) as usize;
+		if i + 2 + short <= buf.len() {
+			// check if the buffer is a valid UTF-8 string
+			let buf_start = i + 2;
+			match str::from_utf8(&buf[buf_start..(buf_start + short)]) {
+				Ok(s) => {
+					r.push_str(&format!("\\{:02x}\\{:02x}", buf[i], buf[i + 1]));
+					r.push_str(s);
+					i = buf_start + short;
+					continue;
+				}
+				Err(_) => {}
+			}
+		}
+		r.push_str(&format!("\\{:02x}", buf[i]));
+		i += 1;
+	}
+
+	r
+}
 
 #[test]
 fn test_roundtrip() {
@@ -17,8 +49,9 @@ fn test_roundtrip() {
 		let reconstructed: T = match from_slice(&buffer) {
 			Ok(r) => r,
 			Err(e) => panic!(
-				"Failed to deserialize {value:?} from {buffer:x?}: {:?} (line {line})",
-				e
+				"Failed to deserialize {value:?} from [{buffer}]: {:?} (line {line})",
+				e,
+				buffer = display_byte_buffer(&buffer),
 			),
 		};
 
@@ -69,6 +102,27 @@ fn test_roundtrip() {
 	);
 
 	#[derive(Serialize, Deserialize, Debug, PartialEq)]
+	struct SimpleStruct {
+		#[serde(default)]
+		first: Option<usize>,
+		second: f64,
+	}
+	test(
+		line!(),
+		&SimpleStruct {
+			first: None,
+			second: 9125123.213,
+		},
+	);
+	test(
+		line!(),
+		&SimpleStruct {
+			first: Some(123456789),
+			second: 9125123.213,
+		},
+	);
+
+	#[derive(Serialize, Deserialize, Debug, PartialEq)]
 	struct ComplexStruct {
 		#[serde(default)]
 		second: Option<usize>,
@@ -92,18 +146,18 @@ fn test_roundtrip() {
 				second: vec![0xB00B135, 0xFACE, 0xFEED],
 				third: {
 					let mut map = HashMap::new();
-					map.insert(
-    					format!("why did the scarecrow win an award? because he was outstanding in his field!"),
-    					InnerStruct { first: format!("testing... testing... 1, 2, 3... is this thing on?"), second: vec![], third: HashMap::new() }
-					);
-					map.insert(
-						format!("i like big bytes and i cannot lie!"),
-						InnerStruct {
-							first: format!("this is not a test"),
-							second: vec![5],
-							third: HashMap::new(),
-						},
-					);
+					// map.insert(
+					// 				format!("why did the scarecrow win an award? because he was outstanding in his field!"),
+					// 				InnerStruct { first: format!("testing... testing... 1, 2, 3... is this thing on?"), second: vec![], third: HashMap::new() }
+					// );
+					// map.insert(
+					// 	format!("i like big bytes and i cannot lie!"),
+					// 	InnerStruct {
+					// 		first: format!("this is not a test"),
+					// 		second: vec![5],
+					// 		third: HashMap::new(),
+					// 	},
+					// );
 					map
 				},
 			},

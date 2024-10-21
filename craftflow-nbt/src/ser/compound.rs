@@ -53,7 +53,13 @@ impl<'a, W: Write> SerializeMap for CompoundSerializer<'a, W> {
 			}
 		};
 
-		let tag = value.serialize(TagSerializer)?;
+		let tag = match value.serialize(TagSerializer)? {
+			Some(t) => t,
+			None => {
+				// if there is no tag, that means the value can not be serialized, so we just skip this entry
+				return Ok(());
+			}
+		};
 
 		// first write the tag
 		self.output.write_all(&[tag as u8])?;
@@ -79,7 +85,13 @@ impl<'a, W: Write> SerializeMap for CompoundSerializer<'a, W> {
 		K: ?Sized + Serialize,
 		V: ?Sized + Serialize,
 	{
-		let tag = value.serialize(TagSerializer)?;
+		let tag = match value.serialize(TagSerializer)? {
+			Some(t) => t,
+			None => {
+				// if there is no tag, that means the value can not be serialized, so we just skip this entry
+				return Ok(());
+			}
+		};
 
 		// first write the tag
 		self.output.write_all(&[tag as u8])?;
