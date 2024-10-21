@@ -69,7 +69,7 @@ impl<'a, W: Write> SerializeMap for CompoundSerializer<'a, W> {
 
 		Ok(())
 	}
-	fn end(mut self) -> Result<Self::Ok, Self::Error> {
+	fn end(self) -> Result<Self::Ok, Self::Error> {
 		self.output.write_all(&[Tag::End as u8])?;
 		Ok(self.written + 1)
 	}

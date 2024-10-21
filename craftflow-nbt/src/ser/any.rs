@@ -70,7 +70,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 	// Sequences
 	//
 
-	fn serialize_seq(mut self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
+	fn serialize_seq(self, len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
 		let mut written = 0;
 		let mut element_tag = None;
 		match self.expecting {
@@ -128,7 +128,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 
 		Ok(write_str(&mut self.output, v)? + written)
 	}
-	fn serialize_bytes(mut self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
+	fn serialize_bytes(self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
 		let mut written = 0;
 		let mut length = v.len() as i32;
 		match self.expecting {
@@ -173,7 +173,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 		Ok(written)
 	}
 
-	fn serialize_bool(mut self, v: bool) -> Result<Self::Ok, Self::Error> {
+	fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Byte as u8])?;
@@ -203,7 +203,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 
 		Ok(written)
 	}
-	fn serialize_i8(mut self, v: i8) -> Result<Self::Ok, Self::Error> {
+	fn serialize_i8(self, v: i8) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Byte as u8])?;
@@ -233,7 +233,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 
 		Ok(written)
 	}
-	fn serialize_i16(mut self, v: i16) -> Result<Self::Ok, Self::Error> {
+	fn serialize_i16(self, v: i16) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Short as u8])?;
@@ -259,7 +259,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 
 		Ok(written)
 	}
-	fn serialize_i32(mut self, v: i32) -> Result<Self::Ok, Self::Error> {
+	fn serialize_i32(self, v: i32) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Int as u8])?;
@@ -281,7 +281,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 
 		Ok(written)
 	}
-	fn serialize_i64(mut self, v: i64) -> Result<Self::Ok, Self::Error> {
+	fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Long as u8])?;
@@ -311,7 +311,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 	fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
 		self.serialize_i64(v as i64)
 	}
-	fn serialize_f32(mut self, v: f32) -> Result<Self::Ok, Self::Error> {
+	fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Float as u8])?;
@@ -333,7 +333,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 
 		Ok(written)
 	}
-	fn serialize_f64(mut self, v: f64) -> Result<Self::Ok, Self::Error> {
+	fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
 		let written = match self.expecting {
 			None => {
 				self.output.write_all(&[Tag::Double as u8])?;
@@ -377,7 +377,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 	) -> Result<Self::SerializeTupleVariant, Self::Error> {
 		Err(Error::InvalidData(format!("{name}: tuples not supported")))
 	}
-	fn serialize_none(mut self) -> Result<Self::Ok, Self::Error> {
+	fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
 		self.output.write_all(&[Tag::End as u8])?;
 		Ok(1)
 	}
@@ -417,7 +417,7 @@ impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 	// This method is also used to indicate that the sequence wrapped should be in a specific format
 	// ByteArray, IntArray or LongArray
 	fn serialize_newtype_struct<T>(
-		mut self,
+		self,
 		name: &'static str,
 		value: &T,
 	) -> Result<Self::Ok, Self::Error>
