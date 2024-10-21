@@ -1,6 +1,6 @@
 //! Provides a choice to serialize sequences as `ByteArray`, `IntArray` or `LongArray`.
 
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 // Sequences are wrapped in newtype structs with these names when serializing
 pub(crate) const MAGIC_BYTE_ARRAY: &str = "_nbt_byte_array";
@@ -11,13 +11,15 @@ macro_rules! impl_array_type {
 	($(#[$meta:meta])* $mod_name:ident, $struct_name:ident, $magic:ident) => {
 	    $(#[$meta])*
 		#[repr(transparent)]
+		#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
 		pub struct $struct_name<T>(pub T);
 
 		$(#[$meta])*
 		///
 		/// Use this with `#[serde(with = "..."]`
 		pub mod $mod_name {
-		    use serde::{Serialize, Serializer};
+		    use serde::{Serialize, Serializer, Deserialize, Deserializer, de::Visitor};
+			use std::marker::PhantomData;
 
             pub fn serialize<T: Serialize, S: Serializer>(
                 value: &T,
@@ -26,12 +28,39 @@ macro_rules! impl_array_type {
                 // use a newtype struct with a magic name to signal the serializer for special behaviour
                 serializer.serialize_newtype_struct(super::$magic, value)
             }
+            pub fn deserialize<'de, T: Deserialize<'de>, D: Deserializer<'de>>(
+               	deserializer: D,
+            ) -> Result<T, D::Error> {
+                // Tell the deserializer that we are expecting a newtype struct with a magic name
+
+               	struct V<T>(PhantomData<T>);
+               	impl<'de, T: Deserialize<'de>> Visitor<'de> for V<T> {
+              		type Value = T;
+
+              		fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+             			formatter.write_str(stringify!(a $struct_name))
+              		}
+              		fn visit_newtype_struct<D: Deserializer<'de>>(
+             			self,
+             			deserializer: D,
+              		) -> Result<Self::Value, D::Error> {
+             			T::deserialize(deserializer)
+              		}
+               	}
+               	deserializer.deserialize_newtype_struct(super::$magic, V(PhantomData))
+            }
         }
 
         impl<T: Serialize> Serialize for $struct_name<T>
         {
             fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
                 $mod_name::serialize(&self.0, serializer)
+            }
+        }
+        impl<'de, T: Deserialize<'de>> Deserialize<'de> for $struct_name<T>
+        {
+            fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                $mod_name::deserialize(deserializer).map($struct_name)
             }
         }
 	};

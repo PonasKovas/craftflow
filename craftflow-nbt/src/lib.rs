@@ -6,9 +6,13 @@
 )]
 
 pub mod arrays;
+pub(crate) mod de;
 mod error;
 pub(crate) mod ser;
 pub(crate) mod tag;
+#[cfg(test)]
+mod tests;
 
+pub use de::{from_slice, from_slice_named};
 pub use error::{Error, Result};
 pub use ser::{to_writer, to_writer_named};

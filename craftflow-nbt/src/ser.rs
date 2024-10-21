@@ -6,28 +6,29 @@ use std::io::Write;
 
 pub(crate) mod any;
 pub(crate) mod compound;
+pub(crate) mod compound_key;
 pub(crate) mod seq;
-pub(crate) mod string;
 pub(crate) mod tag;
+pub(crate) mod write_str;
 
 /// Serializes any value in the NBT format and returns the number of bytes written.
-pub fn to_writer<W: Write, S>(writer: W, value: &S) -> Result<usize, Error>
+pub fn to_writer<W: Write, S>(mut writer: W, value: &S) -> Result<usize, Error>
 where
 	S: Serialize,
 {
 	let serializer = AnySerializer {
-		output: writer,
+		output: &mut writer,
 		expecting: None,
 	};
 	value.serialize(serializer)
 }
 
 /// Serializes any value with a name in the NBT format and returns the number of bytes written.
-pub fn to_writer_named<W: Write, S>(writer: W, name: &str, value: &S) -> Result<usize, Error>
+pub fn to_writer_named<W: Write, S>(mut writer: W, name: &str, value: &S) -> Result<usize, Error>
 where
 	S: Serialize,
 {
-	let mut serializer = CompoundSerializer::new(writer, 0);
+	let mut serializer = CompoundSerializer::new(&mut writer, 0);
 	serializer.serialize_entry(name, value)?;
 	// return without ending (we dont need the extra TAG_END, because the compound is implicit,
 	// just like we didnt add TAG_COMPOUND at the beginning)

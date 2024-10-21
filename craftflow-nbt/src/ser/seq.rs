@@ -1,10 +1,10 @@
 use super::{any::AnySerializer, tag::TagSerializer};
 use crate::{tag::Tag, Error};
-use serde::ser::{SerializeSeq, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
+use serde::ser::{SerializeSeq, SerializeTuple};
 use std::io::Write;
 
-pub struct SeqSerializer<W> {
-	output: W,
+pub struct SeqSerializer<'a, W> {
+	output: &'a mut W,
 	written: usize,
 	/// if set to no None, will be changed to the tag of the first element
 	/// and additionally written as a prefix
@@ -24,11 +24,11 @@ enum Length {
 	},
 }
 
-impl<W: Write> SeqSerializer<W> {
+impl<'a, W: Write> SeqSerializer<'a, W> {
 	/// If tag is `None`, it will be decided based on the first element
 	/// and written as a prefix.
 	/// Length is written either way
-	pub fn new(output: W, written: usize, tag: Option<Tag>, length: Option<usize>) -> Self {
+	pub fn new(output: &'a mut W, written: usize, tag: Option<Tag>, length: Option<usize>) -> Self {
 		Self {
 			output,
 			written,
@@ -51,7 +51,7 @@ impl Length {
 	}
 }
 
-impl<W: Write> SerializeSeq for SeqSerializer<W> {
+impl<'a, W: Write> SerializeSeq for SeqSerializer<'a, W> {
 	type Ok = usize;
 	type Error = Error;
 
@@ -146,39 +146,11 @@ impl<W: Write> SerializeSeq for SeqSerializer<W> {
 		Ok(self.written)
 	}
 }
-impl<W: Write> SerializeTuple for SeqSerializer<W> {
+impl<'a, W: Write> SerializeTuple for SeqSerializer<'a, W> {
 	type Ok = usize;
 	type Error = Error;
 
 	fn serialize_element<T>(&mut self, value: &T) -> Result<(), Self::Error>
-	where
-		T: ?Sized + serde::Serialize,
-	{
-		SerializeSeq::serialize_element(self, value)
-	}
-	fn end(self) -> Result<Self::Ok, Self::Error> {
-		SerializeSeq::end(self)
-	}
-}
-impl<W: Write> SerializeTupleStruct for SeqSerializer<W> {
-	type Ok = usize;
-	type Error = Error;
-
-	fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
-	where
-		T: ?Sized + serde::Serialize,
-	{
-		SerializeSeq::serialize_element(self, value)
-	}
-	fn end(self) -> Result<Self::Ok, Self::Error> {
-		SerializeSeq::end(self)
-	}
-}
-impl<W: Write> SerializeTupleVariant for SeqSerializer<W> {
-	type Ok = usize;
-	type Error = Error;
-
-	fn serialize_field<T>(&mut self, value: &T) -> Result<(), Self::Error>
 	where
 		T: ?Sized + serde::Serialize,
 	{

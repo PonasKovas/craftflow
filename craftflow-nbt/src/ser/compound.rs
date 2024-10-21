@@ -1,4 +1,4 @@
-use super::{any::AnySerializer, string::StrSerializer, tag::TagSerializer};
+use super::{any::AnySerializer, compound_key::CompoundKeySerializer, tag::TagSerializer};
 use crate::{tag::Tag, Error};
 use serde::{
 	ser::{SerializeMap, SerializeStruct, SerializeStructVariant},
@@ -8,14 +8,14 @@ use std::io::Write;
 
 /// A serializer that serializes a compound tag.
 /// Does not include the opening tag, but does include the closing tag.
-pub struct CompoundSerializer<W> {
-	output: W,
+pub struct CompoundSerializer<'a, W> {
+	output: &'a mut W,
 	pub written: usize,
 	/// holds the serialized string of the key, if serializing as map (keys and values separately)
 	key: Option<Vec<u8>>,
 }
-impl<W: Write> CompoundSerializer<W> {
-	pub fn new(output: W, written: usize) -> Self {
+impl<'a, W: Write> CompoundSerializer<'a, W> {
+	pub fn new(output: &'a mut W, written: usize) -> Self {
 		Self {
 			output,
 			written,
@@ -23,7 +23,7 @@ impl<W: Write> CompoundSerializer<W> {
 		}
 	}
 }
-impl<W: Write> SerializeMap for CompoundSerializer<W> {
+impl<'a, W: Write> SerializeMap for CompoundSerializer<'a, W> {
 	type Ok = usize;
 	type Error = Error;
 
@@ -36,7 +36,7 @@ impl<W: Write> SerializeMap for CompoundSerializer<W> {
 		// serialize the key into buffer and store it
 		// we will use it in the next call to serialize_value
 		let mut key_buffer = Vec::new();
-		key.serialize(StrSerializer {
+		key.serialize(CompoundKeySerializer {
 			output: &mut key_buffer,
 		})?;
 		self.key = Some(key_buffer);
@@ -63,7 +63,7 @@ impl<W: Write> SerializeMap for CompoundSerializer<W> {
 		self.written += key.len();
 		// then write the value
 		self.written += value.serialize(AnySerializer {
-			output: &mut self.output,
+			output: self.output,
 			expecting: Some(tag),
 		})?;
 
@@ -85,19 +85,19 @@ impl<W: Write> SerializeMap for CompoundSerializer<W> {
 		self.output.write_all(&[tag as u8])?;
 		self.written += 1;
 		// then write the key
-		self.written += key.serialize(StrSerializer {
+		self.written += key.serialize(CompoundKeySerializer {
 			output: &mut self.output,
 		})?;
 		// then write the value
 		self.written += value.serialize(AnySerializer {
-			output: &mut self.output,
+			output: self.output,
 			expecting: Some(tag),
 		})?;
 
 		Ok(())
 	}
 }
-impl<W: Write> SerializeStruct for CompoundSerializer<W> {
+impl<'a, W: Write> SerializeStruct for CompoundSerializer<'a, W> {
 	type Ok = usize;
 	type Error = Error;
 
@@ -111,7 +111,7 @@ impl<W: Write> SerializeStruct for CompoundSerializer<W> {
 		SerializeMap::end(self)
 	}
 }
-impl<W: Write> SerializeStructVariant for CompoundSerializer<W> {
+impl<'a, W: Write> SerializeStructVariant for CompoundSerializer<'a, W> {
 	type Ok = usize;
 	type Error = Error;
 

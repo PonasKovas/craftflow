@@ -1,36 +1,36 @@
-use super::{compound::CompoundSerializer, seq::SeqSerializer};
+use super::{compound::CompoundSerializer, seq::SeqSerializer, write_str::write_str};
 use crate::{
 	arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY},
 	tag::Tag,
 	Error,
 };
-use serde::{Serialize, Serializer};
+use serde::{ser::Impossible, Serialize, Serializer};
 use std::io::Write;
 
 /// Serializes any value, allows to only accept a specific type
-pub struct AnySerializer<W> {
-	pub output: W,
+pub struct AnySerializer<'a, W> {
+	pub output: &'a mut W,
 	/// If Some, will accept only the given tag and will not write the tag itself
 	/// This is used in lists
 	pub expecting: Option<Tag>,
 }
 
-impl<W: Write> Serializer for AnySerializer<W> {
+impl<'a, W: Write> Serializer for AnySerializer<'a, W> {
 	type Ok = usize;
 	type Error = Error;
-	type SerializeSeq = SeqSerializer<W>;
-	type SerializeTuple = SeqSerializer<W>;
-	type SerializeTupleStruct = SeqSerializer<W>;
-	type SerializeTupleVariant = SeqSerializer<W>;
-	type SerializeMap = CompoundSerializer<W>;
-	type SerializeStruct = CompoundSerializer<W>;
-	type SerializeStructVariant = CompoundSerializer<W>;
+	type SerializeSeq = SeqSerializer<'a, W>;
+	type SerializeTuple = SeqSerializer<'a, W>;
+	type SerializeTupleStruct = Impossible<usize, Error>;
+	type SerializeTupleVariant = Impossible<usize, Error>;
+	type SerializeMap = CompoundSerializer<'a, W>;
+	type SerializeStruct = CompoundSerializer<'a, W>;
+	type SerializeStructVariant = CompoundSerializer<'a, W>;
 
 	///////////////////////////////////////////
 	// Maps
 	//
 
-	fn serialize_map(mut self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
+	fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
 		let mut written = 0;
 		match self.expecting {
 			None => {
@@ -99,22 +99,9 @@ impl<W: Write> Serializer for AnySerializer<W> {
 		Ok(SeqSerializer::new(self.output, written, element_tag, len))
 	}
 	fn serialize_tuple(self, len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-		self.serialize_seq(Some(len))
-	}
-	fn serialize_tuple_struct(
-		self,
-		_name: &'static str,
-		len: usize,
-	) -> Result<Self::SerializeTupleStruct, Self::Error> {
-		self.serialize_seq(Some(len))
-	}
-	fn serialize_tuple_variant(
-		self,
-		_name: &'static str,
-		_variant_index: u32,
-		_variant: &'static str,
-		len: usize,
-	) -> Result<Self::SerializeTupleVariant, Self::Error> {
+		// for whatever reason serde uses this for all statically-known size sequences too
+		// instead of just fucking using seq with Some(len) so we have to implement this
+		// but NBT does not support tuples with different types
 		self.serialize_seq(Some(len))
 	}
 
@@ -139,14 +126,7 @@ impl<W: Write> Serializer for AnySerializer<W> {
 			},
 		}
 
-		let converted = cesu8::to_java_cesu8(v);
-		self.output
-			.write_all(&(converted.len() as u16).to_be_bytes())?;
-		written += 2;
-		self.output.write_all(&converted)?;
-		written += converted.len();
-
-		Ok(written)
+		Ok(write_str(&mut self.output, v)? + written)
 	}
 	fn serialize_bytes(mut self, v: &[u8]) -> Result<Self::Ok, Self::Error> {
 		let mut written = 0;
@@ -381,13 +361,25 @@ impl<W: Write> Serializer for AnySerializer<W> {
 
 		Err(Error::InvalidData(format!("char is not supported")))
 	}
-	fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
-		if let Some(expecting) = self.expecting {
-			return Err(Error::InvalidData(format!(
-				"expected {expecting}, found none"
-			)));
-		}
-		Ok(0)
+	fn serialize_tuple_struct(
+		self,
+		name: &'static str,
+		_len: usize,
+	) -> Result<Self::SerializeTupleStruct, Self::Error> {
+		Err(Error::InvalidData(format!("{name}: tuples not supported")))
+	}
+	fn serialize_tuple_variant(
+		self,
+		name: &'static str,
+		_variant_index: u32,
+		_variant: &'static str,
+		_len: usize,
+	) -> Result<Self::SerializeTupleVariant, Self::Error> {
+		Err(Error::InvalidData(format!("{name}: tuples not supported")))
+	}
+	fn serialize_none(mut self) -> Result<Self::Ok, Self::Error> {
+		self.output.write_all(&[Tag::End as u8])?;
+		Ok(1)
 	}
 	fn serialize_some<T>(self, value: &T) -> Result<Self::Ok, Self::Error>
 	where
@@ -398,16 +390,16 @@ impl<W: Write> Serializer for AnySerializer<W> {
 	fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
 		Ok(0)
 	}
-	fn serialize_unit_struct(self, name: &'static str) -> Result<Self::Ok, Self::Error> {
-		self.serialize_str(name)
+	fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
+		self.serialize_unit()
 	}
 	fn serialize_unit_variant(
 		self,
 		_name: &'static str,
 		_variant_index: u32,
-		variant: &'static str,
+		_variant: &'static str,
 	) -> Result<Self::Ok, Self::Error> {
-		self.serialize_str(variant)
+		self.serialize_unit()
 	}
 	fn serialize_newtype_variant<T>(
 		self,
