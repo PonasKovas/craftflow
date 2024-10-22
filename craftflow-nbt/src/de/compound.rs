@@ -39,7 +39,6 @@ impl<'a, 'de> MapAccess<'de> for CompoundDeserializer<'a, 'de> {
 	where
 		V: DeserializeSeed<'de>,
 	{
-		println!("DESERIALIZING VALUE");
 		let tag = self
 			.tag
 			.take()

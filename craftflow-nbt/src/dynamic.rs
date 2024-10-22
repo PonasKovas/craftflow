@@ -1,7 +1,6 @@
+use crate::arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY};
 use serde::{de::VariantAccess, Deserialize, Serialize};
 use std::collections::HashMap;
-
-use crate::arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY};
 
 /// A structure that can be used to represent any NBT tag dynamically
 #[derive(Serialize, Debug, PartialEq, Clone)]

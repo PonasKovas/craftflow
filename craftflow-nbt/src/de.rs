@@ -19,9 +19,10 @@ pub fn from_slice<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<T> {
 	let r = T::deserialize(&mut deserializer)?;
 
 	if !input.is_empty() {
-		return Err(Error::InvalidData(
-			"Data left after deserialization".to_string(),
-		));
+		return Err(Error::InvalidData(format!(
+			"{} bytes left after deserialization",
+			input.len()
+		)));
 	}
 
 	Ok(r)
@@ -40,9 +41,10 @@ pub fn from_slice_named<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<(
 	let r = T::deserialize(&mut deserializer)?;
 
 	if !input.is_empty() {
-		return Err(Error::InvalidData(
-			"Data left after deserialization".to_string(),
-		));
+		return Err(Error::InvalidData(format!(
+			"{} bytes left after deserialization",
+			input.len()
+		)));
 	}
 
 	Ok((name, r))

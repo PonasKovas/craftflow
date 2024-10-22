@@ -1,6 +1,7 @@
 use crate::{
 	arrays::{ByteArray, IntArray, LongArray},
-	from_slice, to_writer,
+	dynamic::DynNBT,
+	from_slice, from_slice_named, to_writer,
 };
 use core::{f64, str};
 use serde::{Deserialize, Serialize};
@@ -166,4 +167,11 @@ fn test_roundtrip() {
 			},
 		},
 	);
+}
+
+#[test]
+fn bigtest() {
+	let bytes = include_bytes!("../bigtest.nbt");
+	let (name, _value): (_, DynNBT) = from_slice_named(bytes).unwrap();
+	assert_eq!(name, "Level");
 }
