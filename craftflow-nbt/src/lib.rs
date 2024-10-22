@@ -15,5 +15,6 @@ pub(crate) mod tag;
 pub(crate) mod tests;
 
 pub use de::{from_slice, from_slice_named};
+pub use dynamic::DynNBT;
 pub use error::{Error, Result};
 pub use ser::{to_writer, to_writer_named};
