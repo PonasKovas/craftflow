@@ -213,7 +213,11 @@ impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
 		if len < 0 {
 			len = 0;
 		}
-		visitor.visit_seq(SeqDeserializer::new(self.input, element_tag, len as usize))
+		visitor.visit_seq(SeqDeserializer::new(
+			&mut self.input,
+			element_tag,
+			len as usize,
+		))
 	}
 	fn deserialize_tuple<V: Visitor<'de>>(
 		self,

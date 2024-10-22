@@ -125,6 +125,8 @@ fn test_roundtrip() {
 	#[derive(Serialize, Deserialize, Debug, PartialEq)]
 	struct ComplexStruct {
 		#[serde(default)]
+		first: Option<usize>,
+		#[serde(default)]
 		second: Option<usize>,
 		third: Either,
 		inner: InnerStruct,
@@ -139,6 +141,7 @@ fn test_roundtrip() {
 	test(
 		line!(),
 		&ComplexStruct {
+			first: None,
 			second: Some(567),
 			third: Either::Left(57),
 			inner: InnerStruct {
@@ -146,18 +149,18 @@ fn test_roundtrip() {
 				second: vec![0xB00B135, 0xFACE, 0xFEED],
 				third: {
 					let mut map = HashMap::new();
-					// map.insert(
-					// 				format!("why did the scarecrow win an award? because he was outstanding in his field!"),
-					// 				InnerStruct { first: format!("testing... testing... 1, 2, 3... is this thing on?"), second: vec![], third: HashMap::new() }
-					// );
-					// map.insert(
-					// 	format!("i like big bytes and i cannot lie!"),
-					// 	InnerStruct {
-					// 		first: format!("this is not a test"),
-					// 		second: vec![5],
-					// 		third: HashMap::new(),
-					// 	},
-					// );
+					map.insert(
+									format!("why did the scarecrow win an award? because he was outstanding in his field!"),
+									InnerStruct { first: format!("testing... testing... 1, 2, 3... is this thing on?"), second: vec![], third: HashMap::new() }
+					);
+					map.insert(
+						format!("i like big bytes and i cannot lie!"),
+						InnerStruct {
+							first: format!("this is not a test"),
+							second: vec![5],
+							third: HashMap::new(),
+						},
+					);
 					map
 				},
 			},

@@ -2,15 +2,15 @@ use super::any::AnyDeserializer;
 use crate::{tag::Tag, Error};
 use serde::de::{DeserializeSeed, SeqAccess};
 
-pub struct SeqDeserializer<'de> {
-	input: &'de [u8],
+pub struct SeqDeserializer<'a, 'de> {
+	input: &'a mut &'de [u8],
 	tag: Tag,
 	len: usize,
 	index: usize,
 }
 
-impl<'de> SeqDeserializer<'de> {
-	pub fn new(input: &'de [u8], tag: Tag, len: usize) -> Self {
+impl<'a, 'de> SeqDeserializer<'a, 'de> {
+	pub fn new(input: &'a mut &'de [u8], tag: Tag, len: usize) -> Self {
 		Self {
 			input,
 			tag,
@@ -20,7 +20,7 @@ impl<'de> SeqDeserializer<'de> {
 	}
 }
 
-impl<'de> SeqAccess<'de> for SeqDeserializer<'de> {
+impl<'a, 'de> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
 	type Error = Error;
 
 	fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
@@ -33,11 +33,11 @@ impl<'de> SeqAccess<'de> for SeqDeserializer<'de> {
 		self.index += 1;
 
 		let mut serializer = AnyDeserializer {
-			input: self.input,
+			input: *self.input,
 			tag: Some(self.tag),
 		};
 		let r = seed.deserialize(&mut serializer);
-		self.input = serializer.input;
+		*self.input = serializer.input;
 		r.map(Some)
 	}
 }
