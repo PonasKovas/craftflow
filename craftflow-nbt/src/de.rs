@@ -1,29 +1,51 @@
-use crate::{tag::Tag, Result};
+use crate::{tag::Tag, Error, Result};
 use read_ext::ByteRead;
 use serde::Deserialize;
 use std::borrow::Cow;
 
 pub(crate) mod any;
+pub(crate) mod array_enum;
 pub(crate) mod compound;
 pub(crate) mod read_ext;
 pub(crate) mod seq;
 
-pub fn from_slice<'a, T: Deserialize<'a>>(input: &'a [u8]) -> Result<T> {
-	let mut deserializer = any::AnyDeserializer { input, tag: None };
+/// Deserializes any NBT structure from a byte slice
+pub fn from_slice<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<T> {
+	let mut deserializer = any::AnyDeserializer {
+		input: &mut input,
+		tag: None,
+	};
 
-	T::deserialize(&mut deserializer)
+	let r = T::deserialize(&mut deserializer)?;
+
+	if !input.is_empty() {
+		return Err(Error::InvalidData(
+			"Data left after deserialization".to_string(),
+		));
+	}
+
+	Ok(r)
 }
 
+/// Deserializes any NBT structure from a byte slice with a name
 pub fn from_slice_named<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<(Cow<'a, str>, T)> {
 	let tag = Tag::new(input.read_u8()?)?;
 	let name = input.read_str()?;
 
 	let mut deserializer = any::AnyDeserializer {
-		input,
+		input: &mut input,
 		tag: Some(tag),
 	};
 
-	Ok((name, T::deserialize(&mut deserializer)?))
+	let r = T::deserialize(&mut deserializer)?;
+
+	if !input.is_empty() {
+		return Err(Error::InvalidData(
+			"Data left after deserialization".to_string(),
+		));
+	}
+
+	Ok((name, r))
 }
 
 #[cfg(test)]
@@ -53,6 +75,39 @@ mod tests {
 		inner_test(&[Tag::Byte as u8, 100], 100i8);
 		inner_test(&[Tag::Short as u8, 0x05, 0x28], 1320i16);
 		inner_test(&[Tag::Int as u8, 0x00, 0x0F, 0x12, 0x06], 987654i32);
+		#[rustfmt::skip]
+		inner_test(
+			&[
+				Tag::List as u8,
+				Tag::Short as u8,
+				0, 0, 0, 3,
+				0, 1,
+				0, 2,
+				0, 3,
+			],
+			vec![1u16, 2, 3],
+		);
+
+		#[derive(Deserialize, Debug, PartialEq)]
+		struct Test1 {
+			field: Vec<u16>,
+		}
+		#[rustfmt::skip]
+		inner_test(
+			&[
+				Tag::Compound as u8,
+				Tag::List as u8,
+				0, 5,
+				b'f', b'i', b'e', b'l', b'd',
+				Tag::Short as u8,
+				0, 0, 0, 1,
+				0, 123,
+				Tag::End as u8,
+			],
+			Test1 {
+				field: vec![123u16],
+			},
+		);
 
 		// more is tested doing data -> nbt -> data roundtrip tests
 	}
@@ -73,6 +128,11 @@ mod tests {
 			&[Tag::Byte as u8, 0, 4, b'h', b'e', b'l', b'o', 1],
 			"helo",
 			true,
+		);
+		inner_test(
+			&[Tag::List as u8, 0, 0, Tag::Short as u8, 0, 0, 0, 1, 0, 123],
+			"",
+			vec![123u16],
 		);
 		// enough testing
 	}

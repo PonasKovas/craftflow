@@ -33,7 +33,7 @@ impl<'a, 'de> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
 		self.index += 1;
 
 		let mut serializer = AnyDeserializer {
-			input: *self.input,
+			input: self.input,
 			tag: Some(self.tag),
 		};
 		let r = seed.deserialize(&mut serializer);

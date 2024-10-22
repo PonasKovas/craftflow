@@ -7,6 +7,7 @@
 
 pub mod arrays;
 pub(crate) mod de;
+mod dynamic;
 mod error;
 pub(crate) mod ser;
 pub(crate) mod tag;

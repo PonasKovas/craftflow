@@ -1,19 +1,18 @@
-use super::{compound::CompoundDeserializer, read_ext::ByteRead, seq::SeqDeserializer};
-use crate::{
-	arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY},
-	tag::Tag,
-	Error,
+use super::{
+	array_enum::ArrayTypeEnumAccess, compound::CompoundDeserializer, read_ext::ByteRead,
+	seq::SeqDeserializer,
 };
+use crate::{arrays::MAGIC, tag::Tag, Error};
 use serde::{de::Visitor, Deserializer};
 use std::borrow::Cow;
 
-pub struct AnyDeserializer<'de> {
-	pub input: &'de [u8],
+pub struct AnyDeserializer<'a, 'de> {
+	pub input: &'a mut &'de [u8],
 	/// If tag is already known and doesnt need to be read (for example in lists)
 	pub tag: Option<Tag>,
 }
 
-impl<'de> AnyDeserializer<'de> {
+impl<'a, 'de> AnyDeserializer<'a, 'de> {
 	fn tag(&mut self) -> crate::Result<Tag> {
 		if let Some(tag) = self.tag {
 			Ok(tag)
@@ -25,7 +24,7 @@ impl<'de> AnyDeserializer<'de> {
 	}
 }
 
-impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
+impl<'a, 'b, 'de> Deserializer<'de> for &'b mut AnyDeserializer<'a, 'de> {
 	type Error = Error;
 
 	fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
@@ -34,8 +33,9 @@ impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
 		match tag {
 			Tag::End => self.deserialize_option(visitor),
 			Tag::Compound => self.deserialize_map(visitor),
-			Tag::List | Tag::ByteArray | Tag::IntArray | Tag::LongArray => {
-				self.deserialize_seq(visitor)
+			Tag::List => self.deserialize_seq(visitor),
+			Tag::ByteArray | Tag::IntArray | Tag::LongArray => {
+				self.deserialize_enum(MAGIC, &[], visitor)
 			}
 			Tag::String => self.deserialize_str(visitor),
 			Tag::Byte => self.deserialize_i8(visitor),
@@ -170,28 +170,35 @@ impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
 	fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
 		self.deserialize_bytes(visitor)
 	}
-	fn deserialize_newtype_struct<V: Visitor<'de>>(
+	fn deserialize_enum<V: Visitor<'de>>(
 		self,
 		name: &'static str,
+		_variants: &'static [&'static str],
 		visitor: V,
 	) -> Result<V::Value, Self::Error> {
-		// normally we ignore newtype structs in this format
-		// but if it has one of the magic names
-		// we enforce the data type
-		let expected_tag = match name {
-			MAGIC_BYTE_ARRAY => Tag::ByteArray,
-			MAGIC_INT_ARRAY => Tag::IntArray,
-			MAGIC_LONG_ARRAY => Tag::LongArray,
-			_ => return visitor.visit_newtype_struct(self),
-		};
+		if name == MAGIC {
+			let tag = self.tag()?;
+			if !matches!(tag, Tag::ByteArray | Tag::IntArray | Tag::LongArray) {
+				return Err(Error::InvalidData(format!(
+					"Expected byte_array/int_array/long_array tag, found {tag}"
+				)));
+			}
 
-		let tag = self.tag()?;
-		if tag != expected_tag {
-			return Err(Error::InvalidData(format!(
-				"Expected {expected_tag} tag, found {tag}"
-			)));
+			return visitor.visit_enum(ArrayTypeEnumAccess {
+				input: &mut self.input,
+				tag,
+			});
 		}
 
+		Err(Error::InvalidData(format!(
+			"nbt does not support enums. Use #[serde(untagged)] if its meant to be untagged"
+		)))
+	}
+	fn deserialize_newtype_struct<V: Visitor<'de>>(
+		self,
+		_name: &'static str,
+		visitor: V,
+	) -> Result<V::Value, Self::Error> {
 		visitor.visit_newtype_struct(self)
 	}
 	fn deserialize_seq<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
@@ -268,16 +275,6 @@ impl<'a, 'de> Deserializer<'de> for &'a mut AnyDeserializer<'de> {
 		} else {
 			visitor.visit_some(self)
 		}
-	}
-	fn deserialize_enum<V: Visitor<'de>>(
-		self,
-		_name: &'static str,
-		_variants: &'static [&'static str],
-		_visitor: V,
-	) -> Result<V::Value, Self::Error> {
-		Err(Error::InvalidData(format!(
-			"nbt does not support enums. Use #[serde(untagged)] if its meant to be untagged"
-		)))
 	}
 	fn deserialize_identifier<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
 		self.deserialize_any(visitor)

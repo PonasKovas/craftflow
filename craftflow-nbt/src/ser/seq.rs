@@ -110,7 +110,7 @@ impl<'a, W: Write> SerializeSeq for SeqSerializer<'a, W> {
 			Length::Known(_) => {
 				// just write the element to the output
 				let serializer = AnySerializer {
-					output: &mut self.output,
+					output: self.output,
 					expecting: self.tag,
 				};
 				self.written += value.serialize(serializer)?;

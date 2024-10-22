@@ -27,7 +27,7 @@ impl<'a, 'de> MapAccess<'de> for CompoundDeserializer<'a, 'de> {
 		self.tag = Some(tag);
 
 		let mut serializer = AnyDeserializer {
-			input: *self.input,
+			input: self.input,
 			tag: Some(Tag::String),
 		};
 		let r = seed.deserialize(&mut serializer);
@@ -39,13 +39,14 @@ impl<'a, 'de> MapAccess<'de> for CompoundDeserializer<'a, 'de> {
 	where
 		V: DeserializeSeed<'de>,
 	{
+		println!("DESERIALIZING VALUE");
 		let tag = self
 			.tag
 			.take()
 			.ok_or(Error::InvalidData(format!("compound value without key")))?;
 
 		let mut serializer = AnyDeserializer {
-			input: *self.input,
+			input: self.input,
 			tag: Some(tag),
 		};
 		let r = seed.deserialize(&mut serializer);

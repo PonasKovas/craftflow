@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-// Sequences are wrapped in newtype structs with these names when serializing
+pub(crate) const MAGIC: &str = "_nbt_array_type";
 pub(crate) const MAGIC_BYTE_ARRAY: &str = "_nbt_byte_array";
 pub(crate) const MAGIC_INT_ARRAY: &str = "_nbt_int_array";
 pub(crate) const MAGIC_LONG_ARRAY: &str = "_nbt_long_array";
@@ -18,7 +18,7 @@ macro_rules! impl_array_type {
 		///
 		/// Use this with `#[serde(with = "..."]`
 		pub mod $mod_name {
-		    use serde::{Serialize, Serializer, Deserialize, Deserializer, de::Visitor};
+		    use serde::{Serialize, Serializer, Deserialize, Deserializer, de::{VariantAccess, EnumAccess, Visitor}};
 			use std::marker::PhantomData;
 
             pub fn serialize<T: Serialize, S: Serializer>(
@@ -31,7 +31,7 @@ macro_rules! impl_array_type {
             pub fn deserialize<'de, T: Deserialize<'de>, D: Deserializer<'de>>(
                	deserializer: D,
             ) -> Result<T, D::Error> {
-                // Tell the deserializer that we are expecting a newtype struct with a magic name
+                // Tell the deserializer that we are expecting an enum variant with a magic name
 
                	struct V<T>(PhantomData<T>);
                	impl<'de, T: Deserialize<'de>> Visitor<'de> for V<T> {
@@ -40,14 +40,20 @@ macro_rules! impl_array_type {
               		fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
              			formatter.write_str(stringify!(a $struct_name))
               		}
-              		fn visit_newtype_struct<D: Deserializer<'de>>(
-             			self,
-             			deserializer: D,
-              		) -> Result<Self::Value, D::Error> {
-             			T::deserialize(deserializer)
-              		}
+              		fn visit_enum<A: EnumAccess<'de>>(self, data: A) -> Result<Self::Value, A::Error> {
+                        let (name, inner): (&str, _) = data.variant()?;
+
+                        if name != super::$magic {
+                            return Err(serde::de::Error::unknown_variant(
+                                name,
+                                &[super::MAGIC_BYTE_ARRAY, super::MAGIC_INT_ARRAY, super::MAGIC_LONG_ARRAY],
+                            ));
+                        }
+
+                        inner.newtype_variant()
+                    }
                	}
-               	deserializer.deserialize_newtype_struct(super::$magic, V(PhantomData))
+               	deserializer.deserialize_enum(super::MAGIC, &[], V(PhantomData))
             }
         }
 
