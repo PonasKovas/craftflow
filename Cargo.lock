@@ -177,7 +177,7 @@ dependencies = [
 
 [[package]]
 name = "craftflow-nbt"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "cesu8",
  "serde",
