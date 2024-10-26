@@ -20,6 +20,441 @@ pub enum DynNBT {
 	ByteArray(#[serde(with = "crate::arrays::byte_array")] Vec<u8>),
 }
 
+impl DynNBT {
+	pub fn as_long(&self) -> Option<i64> {
+		match self {
+			DynNBT::Long(v) => Some(*v),
+			_ => None,
+		}
+	}
+	pub fn as_int(&self) -> Option<i32> {
+		match self {
+			DynNBT::Int(v) => Some(*v),
+			_ => None,
+		}
+	}
+	pub fn as_short(&self) -> Option<i16> {
+		match self {
+			DynNBT::Short(v) => Some(*v),
+			_ => None,
+		}
+	}
+	pub fn as_byte(&self) -> Option<i8> {
+		match self {
+			DynNBT::Byte(v) => Some(*v),
+			_ => None,
+		}
+	}
+	pub fn as_double(&self) -> Option<f64> {
+		match self {
+			DynNBT::Double(v) => Some(*v),
+			_ => None,
+		}
+	}
+	pub fn as_float(&self) -> Option<f32> {
+		match self {
+			DynNBT::Float(v) => Some(*v),
+			_ => None,
+		}
+	}
+	pub fn as_string(&self) -> Option<&String> {
+		match self {
+			DynNBT::String(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_list(&self) -> Option<&Vec<DynNBT>> {
+		match self {
+			DynNBT::List(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_compound(&self) -> Option<&HashMap<String, DynNBT>> {
+		match self {
+			DynNBT::Compound(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_long_array(&self) -> Option<&Vec<i64>> {
+		match self {
+			DynNBT::LongArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_int_array(&self) -> Option<&Vec<i32>> {
+		match self {
+			DynNBT::IntArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_byte_array(&self) -> Option<&Vec<u8>> {
+		match self {
+			DynNBT::ByteArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_long(&mut self) -> Option<&mut i64> {
+		match self {
+			DynNBT::Long(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_int(&mut self) -> Option<&mut i32> {
+		match self {
+			DynNBT::Int(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_short(&mut self) -> Option<&mut i16> {
+		match self {
+			DynNBT::Short(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_byte(&mut self) -> Option<&mut i8> {
+		match self {
+			DynNBT::Byte(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_double(&mut self) -> Option<&mut f64> {
+		match self {
+			DynNBT::Double(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_float(&mut self) -> Option<&mut f32> {
+		match self {
+			DynNBT::Float(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_string(&mut self) -> Option<&mut String> {
+		match self {
+			DynNBT::String(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_list(&mut self) -> Option<&mut Vec<DynNBT>> {
+		match self {
+			DynNBT::List(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_compound(&mut self) -> Option<&mut HashMap<String, DynNBT>> {
+		match self {
+			DynNBT::Compound(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_long_array(&mut self) -> Option<&mut Vec<i64>> {
+		match self {
+			DynNBT::LongArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_int_array(&mut self) -> Option<&mut Vec<i32>> {
+		match self {
+			DynNBT::IntArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn as_mut_byte_array(&mut self) -> Option<&mut Vec<u8>> {
+		match self {
+			DynNBT::ByteArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_long(self) -> Option<i64> {
+		match self {
+			DynNBT::Long(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_int(self) -> Option<i32> {
+		match self {
+			DynNBT::Int(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_short(self) -> Option<i16> {
+		match self {
+			DynNBT::Short(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_byte(self) -> Option<i8> {
+		match self {
+			DynNBT::Byte(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_double(self) -> Option<f64> {
+		match self {
+			DynNBT::Double(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_float(self) -> Option<f32> {
+		match self {
+			DynNBT::Float(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_string(self) -> Option<String> {
+		match self {
+			DynNBT::String(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_list(self) -> Option<Vec<DynNBT>> {
+		match self {
+			DynNBT::List(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_compound(self) -> Option<HashMap<String, DynNBT>> {
+		match self {
+			DynNBT::Compound(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_long_array(self) -> Option<Vec<i64>> {
+		match self {
+			DynNBT::LongArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_int_array(self) -> Option<Vec<i32>> {
+		match self {
+			DynNBT::IntArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn into_byte_array(self) -> Option<Vec<u8>> {
+		match self {
+			DynNBT::ByteArray(v) => Some(v),
+			_ => None,
+		}
+	}
+	pub fn expect_long(&self) -> i64 {
+		match self {
+			DynNBT::Long(v) => *v,
+			_ => panic!("Expected Long, found {:?}", self),
+		}
+	}
+	pub fn expect_int(&self) -> i32 {
+		match self {
+			DynNBT::Int(v) => *v,
+			_ => panic!("Expected Int, found {:?}", self),
+		}
+	}
+	pub fn expect_short(&self) -> i16 {
+		match self {
+			DynNBT::Short(v) => *v,
+			_ => panic!("Expected Short, found {:?}", self),
+		}
+	}
+	pub fn expect_byte(&self) -> i8 {
+		match self {
+			DynNBT::Byte(v) => *v,
+			_ => panic!("Expected Byte, found {:?}", self),
+		}
+	}
+	pub fn expect_double(&self) -> f64 {
+		match self {
+			DynNBT::Double(v) => *v,
+			_ => panic!("Expected Double, found {:?}", self),
+		}
+	}
+	pub fn expect_float(&self) -> f32 {
+		match self {
+			DynNBT::Float(v) => *v,
+			_ => panic!("Expected Float, found {:?}", self),
+		}
+	}
+	pub fn expect_string(&self) -> &String {
+		match self {
+			DynNBT::String(v) => v,
+			_ => panic!("Expected String, found {:?}", self),
+		}
+	}
+	pub fn expect_list(&self) -> &Vec<DynNBT> {
+		match self {
+			DynNBT::List(v) => v,
+			_ => panic!("Expected List, found {:?}", self),
+		}
+	}
+	pub fn expect_compound(&self) -> &HashMap<String, DynNBT> {
+		match self {
+			DynNBT::Compound(v) => v,
+			_ => panic!("Expected Compound, found {:?}", self),
+		}
+	}
+	pub fn expect_long_array(&self) -> &Vec<i64> {
+		match self {
+			DynNBT::LongArray(v) => v,
+			_ => panic!("Expected LongArray, found {:?}", self),
+		}
+	}
+	pub fn expect_int_array(&self) -> &Vec<i32> {
+		match self {
+			DynNBT::IntArray(v) => v,
+			_ => panic!("Expected IntArray, found {:?}", self),
+		}
+	}
+	pub fn expect_byte_array(&self) -> &Vec<u8> {
+		match self {
+			DynNBT::ByteArray(v) => v,
+			_ => panic!("Expected ByteArray, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_long(&mut self) -> &mut i64 {
+		match self {
+			DynNBT::Long(v) => v,
+			_ => panic!("Expected Long, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_int(&mut self) -> &mut i32 {
+		match self {
+			DynNBT::Int(v) => v,
+			_ => panic!("Expected Int, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_short(&mut self) -> &mut i16 {
+		match self {
+			DynNBT::Short(v) => v,
+			_ => panic!("Expected Short, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_byte(&mut self) -> &mut i8 {
+		match self {
+			DynNBT::Byte(v) => v,
+			_ => panic!("Expected Byte, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_double(&mut self) -> &mut f64 {
+		match self {
+			DynNBT::Double(v) => v,
+			_ => panic!("Expected Double, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_float(&mut self) -> &mut f32 {
+		match self {
+			DynNBT::Float(v) => v,
+			_ => panic!("Expected Float, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_string(&mut self) -> &mut String {
+		match self {
+			DynNBT::String(v) => v,
+			_ => panic!("Expected String, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_list(&mut self) -> &mut Vec<DynNBT> {
+		match self {
+			DynNBT::List(v) => v,
+			_ => panic!("Expected List, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_compound(&mut self) -> &mut HashMap<String, DynNBT> {
+		match self {
+			DynNBT::Compound(v) => v,
+			_ => panic!("Expected Compound, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_long_array(&mut self) -> &mut Vec<i64> {
+		match self {
+			DynNBT::LongArray(v) => v,
+			_ => panic!("Expected LongArray, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_int_array(&mut self) -> &mut Vec<i32> {
+		match self {
+			DynNBT::IntArray(v) => v,
+			_ => panic!("Expected IntArray, found {:?}", self),
+		}
+	}
+	pub fn expect_mut_byte_array(&mut self) -> &mut Vec<u8> {
+		match self {
+			DynNBT::ByteArray(v) => v,
+			_ => panic!("Expected ByteArray, found {:?}", self),
+		}
+	}
+	pub fn unwrap_long(self) -> i64 {
+		match self {
+			DynNBT::Long(v) => v,
+			_ => panic!("Expected Long, found {:?}", self),
+		}
+	}
+	pub fn unwrap_int(self) -> i32 {
+		match self {
+			DynNBT::Int(v) => v,
+			_ => panic!("Expected Int, found {:?}", self),
+		}
+	}
+	pub fn unwrap_short(self) -> i16 {
+		match self {
+			DynNBT::Short(v) => v,
+			_ => panic!("Expected Short, found {:?}", self),
+		}
+	}
+	pub fn unwrap_byte(self) -> i8 {
+		match self {
+			DynNBT::Byte(v) => v,
+			_ => panic!("Expected Byte, found {:?}", self),
+		}
+	}
+	pub fn unwrap_double(self) -> f64 {
+		match self {
+			DynNBT::Double(v) => v,
+			_ => panic!("Expected Double, found {:?}", self),
+		}
+	}
+	pub fn unwrap_float(self) -> f32 {
+		match self {
+			DynNBT::Float(v) => v,
+			_ => panic!("Expected Float, found {:?}", self),
+		}
+	}
+	pub fn unwrap_string(self) -> String {
+		match self {
+			DynNBT::String(v) => v,
+			_ => panic!("Expected String, found {:?}", self),
+		}
+	}
+	pub fn unwrap_list(self) -> Vec<DynNBT> {
+		match self {
+			DynNBT::List(v) => v,
+			_ => panic!("Expected List, found {:?}", self),
+		}
+	}
+	pub fn unwrap_compound(self) -> HashMap<String, DynNBT> {
+		match self {
+			DynNBT::Compound(v) => v,
+			_ => panic!("Expected Compound, found {:?}", self),
+		}
+	}
+	pub fn unwrap_long_array(self) -> Vec<i64> {
+		match self {
+			DynNBT::LongArray(v) => v,
+			_ => panic!("Expected LongArray, found {:?}", self),
+		}
+	}
+	pub fn unwrap_int_array(self) -> Vec<i32> {
+		match self {
+			DynNBT::IntArray(v) => v,
+			_ => panic!("Expected IntArray, found {:?}", self),
+		}
+	}
+	pub fn unwrap_byte_array(self) -> Vec<u8> {
+		match self {
+			DynNBT::ByteArray(v) => v,
+			_ => panic!("Expected ByteArray, found {:?}", self),
+		}
+	}
+}
+
 // Due to the way serde derives Deserialize for untagged enums we need to implement it manually
 // This is because the derived implementation does some weird type converting stuff, like deserializing
 // all integers that fit in the range of 0-255 as u8, if the Deserialize wants an u8. This results in all
