@@ -1,10 +1,10 @@
 [package]
 name = "craftflow-nbt"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2021"
 description = "A serde-based NBT (from Minecraft) binary format implementation"
 repository = "https://github.com/PonasKovas/craftflow/tree/master/craftflow-nbt"
-license = "GPL-3.0-only"
+license = "MPL-2.0"
 
 [dependencies]
 thiserror = { workspace = true }
