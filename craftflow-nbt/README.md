@@ -4,7 +4,10 @@
 
 <h1 align="center">CraftFlow-NBT</h1>
 
-<p align="center"><img alt="docs.rs" src="https://img.shields.io/docsrs/craftflow-nbt?style=flat"> <img alt="Crates.io Version" src="https://img.shields.io/crates/v/craftflow-nbt?style=flat"></p>
+<p align="center">
+<a href="https://docs.rs/craftflow-nbt/latest/craftflow_nbt/"><img alt="docs.rs" src="https://img.shields.io/docsrs/craftflow-nbt?style=flat"></a>
+<a href="https://crates.io/crates/craftflow-nbt"><img alt="Crates.io Version" src="https://img.shields.io/crates/v/craftflow-nbt?style=flat"></a>
+</p>
 <p align="center">A serde-based implementation of the Minecraft NBT binary format.</p>
 
 ## Serde deriving
