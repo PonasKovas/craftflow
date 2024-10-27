@@ -144,6 +144,18 @@ mod tests {
 			&[],
 			vec![Tag::List as u8, Tag::End as u8, 0, 0, 0, 0],
 		);
+
+		inner_test::<Option<()>>(None, vec![Tag::End as u8]);
+
+		#[derive(Serialize, Debug)]
+		struct OptionTest {
+			test: Option<bool>,
+		}
+
+		inner_test(
+			OptionTest { test: None },
+			vec![Tag::Compound as u8, Tag::End as u8],
+		);
 	}
 
 	#[test]
