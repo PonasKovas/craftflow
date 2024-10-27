@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../assets/icon.png" width="256" />
+  <img src="https://raw.githubusercontent.com/PonasKovas/craftflow/refs/heads/master/assets/icon.png" width="256" />
 </p>
 
 <h1 align="center">CraftFlow-NBT</h1>
