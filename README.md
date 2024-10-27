@@ -3,3 +3,5 @@
 </p>
 
 <h1 align="center">CraftFlow</h1>
+
+Not officially released or announced yet. Feel free to message me on discord.
