@@ -1,0 +1,157 @@
+{
+  "minecraft:trim_pattern": {
+    "type": "minecraft:trim_pattern",
+    "value": []
+  },
+  "minecraft:trim_material": {
+    "type": "minecraft:trim_material",
+    "value": []
+  },
+  "minecraft:chat_type": {
+    "type": "minecraft:chat_type",
+    "value": [
+      {
+        "name": "minecraft:chat",
+        "id": 0,
+        "element": {
+          "chat": {
+            "translation_key": "chat.type.text",
+            "parameters": ["sender", "content"]
+          },
+          "narration": {
+            "translation_key": "chat.type.text.narrate",
+            "parameters": ["sender", "content"]
+          }
+        }
+      }
+    ]
+  },
+  "minecraft:dimension_type": {
+    "type": "minecraft:dimension_type",
+    "value": [
+      {
+        "name": "craftflow:default_dimension",
+        "id": 0,
+        "element": {
+          "piglin_safe": 0,
+          "natural": 1,
+          "ambient_light": 0.0,
+          "monster_spawn_block_light_limit": 0,
+          "infiniburn": "#minecraft:infiniburn_overworld",
+          "respawn_anchor_works": 0,
+          "has_skylight": 1,
+          "bed_works": 1,
+          "effects": "minecraft:overworld",
+          "has_raids": 1,
+          "logical_height": 384,
+          "coordinate_scale": 1.0,
+          "monster_spawn_light_level": {
+            "type": "minecraft:uniform",
+            "value": {
+              "min_inclusive": 0,
+              "max_inclusive": 7
+            }
+          },
+          "min_y": -64,
+          "ultrawarm": 0,
+          "has_ceiling": 0,
+          "height": 384
+        }
+      }
+    ]
+  },
+  "minecraft:damage_type": {
+    "type": "minecraft:damage_type",
+    "value": [
+      {
+        "name": "craftflow:default_damage",
+        "id": 0,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow"
+        }
+      },
+      {
+        "name": "craftflow:hurt_damage",
+        "id": 1,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow",
+          "effects": "hurt"
+        }
+      },
+      {
+        "name": "craftflow:thorns_damage",
+        "id": 2,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow",
+          "effects": "thorns"
+        }
+      },
+      {
+        "name": "craftflow:drowning_damage",
+        "id": 3,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow",
+          "effects": "drowning"
+        }
+      },
+      {
+        "name": "craftflow:burning_damage",
+        "id": 4,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow",
+          "effects": "burning"
+        }
+      },
+      {
+        "name": "craftflow:poking_damage",
+        "id": 5,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow",
+          "effects": "poking"
+        }
+      },
+      {
+        "name": "craftflow:freezing_damage",
+        "id": 6,
+        "element": {
+          "scaling": "never",
+          "exhaustion": 0.0,
+          "message_id": "arrow",
+          "effects": "freezing"
+        }
+      }
+    ]
+  },
+  "minecraft:worldgen/biome": {
+    "type": "minecraft:worldgen/biome",
+    "value": [
+      {
+        "name": "craftflow:default_biome",
+        "id": 0,
+        "element": {
+          "effects": {
+            "sky_color": 7907327,
+            "water_fog_color": 329011,
+            "fog_color": 12638463,
+            "water_color": 4159204
+          },
+          "has_precipitation": 0,
+          "temperature": 2.0,
+          "downfall": 0.0
+        }
+      }
+    ]
+  }
+}

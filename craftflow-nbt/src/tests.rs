@@ -48,7 +48,10 @@ fn test_roundtrip() {
 		}
 
 		let reconstructed: T = match from_slice(&buffer) {
-			Ok(r) => r,
+			Ok((input, r)) => {
+				assert!(input.is_empty(), "line {line}");
+				r
+			}
 			Err(e) => panic!(
 				"Failed to deserialize {value:?} from [{buffer}]: {:?} (line {line})",
 				e,
@@ -172,6 +175,7 @@ fn test_roundtrip() {
 #[test]
 fn bigtest() {
 	let bytes = include_bytes!("../bigtest.nbt");
-	let (name, _value): (_, DynNBT) = from_slice_named(bytes).unwrap();
+	let (input, (name, _value)): (_, (_, DynNBT)) = from_slice_named(bytes).unwrap();
+	assert!(input.is_empty());
 	assert_eq!(name, "Level");
 }

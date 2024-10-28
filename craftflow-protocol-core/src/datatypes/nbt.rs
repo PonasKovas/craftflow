@@ -1,82 +1,53 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
+use craftflow_nbt::DynNBT;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Nbt {
-	pub inner: crab_nbt::Nbt,
+pub struct Nbt<T = DynNBT> {
+	pub inner: T,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct AnonymousNbt {
-	pub inner: crab_nbt::Nbt,
+pub struct AnonymousNbt<T = DynNBT> {
+	pub inner: T,
 }
 
-/// Wraps a Write to count the bytes written, since the Nbt parser doesn't return this info
-struct Counter<W> {
-	inner: W,
-	written_bytes: usize,
-}
-impl<W: Write> Write for Counter<W> {
-	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-		let written = self.inner.write(buf)?;
-		self.written_bytes += written;
-		Ok(written)
-	}
-	fn flush(&mut self) -> std::io::Result<()> {
-		self.inner.flush()
+impl<T: for<'de> Deserialize<'de>> MCPRead for Nbt<T> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+		let (input_after, value): (_, T) =
+			craftflow_nbt::from_slice(input).map_err(|e| Error::InvalidData(e.to_string()))?;
+
+		// crazy shit here because we need a mutable slice from the immutable one
+		let offset = input_after.as_ptr() as usize - input.as_ptr() as usize;
+		let input = &mut input[offset..];
+
+		Ok((input, Self { inner: value }))
 	}
 }
-
-impl MCPRead for Nbt {
-	fn read(orig_input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let mut input: &[u8] = orig_input;
-		let inner =
-			crab_nbt::Nbt::read(&mut input).map_err(|e| Error::InvalidData(format!("{e}")))?;
-
-		let read_bytes = orig_input.len() - input.len();
-		Ok((&mut orig_input[read_bytes..], Self { inner }))
-	}
-}
-impl MCPRead for AnonymousNbt {
-	fn read(orig_input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let mut input: &[u8] = orig_input;
-		let inner = crab_nbt::Nbt::read_unnamed(&mut input)
-			.map_err(|e| Error::InvalidData(format!("{e}")))?;
-
-		let read_bytes = orig_input.len() - input.len();
-		Ok((&mut orig_input[read_bytes..], Self { inner }))
-	}
-}
-
-impl MCPWrite for Nbt {
+impl<T: Serialize> MCPWrite for Nbt<T> {
 	fn write(&self, output: &mut impl Write) -> Result<usize> {
-		let mut counter = Counter {
-			inner: output,
-			written_bytes: 0,
-		};
-
-		self.inner
-			.write_to_writer(&mut counter)
-			.map_err(|e| match e {
-				crab_nbt::error::Error::Io(e) => Error::IOError(e),
-				other => Error::InvalidData(format!("{other}")),
-			})?;
-		Ok(counter.written_bytes)
+		Ok(craftflow_nbt::to_writer(output, &self.inner)
+			.map_err(|e| Error::InvalidData(e.to_string()))?)
 	}
 }
-impl MCPWrite for AnonymousNbt {
-	fn write(&self, output: &mut impl Write) -> Result<usize> {
-		let mut counter = Counter {
-			inner: output,
-			written_bytes: 0,
-		};
 
-		self.inner
-			.write_unnamed_to_writer(&mut counter)
-			.map_err(|e| match e {
-				crab_nbt::error::Error::Io(e) => Error::IOError(e),
-				other => Error::InvalidData(format!("{other}")),
-			})?;
-		Ok(counter.written_bytes)
+impl<T: for<'de> Deserialize<'de>> MCPRead for AnonymousNbt<T> {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+		let (input_after, (name, value)): (_, (_, T)) = craftflow_nbt::from_slice_named(input)
+			.map_err(|e| Error::InvalidData(e.to_string()))?;
+		assert_eq!(name.as_ref(), "");
+
+		// crazy shit here because we need a mutable slice from the immutable one
+		let offset = input_after.as_ptr() as usize - input.as_ptr() as usize;
+		let input = &mut input[offset..];
+
+		Ok((input, Self { inner: value }))
+	}
+}
+impl<T: Serialize> MCPWrite for AnonymousNbt<T> {
+	fn write(&self, output: &mut impl Write) -> Result<usize> {
+		Ok(craftflow_nbt::to_writer_named(output, &"", &self.inner)
+			.map_err(|e| Error::InvalidData(e.to_string()))?)
 	}
 }

@@ -4,18 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+craftflow-nbt = { path = "../craftflow-nbt" }
 byteorder = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
-crab_nbt = { workspace = true }
-
-# notes
-#
-# core - MCPBaseRead and MCPBaseWrite, take protocol version argument, works with all versions
-# (though possibly a bit different, NBT for example)
-#
-# versions - MCPVersionSpecificRead, MCPVersionSpecificWrite, take no arguments, implementation for specific version
-#
-# abstract - MCPAbstractRead, MCPAbstractWrite, takes version argument, has associated constant for supported versions
-# works for a set of versions

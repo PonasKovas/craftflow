@@ -1,4 +1,4 @@
-use crate::{tag::Tag, Error, Result};
+use crate::{tag::Tag, Result};
 use read_ext::ByteRead;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -10,7 +10,8 @@ pub(crate) mod read_ext;
 pub(crate) mod seq;
 
 /// Deserializes any NBT structure from a byte slice
-pub fn from_slice<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<T> {
+/// and returns the remaining slice together with the value
+pub fn from_slice<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<(&'a [u8], T)> {
 	let mut deserializer = any::AnyDeserializer {
 		input: &mut input,
 		tag: None,
@@ -18,18 +19,14 @@ pub fn from_slice<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<T> {
 
 	let r = T::deserialize(&mut deserializer)?;
 
-	if !input.is_empty() {
-		return Err(Error::InvalidData(format!(
-			"{} bytes left after deserialization",
-			input.len()
-		)));
-	}
-
-	Ok(r)
+	Ok((input, r))
 }
 
 /// Deserializes any NBT structure from a byte slice with a name
-pub fn from_slice_named<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<(Cow<'a, str>, T)> {
+/// and returns the remaining slice together with the name and the value
+pub fn from_slice_named<'a, T: Deserialize<'a>>(
+	mut input: &'a [u8],
+) -> Result<(&'a [u8], (Cow<'a, str>, T))> {
 	let tag = Tag::new(input.read_u8()?)?;
 	let name = input.read_str()?;
 
@@ -40,14 +37,7 @@ pub fn from_slice_named<'a, T: Deserialize<'a>>(mut input: &'a [u8]) -> Result<(
 
 	let r = T::deserialize(&mut deserializer)?;
 
-	if !input.is_empty() {
-		return Err(Error::InvalidData(format!(
-			"{} bytes left after deserialization",
-			input.len()
-		)));
-	}
-
-	Ok((name, r))
+	Ok((input, (name, r)))
 }
 
 #[cfg(test)]
@@ -63,7 +53,8 @@ mod tests {
 		) {
 			let result = from_slice::<'a, T>(bytes).unwrap();
 
-			assert_eq!(result, expected_value);
+			assert!(result.0.is_empty());
+			assert_eq!(result.1, expected_value);
 		}
 
 		inner_test(&[Tag::End as u8], None::<()>);
@@ -120,7 +111,9 @@ mod tests {
 			expected_name: &str,
 			expected_value: T,
 		) {
-			let (name, result) = from_slice_named::<'a, T>(bytes).unwrap();
+			let (input, (name, result)) = from_slice_named::<'a, T>(bytes).unwrap();
+
+			assert!(input.is_empty());
 
 			assert_eq!(name, expected_name);
 			assert_eq!(result, expected_value);

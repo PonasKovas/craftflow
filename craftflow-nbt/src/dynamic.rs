@@ -579,7 +579,8 @@ mod tests {
 			.collect(),
 		);
 		to_writer(&mut buffer, &value).unwrap();
-		let reconstructed: DynNBT = from_slice(&buffer).unwrap();
+		let (input, reconstructed): (&[u8], DynNBT) = from_slice(&buffer).unwrap();
+		assert!(input.is_empty());
 
 		if value != reconstructed {
 			println!("Reconstructed: {:#?}", reconstructed);
