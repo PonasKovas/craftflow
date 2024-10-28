@@ -1,7 +1,7 @@
 CACHE_DIR = ".cache/"
 REPOSITORY = "https://github.com/PrismarineJS/minecraft-data.git"
-COMMIT = "9c8c31f2cee73500130e14e398a4b6ac6d5f22b8"
-VERSION_RANGE = [5, 765]
+COMMIT = "f1130aea931b948d2ecaecf34ecfe0116bfd4172"
+VERSION_RANGE = [5, 767]
 C2S_PACKETS = {
     "handshaking": ["set_protocol"],
     "status": ["ping_start", "ping"],

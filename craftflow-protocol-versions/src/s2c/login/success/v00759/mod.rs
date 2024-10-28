@@ -7,7 +7,7 @@ use craftflow_protocol_core::*;
 pub struct SuccessV00759 {
 	pub uuid: u128,
 	pub username: String,
-	pub properties: Vec<Property>,
+	pub properties: Array<VarInt, Property>,
 }
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
 pub struct Property {
@@ -21,16 +21,18 @@ impl MCPWrite for SuccessV00759 {
 
 		written_bytes += self.uuid.write(output)?;
 		written_bytes += self.username.write(output)?;
-		written_bytes += (self.properties.len() as i32).write(output)?;
-		for property in &self.properties {
-			written_bytes += property.name.write(output)?;
-			written_bytes += property.value.write(output)?;
-			if let Some(ref signature) = property.signature {
-				written_bytes += signature.write(output)?;
-			} else {
-				written_bytes += (-1i32).write(output)?; // Write -1 for None
-			}
-		}
+		written_bytes += self.properties.write(output)?;
+
+		Ok(written_bytes)
+	}
+}
+impl MCPWrite for Property {
+	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
+		let mut written_bytes = 0;
+
+		written_bytes += self.name.write(output)?;
+		written_bytes += self.value.write(output)?;
+		written_bytes += self.signature.write(output)?;
 
 		Ok(written_bytes)
 	}
@@ -39,19 +41,7 @@ impl MCPRead for SuccessV00759 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, uuid) = u128::read(input)?;
 		let (input, username) = String::read(input)?;
-		let (mut input, properties_len) = VarInt::read(input)?;
-		let mut properties = Vec::new();
-		for _ in 0..properties_len.0 {
-			let (i, name) = String::read(input)?;
-			let (i, value) = String::read(i)?;
-			let (i, signature) = Option::<String>::read(i)?;
-			properties.push(Property {
-				name,
-				value,
-				signature,
-			});
-			input = i;
-		}
+		let (input, properties) = Array::read(input)?;
 
 		Ok((
 			input,
@@ -59,6 +49,21 @@ impl MCPRead for SuccessV00759 {
 				uuid,
 				username,
 				properties,
+			},
+		))
+	}
+}
+impl MCPRead for Property {
+	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+		let (input, name) = String::read(input)?;
+		let (input, value) = String::read(input)?;
+		let (input, signature) = Option::read(input)?;
+		Ok((
+			input,
+			Self {
+				name,
+				value,
+				signature,
 			},
 		))
 	}
