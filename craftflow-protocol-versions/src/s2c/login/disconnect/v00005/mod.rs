@@ -1,3 +1,4 @@
+use common_structures::Text;
 #[allow(unused_imports)]
 use craftflow_protocol_core::datatypes::*;
 #[allow(unused_imports)]
@@ -5,7 +6,7 @@ use craftflow_protocol_core::*;
 
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd)]
 pub struct DisconnectV00005 {
-	pub reason: String,
+	pub reason: Json<Text>,
 }
 impl MCPWrite for DisconnectV00005 {
 	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
@@ -14,7 +15,7 @@ impl MCPWrite for DisconnectV00005 {
 }
 impl MCPRead for DisconnectV00005 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let (input, reason) = String::read(input)?;
+		let (input, reason) = Json::<_>::read(input)?;
 		Ok((input, Self { reason }))
 	}
 }

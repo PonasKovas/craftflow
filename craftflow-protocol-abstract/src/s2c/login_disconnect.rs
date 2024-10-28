@@ -1,6 +1,6 @@
 use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
-use craftflow_protocol_core::common_structures::Text;
+use craftflow_protocol_core::{common_structures::Text, datatypes::Json};
 use craftflow_protocol_versions::{
 	s2c::{
 		login::{disconnect::v00765::DisconnectV00005, Disconnect},
@@ -25,7 +25,9 @@ impl AbPacketWrite for AbLoginDisconnect {
 
 		Ok(WriteResult::Success(once(
 			DisconnectV00005 {
-				reason: serde_json::to_string(&self.message)?,
+				reason: Json {
+					inner: self.message,
+				},
 			}
 			.into_state_enum(),
 		)))
@@ -42,7 +44,7 @@ impl AbPacketNew for AbLoginDisconnect {
 		match packet {
 			S2C::Login(Login::Disconnect(Disconnect::V00005(packet))) => {
 				Ok(ConstructorResult::Done(Self {
-					message: serde_json::from_str(&packet.reason)?,
+					message: packet.reason.inner,
 				}))
 			}
 			_ => Ok(ConstructorResult::Ignore(packet)),
