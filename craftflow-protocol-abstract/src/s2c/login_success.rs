@@ -1,10 +1,12 @@
 use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
+use craftflow_protocol_core::datatypes::Array;
 use craftflow_protocol_versions::{
 	s2c::{
 		login::{
 			success::{
 				v00573::SuccessV00005, v00758::SuccessV00735, v00759, v00765::SuccessV00759,
+				v00766, v00767::SuccessV00766,
 			},
 			Success,
 		},
@@ -20,6 +22,7 @@ pub struct AbLoginSuccess {
 	pub uuid: u128,
 	pub username: String,
 	pub properties: Vec<Property>,
+	pub strict_error_handling: bool,
 }
 
 /// A property of the player
@@ -53,18 +56,35 @@ impl AbPacketWrite for AbLoginSuccess {
 				username: self.username,
 			}
 			.into_state_enum(),
-			759.. => SuccessV00759 {
+			759..766 => SuccessV00759 {
 				uuid: self.uuid,
 				username: self.username,
-				properties: self
-					.properties
-					.into_iter()
-					.map(|p| v00759::Property {
-						name: p.name,
-						value: p.value,
-						signature: p.signature,
-					})
-					.collect(),
+				properties: Array::new(
+					self.properties
+						.into_iter()
+						.map(|p| v00759::Property {
+							name: p.name,
+							value: p.value,
+							signature: p.signature,
+						})
+						.collect(),
+				),
+			}
+			.into_state_enum(),
+			766.. => SuccessV00766 {
+				uuid: self.uuid,
+				username: self.username,
+				properties: Array::new(
+					self.properties
+						.into_iter()
+						.map(|p| v00766::Property {
+							name: p.name,
+							value: p.value,
+							signature: p.signature,
+						})
+						.collect(),
+				),
+				strict_error_handling: self.strict_error_handling,
 			}
 			.into_state_enum(),
 			_ => return Ok(WriteResult::Unsupported),
@@ -87,17 +107,20 @@ impl AbPacketNew for AbLoginSuccess {
 					uuid: u128::from_str_radix(&pkt.uuid.replace("-", ""), 16)?,
 					username: pkt.username,
 					properties: Vec::new(),
+					strict_error_handling: true,
 				}),
 				Success::V00735(pkt) => ConstructorResult::Done(Self {
 					uuid: pkt.uuid,
 					username: pkt.username,
 					properties: Vec::new(),
+					strict_error_handling: true,
 				}),
 				Success::V00759(pkt) => ConstructorResult::Done(Self {
 					uuid: pkt.uuid,
 					username: pkt.username,
 					properties: pkt
 						.properties
+						.data
 						.into_iter()
 						.map(|p| Property {
 							name: p.name,
@@ -105,6 +128,22 @@ impl AbPacketNew for AbLoginSuccess {
 							signature: p.signature,
 						})
 						.collect(),
+					strict_error_handling: true,
+				}),
+				Success::V00766(pkt) => ConstructorResult::Done(Self {
+					uuid: pkt.uuid,
+					username: pkt.username,
+					properties: pkt
+						.properties
+						.data
+						.into_iter()
+						.map(|p| Property {
+							name: p.name,
+							value: p.value,
+							signature: p.signature,
+						})
+						.collect(),
+					strict_error_handling: pkt.strict_error_handling,
 				}),
 			},
 			_ => ConstructorResult::Ignore(packet),

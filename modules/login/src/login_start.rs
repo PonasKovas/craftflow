@@ -34,6 +34,7 @@ pub fn login_start<'a>(
 				&rsa_key.e().to_bytes_be(),
 			),
 			verify_token: VERIFY_TOKEN.as_bytes().to_vec(),
+			should_authenticate: true,
 		});
 	}
 

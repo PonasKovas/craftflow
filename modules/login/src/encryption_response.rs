@@ -67,6 +67,7 @@ pub fn encryption_response<'a>(
 					uuid: uuid.unwrap_or(0),
 					username,
 					properties: Vec::new(),
+					strict_error_handling: false,
 				});
 			}
 			_ => {
