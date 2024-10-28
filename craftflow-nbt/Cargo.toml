@@ -1,6 +1,6 @@
 [package]
 name = "craftflow-nbt"
-version = "2.0.0"
+version = "2.1.0"
 edition = "2021"
 description = "A serde-based NBT (from Minecraft) binary format implementation"
 repository = "https://github.com/PonasKovas/craftflow/tree/master/craftflow-nbt"

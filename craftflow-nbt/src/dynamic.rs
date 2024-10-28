@@ -539,6 +539,36 @@ impl<'de> Deserialize<'de> for DynNBT {
 					_ => Err(A::Error::custom("Invalid magic byte array")),
 				}
 			}
+			// The following methods are not used by the NBT deserializer
+			// but we implement them regardless for general serde compatability
+			////////////////////////////////////////////////////////////////////
+			fn visit_bool<E: Error>(self, v: bool) -> Result<Self::Value, E> {
+				self.visit_i8(v as i8)
+			}
+			fn visit_u8<E: Error>(self, v: u8) -> Result<Self::Value, E> {
+				self.visit_i8(v as i8)
+			}
+			fn visit_u16<E: Error>(self, v: u16) -> Result<Self::Value, E> {
+				self.visit_i16(v as i16)
+			}
+			fn visit_u32<E: Error>(self, v: u32) -> Result<Self::Value, E> {
+				self.visit_i32(v as i32)
+			}
+			fn visit_u64<E: Error>(self, v: u64) -> Result<Self::Value, E> {
+				self.visit_i64(v as i64)
+			}
+			fn visit_bytes<E: Error>(self, v: &[u8]) -> Result<Self::Value, E> {
+				Ok(DynNBT::ByteArray(v.to_vec()))
+			}
+			fn visit_byte_buf<E: Error>(self, v: Vec<u8>) -> Result<Self::Value, E> {
+				Ok(DynNBT::ByteArray(v))
+			}
+			fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+			where
+				D: serde::Deserializer<'de>,
+			{
+				deserializer.deserialize_any(self)
+			}
 		}
 
 		deserializer.deserialize_any(DynNBTVisitor)

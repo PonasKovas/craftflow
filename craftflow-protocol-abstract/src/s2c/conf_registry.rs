@@ -76,3 +76,13 @@ impl AbPacketNew for AbConfRegistry {
 		})
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn default_registry() {
+		let _packet = AbConfRegistry::default();
+	}
+}
