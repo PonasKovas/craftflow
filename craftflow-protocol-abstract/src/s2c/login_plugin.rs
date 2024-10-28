@@ -12,7 +12,7 @@ use std::iter::{once, Once};
 
 /// Sends a plugin request to the client
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbLoginPlugin {
+pub struct AbLoginPluginRequest {
 	/// ID of the message. The client will respond with a plugin message with a matching ID.
 	pub id: u32,
 	/// Channel name of the plugin
@@ -21,7 +21,7 @@ pub struct AbLoginPlugin {
 	pub data: Vec<u8>,
 }
 
-impl AbPacketWrite for AbLoginPlugin {
+impl AbPacketWrite for AbLoginPluginRequest {
 	type Direction = S2C;
 	type Iter = Once<Self::Direction>;
 
@@ -40,7 +40,7 @@ impl AbPacketWrite for AbLoginPlugin {
 	}
 }
 
-impl AbPacketNew for AbLoginPlugin {
+impl AbPacketNew for AbLoginPluginRequest {
 	type Direction = S2C;
 	type Constructor = NoConstructor<Self, S2C>;
 

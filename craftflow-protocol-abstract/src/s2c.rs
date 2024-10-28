@@ -18,7 +18,7 @@ pub use conf_plugin::AbConfPlugin;
 pub use login_compress::AbLoginCompress;
 pub use login_disconnect::AbLoginDisconnect;
 pub use login_encryption_begin::AbLoginEncryptionBegin;
-pub use login_plugin::AbLoginPlugin;
+pub use login_plugin::AbLoginPluginRequest;
 pub use login_success::AbLoginSuccess;
 pub use status_info::AbStatusInfo;
 pub use status_pong::AbStatusPong;
@@ -36,7 +36,7 @@ gen_direction_enum! {
 		LoginEncryptionBegin(AbLoginEncryptionBegin),
 		LoginSuccess(AbLoginSuccess),
 		LoginCompress(AbLoginCompress),
-		LoginPlugin(AbLoginPlugin),
+		LoginPluginRequest(AbLoginPluginRequest),
 		ConfPlugin(AbConfPlugin),
 		ConfDisconnect(AbConfDisconnect),
 		ConfFinish(AbConfFinish),
