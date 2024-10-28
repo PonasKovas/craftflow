@@ -7,42 +7,47 @@ use craftflow_protocol_core::*;
 
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 pub struct TagsV00764 {
-	pub tags: Array<VarInt, TagContainer>,
+	pub registries: Array<VarInt, TagsRegistry>,
 }
 
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
-pub struct TagContainer {
-	pub tag_type: String,
+pub struct TagsRegistry {
+	pub name: String,
 	pub tags: Tags,
 }
 
 impl MCPWrite for TagsV00764 {
 	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
-		self.tags.write(output)
+		self.registries.write(output)
 	}
 }
-
-impl MCPWrite for TagContainer {
+impl MCPWrite for TagsRegistry {
 	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
-		let mut written_bytes = 0;
-		written_bytes += self.tag_type.write(output)?;
-		written_bytes += self.tags.write(output)?;
-		Ok(written_bytes)
+		let mut written = 0;
+		written += self.name.write(output)?;
+		written += self.tags.write(output)?;
+
+		Ok(written)
 	}
 }
 
 impl MCPRead for TagsV00764 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let (input, tags) = Array::<VarInt, TagContainer>::read(input)?;
-		Ok((input, Self { tags }))
+		let (input, tags) = Array::<VarInt, _>::read(input)?;
+		Ok((input, Self { registries: tags }))
 	}
 }
-
-impl MCPRead for TagContainer {
+impl MCPRead for TagsRegistry {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let (input, tag_type) = String::read(input)?;
+		let (input, registry_name) = String::read(input)?;
 		let (input, tags) = Tags::read(input)?;
-		Ok((input, Self { tag_type, tags }))
+		Ok((
+			input,
+			Self {
+				name: registry_name,
+				tags,
+			},
+		))
 	}
 }
 

@@ -6,6 +6,7 @@ pub mod conf_keepalive;
 pub mod conf_ping;
 pub mod conf_plugin;
 pub mod conf_registry;
+pub mod conf_tags;
 pub mod login_compress;
 pub mod login_disconnect;
 pub mod login_encryption_begin;
@@ -19,6 +20,7 @@ pub use conf_disconnect::AbConfDisconnect;
 pub use conf_feature_flags::AbConfFeatureFlags;
 pub use conf_finish::AbConfFinish;
 pub use conf_plugin::AbConfPlugin;
+pub use conf_tags::AbConfTags;
 pub use login_compress::AbLoginCompress;
 pub use login_disconnect::AbLoginDisconnect;
 pub use login_encryption_begin::AbLoginEncryptionBegin;
@@ -46,5 +48,6 @@ gen_direction_enum! {
 		ConfFinish(AbConfFinish),
 		ConfAddResourcePack(AbConfAddResourcePack),
 		ConfFeatureFlags(AbConfFeatureFlags),
+		ConfTags(AbConfTags),
 	}
 }
