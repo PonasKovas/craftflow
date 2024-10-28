@@ -1,5 +1,6 @@
 pub mod conf_add_resource_pack;
 pub mod conf_disconnect;
+pub mod conf_feature_flags;
 pub mod conf_finish;
 pub mod conf_keepalive;
 pub mod conf_ping;
@@ -15,6 +16,7 @@ pub mod status_pong;
 
 pub use conf_add_resource_pack::AbConfAddResourcePack;
 pub use conf_disconnect::AbConfDisconnect;
+pub use conf_feature_flags::AbConfFeatureFlags;
 pub use conf_finish::AbConfFinish;
 pub use conf_plugin::AbConfPlugin;
 pub use login_compress::AbLoginCompress;
@@ -43,5 +45,6 @@ gen_direction_enum! {
 		ConfDisconnect(AbConfDisconnect),
 		ConfFinish(AbConfFinish),
 		ConfAddResourcePack(AbConfAddResourcePack),
+		ConfFeatureFlags(AbConfFeatureFlags),
 	}
 }
