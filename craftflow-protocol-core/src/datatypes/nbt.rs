@@ -3,12 +3,12 @@ use craftflow_nbt::DynNBT;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
 pub struct Nbt<T = DynNBT> {
 	pub inner: T,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
 pub struct AnonymousNbt<T = DynNBT> {
 	pub inner: T,
 }

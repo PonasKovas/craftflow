@@ -1,5 +1,6 @@
 use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
 use anyhow::Result;
+use craftflow_protocol_core::{common_structures::Text, datatypes::Json};
 use craftflow_protocol_versions::{
 	s2c::{
 		configuration::{disconnect::v00764::DisconnectV00764, Disconnect},
@@ -11,7 +12,7 @@ use std::iter::{once, Once};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfDisconnect {
-	pub reason: String,
+	pub reason: Text,
 }
 
 impl AbPacketWrite for AbConfDisconnect {
@@ -21,7 +22,7 @@ impl AbPacketWrite for AbConfDisconnect {
 	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
 		let pkt = match protocol_version {
 			764.. => DisconnectV00764 {
-				reason: self.reason,
+				reason: Json { inner: self.reason },
 			}
 			.into_state_enum(),
 			_ => return Ok(WriteResult::Unsupported),
@@ -40,7 +41,9 @@ impl AbPacketNew for AbConfDisconnect {
 	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::Disconnect(Disconnect::V00764(pkt))) => {
-				ConstructorResult::Done(Self { reason: pkt.reason })
+				ConstructorResult::Done(Self {
+					reason: pkt.reason.inner,
+				})
 			}
 			_ => ConstructorResult::Ignore(packet),
 		})

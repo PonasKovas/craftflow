@@ -1,3 +1,4 @@
+use common_structures::Text;
 #[allow(unused_imports)]
 use craftflow_protocol_core::datatypes::*;
 #[allow(unused_imports)]
@@ -5,7 +6,7 @@ use craftflow_protocol_core::*;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct DisconnectV00765 {
-	pub reason: AnonymousNbt,
+	pub reason: AnonymousNbt<Text>,
 }
 
 impl MCPWrite for DisconnectV00765 {

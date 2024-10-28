@@ -6,6 +6,7 @@ mod bool;
 mod buffer;
 mod float;
 mod integers;
+mod json;
 mod nbt;
 mod option;
 mod rest_buffer;
@@ -17,6 +18,7 @@ mod varlong;
 
 pub use array::Array;
 pub use buffer::Buffer;
+pub use json::Json;
 pub use nbt::{AnonymousNbt, Nbt};
 pub use rest_buffer::RestBuffer;
 pub use top_bit_set_array::TopBitSetArray;

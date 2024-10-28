@@ -1,3 +1,4 @@
+use common_structures::Text;
 #[allow(unused_imports)]
 use craftflow_protocol_core::datatypes::*;
 #[allow(unused_imports)]
@@ -9,7 +10,7 @@ pub struct AddResourcePackV00765 {
 	pub url: String,
 	pub hash: String,
 	pub forced: bool,
-	pub prompt_message: Option<AnonymousNbt>,
+	pub prompt_message: Option<AnonymousNbt<Text>>,
 }
 
 impl MCPWrite for AddResourcePackV00765 {
@@ -32,7 +33,7 @@ impl MCPRead for AddResourcePackV00765 {
 		let (input, url) = String::read(input)?;
 		let (input, hash) = String::read(input)?;
 		let (input, forced) = bool::read(input)?;
-		let (input, prompt_message) = Option::<AnonymousNbt>::read(input)?;
+		let (input, prompt_message) = Option::<AnonymousNbt<_>>::read(input)?;
 
 		Ok((
 			input,
