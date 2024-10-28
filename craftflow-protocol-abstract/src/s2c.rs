@@ -1,3 +1,4 @@
+pub mod conf_add_resource_pack;
 pub mod conf_disconnect;
 pub mod conf_finish;
 pub mod conf_keepalive;
@@ -12,6 +13,7 @@ pub mod login_success;
 pub mod status_info;
 pub mod status_pong;
 
+pub use conf_add_resource_pack::AbConfAddResourcePack;
 pub use conf_disconnect::AbConfDisconnect;
 pub use conf_finish::AbConfFinish;
 pub use conf_plugin::AbConfPlugin;
@@ -40,5 +42,6 @@ gen_direction_enum! {
 		ConfPlugin(AbConfPlugin),
 		ConfDisconnect(AbConfDisconnect),
 		ConfFinish(AbConfFinish),
+		ConfAddResourcePack(AbConfAddResourcePack),
 	}
 }
