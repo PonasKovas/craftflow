@@ -8,14 +8,7 @@ use craftflow_protocol_core::*;
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 pub struct ResourcePackReceiveV00765 {
 	pub uuid: u128,
-	pub result: ResultType,
-}
-
-#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
-pub enum ResultType {
-	Success,
-	Failure,
-	Unknown(i32),
+	pub result: VarInt,
 }
 
 impl MCPWrite for ResourcePackReceiveV00765 {
@@ -29,36 +22,12 @@ impl MCPWrite for ResourcePackReceiveV00765 {
 	}
 }
 
-impl MCPWrite for ResultType {
-	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
-		match self {
-			ResultType::Success => VarInt(0).write(output),
-			ResultType::Failure => VarInt(1).write(output),
-			ResultType::Unknown(code) => VarInt(*code).write(output),
-		}
-	}
-}
-
 impl MCPRead for ResourcePackReceiveV00765 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let (input, uuid) = u128::read(input)?;
-		let (input, result) = ResultType::read(input)?;
+		let (input, result) = VarInt::read(input)?;
 
 		Ok((input, Self { uuid, result }))
-	}
-}
-
-impl MCPRead for ResultType {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
-		let (input, code) = VarInt::read(input)?;
-
-		let result = match code.0 {
-			0 => ResultType::Success,
-			1 => ResultType::Failure,
-			_ => ResultType::Unknown(code.0),
-		};
-
-		Ok((input, result))
 	}
 }
 
