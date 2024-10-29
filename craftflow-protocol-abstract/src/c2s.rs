@@ -1,5 +1,4 @@
-include!("direction_macro.rs");
-
+pub mod conf_plugin;
 pub mod handshake;
 pub mod login_acknowledge;
 pub mod login_encryption;
@@ -8,6 +7,7 @@ pub mod login_start;
 pub mod status_ping;
 pub mod status_request_info;
 
+pub use conf_plugin::AbConfPlugin;
 pub use handshake::AbHandshake;
 pub use login_acknowledge::AbLoginAcknowledge;
 pub use login_encryption::AbLoginEncryption;
@@ -15,6 +15,8 @@ pub use login_plugin::AbLoginPluginResponse;
 pub use login_start::AbLoginStart;
 pub use status_ping::AbStatusPing;
 pub use status_request_info::AbStatusRequestInfo;
+
+include!("direction_macro.rs");
 
 gen_direction_enum! {
 	@DIRECTION=C2S;
@@ -28,5 +30,6 @@ gen_direction_enum! {
 		LoginEncryption(AbLoginEncryption),
 		LoginPluginResponse(AbLoginPluginResponse),
 		LoginAcknowledge(AbLoginAcknowledge),
+		ConfPlugin(AbConfPlugin)
 	}
 }
