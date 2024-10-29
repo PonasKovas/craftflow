@@ -42,3 +42,8 @@ include!(concat!(
 ));
 pub mod tags;
 include!(concat!(env!("OUT_DIR"), "/s2c/configuration/tags_enum.rs"));
+pub mod reset_chat;
+include!(concat!(
+	env!("OUT_DIR"),
+	"/s2c/configuration/reset_chat_enum.rs"
+));

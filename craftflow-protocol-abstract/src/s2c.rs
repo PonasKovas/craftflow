@@ -7,6 +7,7 @@ pub mod conf_ping;
 pub mod conf_plugin;
 pub mod conf_registry;
 pub mod conf_remove_resource_pack;
+pub mod conf_reset_chat;
 pub mod conf_tags;
 pub mod login_compress;
 pub mod login_disconnect;
@@ -22,6 +23,7 @@ pub use conf_feature_flags::AbConfFeatureFlags;
 pub use conf_finish::AbConfFinish;
 pub use conf_plugin::AbConfPlugin;
 pub use conf_remove_resource_pack::AbConfRemoveResourcePack;
+pub use conf_reset_chat::AbConfResetChat;
 pub use conf_tags::AbConfTags;
 pub use login_compress::AbLoginCompress;
 pub use login_disconnect::AbLoginDisconnect;
@@ -52,5 +54,6 @@ gen_direction_enum! {
 		ConfRemoveResourcePack(AbConfRemoveResourcePack),
 		ConfFeatureFlags(AbConfFeatureFlags),
 		ConfTags(AbConfTags),
+		ConfResetChat(AbConfResetChat)
 	}
 }
