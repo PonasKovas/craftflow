@@ -1,3 +1,4 @@
+pub mod client_settings;
 pub mod conf_finish;
 pub mod conf_keepalive;
 pub mod conf_plugin;
@@ -11,6 +12,7 @@ pub mod login_start;
 pub mod status_ping;
 pub mod status_request_info;
 
+pub use client_settings::AbClientSettings;
 pub use conf_finish::AbConfFinish;
 pub use conf_keepalive::AbConfKeepAlive;
 pub use conf_plugin::AbConfPlugin;
@@ -43,5 +45,7 @@ gen_direction_enum! {
 		ConfKeepAlive(AbConfKeepAlive),
 		ConfPong(AbConfPong),
 		ConfResourcePackResponse(AbConfResourcePackResponse),
+
+		ClientSettings(AbClientSettings),
 	}
 }
