@@ -1,3 +1,4 @@
+pub mod conf_finish;
 pub mod conf_plugin;
 pub mod handshake;
 pub mod login_acknowledge;
@@ -7,6 +8,7 @@ pub mod login_start;
 pub mod status_ping;
 pub mod status_request_info;
 
+pub use conf_finish::AbConfFinish;
 pub use conf_plugin::AbConfPlugin;
 pub use handshake::AbHandshake;
 pub use login_acknowledge::AbLoginAcknowledge;
@@ -30,6 +32,7 @@ gen_direction_enum! {
 		LoginEncryption(AbLoginEncryption),
 		LoginPluginResponse(AbLoginPluginResponse),
 		LoginAcknowledge(AbLoginAcknowledge),
-		ConfPlugin(AbConfPlugin)
+		ConfPlugin(AbConfPlugin),
+		ConfFinish(AbConfFinish),
 	}
 }
