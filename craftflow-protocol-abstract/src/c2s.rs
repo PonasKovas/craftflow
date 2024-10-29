@@ -1,6 +1,7 @@
 pub mod conf_finish;
 pub mod conf_keepalive;
 pub mod conf_plugin;
+pub mod conf_pong;
 pub mod handshake;
 pub mod login_acknowledge;
 pub mod login_encryption;
@@ -12,6 +13,7 @@ pub mod status_request_info;
 pub use conf_finish::AbConfFinish;
 pub use conf_keepalive::AbConfKeepAlive;
 pub use conf_plugin::AbConfPlugin;
+pub use conf_pong::AbConfPong;
 pub use handshake::AbHandshake;
 pub use login_acknowledge::AbLoginAcknowledge;
 pub use login_encryption::AbLoginEncryption;
@@ -37,5 +39,6 @@ gen_direction_enum! {
 		ConfPlugin(AbConfPlugin),
 		ConfFinish(AbConfFinish),
 		ConfKeepAlive(AbConfKeepAlive),
+		ConfPong(AbConfPong),
 	}
 }
