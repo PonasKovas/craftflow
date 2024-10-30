@@ -1,8 +1,9 @@
 use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State, WriteResult};
 use anyhow::{bail, Result};
+use craftflow_protocol_core::datatypes::VarInt;
 use craftflow_protocol_versions::{
 	c2s::{
-		configuration::{pong::v00767::PongV00764, Pong},
+		configuration::{settings::v00767::SettingsV00764, Settings},
 		Configuration,
 	},
 	IntoStateEnum, C2S,
@@ -94,13 +95,25 @@ impl AbPacketWrite for AbClientSettings {
 	type Iter = Once<Self::Direction>;
 
 	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
-		todo!()
-		// let pkt = match protocol_version {
-		// 	764.. => PongV00764 { id: self.id }.into_state_enum(),
-		// 	_ => return Ok(WriteResult::Unsupported),
-		// };
+		let pkt = match state {
+			State::Configuration => match protocol_version {
+				764.. => SettingsV00764 {
+					locale: self.locale,
+					view_distance: self.view_distance as i8,
+					chat_flags: VarInt(self.chat_flags as i32),
+					chat_colors: self.chat_colors,
+					skin_parts: self.skin_parts.as_bitfield(),
+					main_hand: VarInt(self.main_hand as i32),
+					enable_text_filtering: self.enable_text_filtering,
+					enable_server_listing: self.enable_server_listing,
+				}
+				.into_state_enum(),
+				_ => return Ok(WriteResult::Unsupported),
+			},
+			_ => return Ok(WriteResult::Unsupported),
+		};
 
-		// Ok(WriteResult::Success(once(pkt)))
+		Ok(WriteResult::Success(once(pkt)))
 	}
 }
 
@@ -111,12 +124,20 @@ impl AbPacketNew for AbClientSettings {
 	fn construct(
 		packet: Self::Direction,
 	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
-		todo!()
-		// Ok(match packet {
-		// 	C2S::Configuration(Configuration::Pong(pkt)) => match pkt {
-		// 		Pong::V00764(pkt) => ConstructorResult::Done(Self { id: pkt.id }),
-		// 	},
-		// 	_ => ConstructorResult::Ignore(packet),
-		// })
+		Ok(match packet {
+			C2S::Configuration(Configuration::Settings(pkt)) => match pkt {
+				Settings::V00764(pkt) => ConstructorResult::Done(Self {
+					locale: pkt.locale,
+					view_distance: pkt.view_distance as u8,
+					chat_flags: ChatMode::from_byte(pkt.chat_flags.0 as u8)?,
+					chat_colors: pkt.chat_colors,
+					skin_parts: SkinParts::from_bitfield(pkt.skin_parts),
+					main_hand: MainHand::from_byte(pkt.main_hand.0 as u8)?,
+					enable_text_filtering: pkt.enable_text_filtering,
+					enable_server_listing: pkt.enable_server_listing,
+				}),
+			},
+			_ => ConstructorResult::Ignore(packet),
+		})
 	}
 }
