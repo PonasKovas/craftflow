@@ -32,9 +32,7 @@ pub trait MCPWrite {
 /// Types that can be deserialized in the Minecraft network protocol format
 pub trait MCPRead<'a> {
 	/// Reads and parses the data, returning the remaining data (if any) together with the parsed value.
-	// The reason this is a mutable reference is because of how retarded the minecraft protocol is
-	// In certain cases we need to modify the bytes to read them (top bit set terminated array)
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)>
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)>
 	where
 		Self: Sized;
 }

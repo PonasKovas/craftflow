@@ -22,7 +22,7 @@ where
 	// copy isnt really required but just makes stuff easier here,
 	// and I assume there wont be a type that isnt Copy
 {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let mut data = Vec::new();
 
 		let (mut input, len) = LEN::read(input)?;

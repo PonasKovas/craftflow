@@ -28,7 +28,7 @@ impl VarLong {
 }
 
 impl<'a> MCPRead<'a> for VarLong {
-	fn read(mut input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(mut input: &[u8]) -> Result<(&[u8], Self)> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i64; // The VarInt being constructed
 
@@ -40,7 +40,7 @@ impl<'a> MCPRead<'a> for VarLong {
 
 			// Read a byte
 			let byte = input.as_ref().read_u8()?;
-			input = &mut input[1..];
+			input = &input[1..];
 
 			// Extract the 7 lower bits (the data bits) and cast to i32
 			let value = (byte & 0b0111_1111) as i64;

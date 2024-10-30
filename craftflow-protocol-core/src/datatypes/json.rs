@@ -8,7 +8,7 @@ pub struct Json<T> {
 }
 
 impl<'a, T: Deserialize<'a>> MCPRead<'a> for Json<T> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, s) = MCPRead::read(input)?;
 
 		let value = serde_json::from_str(s).map_err(|e| Error::InvalidData(format!("{e}")))?;

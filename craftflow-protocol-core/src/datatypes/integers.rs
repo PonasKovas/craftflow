@@ -3,10 +3,10 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
 impl<'a> MCPRead<'a> for u8 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_u8()?;
 
-		Ok((&mut input[1..], r))
+		Ok((&input[1..], r))
 	}
 }
 
@@ -18,10 +18,10 @@ impl MCPWrite for u8 {
 }
 
 impl<'a> MCPRead<'a> for u16 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_u16::<BigEndian>()?;
 
-		Ok((&mut input[2..], r))
+		Ok((&input[2..], r))
 	}
 }
 
@@ -33,10 +33,10 @@ impl MCPWrite for u16 {
 }
 
 impl<'a> MCPRead<'a> for u32 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_u32::<BigEndian>()?;
 
-		Ok((&mut input[4..], r))
+		Ok((&input[4..], r))
 	}
 }
 
@@ -48,10 +48,10 @@ impl MCPWrite for u32 {
 }
 
 impl<'a> MCPRead<'a> for u64 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_u64::<BigEndian>()?;
 
-		Ok((&mut input[8..], r))
+		Ok((&input[8..], r))
 	}
 }
 
@@ -63,10 +63,10 @@ impl MCPWrite for u64 {
 }
 
 impl<'a> MCPRead<'a> for u128 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_u128::<BigEndian>()?;
 
-		Ok((&mut input[16..], r))
+		Ok((&input[16..], r))
 	}
 }
 
@@ -78,10 +78,10 @@ impl MCPWrite for u128 {
 }
 
 impl<'a> MCPRead<'a> for i8 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_i8()?;
 
-		Ok((&mut input[1..], r))
+		Ok((&input[1..], r))
 	}
 }
 
@@ -93,10 +93,10 @@ impl MCPWrite for i8 {
 }
 
 impl<'a> MCPRead<'a> for i16 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_i16::<BigEndian>()?;
 
-		Ok((&mut input[2..], r))
+		Ok((&input[2..], r))
 	}
 }
 
@@ -108,10 +108,10 @@ impl MCPWrite for i16 {
 }
 
 impl<'a> MCPRead<'a> for i32 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_i32::<BigEndian>()?;
 
-		Ok((&mut input[4..], r))
+		Ok((&input[4..], r))
 	}
 }
 
@@ -123,10 +123,10 @@ impl MCPWrite for i32 {
 }
 
 impl<'a> MCPRead<'a> for i64 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_i64::<BigEndian>()?;
 
-		Ok((&mut input[8..], r))
+		Ok((&input[8..], r))
 	}
 }
 
@@ -138,10 +138,10 @@ impl MCPWrite for i64 {
 }
 
 impl<'a> MCPRead<'a> for i128 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &[u8]) -> Result<(&[u8], Self)> {
 		let r = input.as_ref().read_i128::<BigEndian>()?;
 
-		Ok((&mut input[16..], r))
+		Ok((&input[16..], r))
 	}
 }
 

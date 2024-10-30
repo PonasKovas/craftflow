@@ -5,9 +5,9 @@ use std::{borrow::Cow, io::Write};
 pub struct RestBuffer<'a>(pub Cow<'a, [u8]>);
 
 impl<'a> MCPRead<'a> for RestBuffer<'a> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let len = input.len();
-		let (l, r) = input.split_at_mut(len);
+		let (l, r) = input.split_at(len);
 		let result = Self(Cow::Borrowed(l));
 
 		Ok((r, result))

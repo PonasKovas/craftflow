@@ -5,7 +5,7 @@ use crate::{MCPRead, MCPWrite};
 use std::io::Write;
 
 impl<'a, T: MCPRead<'a>> MCPRead<'a> for Option<T> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, tag) = bool::read(input)?;
 
 		if tag {

@@ -4,7 +4,7 @@ use core::str;
 use std::{borrow::Cow, io::Write};
 
 impl<'a> MCPRead<'a> for &'a str {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, len) = VarInt::read(input)?;
 		let len = len.0 as usize;
 
@@ -18,7 +18,7 @@ impl<'a> MCPRead<'a> for &'a str {
 			)));
 		}
 
-		let (l, r) = input.split_at_mut(len);
+		let (l, r) = input.split_at(len);
 
 		let s = match str::from_utf8(l) {
 			Ok(s) => s,
@@ -32,7 +32,7 @@ impl<'a> MCPRead<'a> for &'a str {
 }
 
 impl<'a> MCPRead<'a> for Cow<'a, str> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, s) = <&str as MCPRead>::read(input)?;
 
 		Ok((input, Cow::Borrowed(s)))

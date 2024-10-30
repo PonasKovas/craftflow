@@ -1,7 +1,7 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
 use craftflow_nbt::DynNBT;
 use serde::{Deserialize, Serialize};
-use std::{cell::UnsafeCell, io::Write};
+use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
 pub struct Nbt<T = DynNBT> {
@@ -14,7 +14,7 @@ pub struct AnonymousNbt<T = DynNBT> {
 }
 
 impl<'a, T: Deserialize<'a>> MCPRead<'a> for Nbt<T> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, value): (_, T) =
 			craftflow_nbt::from_slice(input).map_err(|e| Error::InvalidData(e.to_string()))?;
 
@@ -29,7 +29,7 @@ impl<T: Serialize> MCPWrite for Nbt<T> {
 }
 
 impl<'a, T: Deserialize<'a>> MCPRead<'a> for AnonymousNbt<T> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, (name, value)): (_, (_, T)) = craftflow_nbt::from_slice_named(input)
 			.map_err(|e| Error::InvalidData(e.to_string()))?;
 		assert_eq!(name.as_ref(), "");

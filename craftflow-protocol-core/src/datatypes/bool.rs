@@ -4,10 +4,10 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
 impl<'a> MCPRead<'a> for bool {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], bool)> {
+	fn read(input: &[u8]) -> Result<(&[u8], bool)> {
 		let b = input.as_ref().read_u8()? != 0;
 
-		Ok((&mut input[1..], b))
+		Ok((&input[1..], b))
 	}
 }
 
