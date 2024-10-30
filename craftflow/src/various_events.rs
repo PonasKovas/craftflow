@@ -25,8 +25,8 @@ impl Event for Disconnect {
 }
 
 impl Event for UnsupportedClientVersion {
-	/// The ID of the connection
-	type Args<'a> = u64;
+	/// The ID of the connection and the protocol version
+	type Args<'a> = (u64, u32);
 	/// The error message to send to the client
 	/// If no handler returns, a default message will be used
 	type Return = Text;

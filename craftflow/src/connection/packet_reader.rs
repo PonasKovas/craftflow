@@ -1,15 +1,21 @@
-use super::ConnState;
-use aes::cipher::{generic_array::GenericArray, BlockDecryptMut, KeyIvInit};
+use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
+use craftflow_protocol_abstract::State;
 use craftflow_protocol_core::{datatypes::VarInt, Error, MCPRead};
 use craftflow_protocol_versions::{
-	c2s::{Handshaking, Login, Status},
-	IntoStateEnum, PacketRead, C2S, MIN_VERSION,
+	c2s::{Configuration, Handshaking, Login, Status},
+	IntoStateEnum, PacketRead, C2S,
 };
+use flate2::write::ZlibDecoder;
 use std::{
 	io::Write,
-	sync::{Arc, OnceLock, RwLock},
+	sync::{OnceLock, RwLock},
 };
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
+
+const MAX_PACKET_SIZE: usize = 2usize.pow(21);
+const DEFAULT_BUFFER_SIZE: usize = 4 * 1024;
+
+pub(crate) type Decryptor = cfb8::Decryptor<aes::Aes128>;
 
 /// Specialised BufReader than can read packets in a cancel-safe way
 /// and also handles encryption and compression
@@ -17,51 +23,61 @@ pub(crate) struct PacketReader {
 	pub(crate) stream: OwnedReadHalf,
 	pub(crate) buffer: Vec<u8>,
 	pub(crate) decompression_buffer: Vec<u8>,
-	pub(crate) state: Arc<RwLock<ConnState>>,
-	pub(crate) encryption_secret: Arc<OnceLock<[u8; 16]>>,
-	pub(crate) decryptor: Option<cfb8::Decryptor<aes::Aes128>>,
-	pub(crate) compression: Arc<OnceLock<usize>>,
-	pub(crate) protocol_version: Arc<OnceLock<u32>>,
 }
 
 impl PacketReader {
+	pub(crate) fn new(stream: OwnedReadHalf) -> Self {
+		Self {
+			stream,
+			buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+			decompression_buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+		}
+	}
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet(&mut self) -> craftflow_protocol_core::Result<C2S> {
+	pub(crate) async fn read_packet(
+		&mut self,
+		state: &RwLock<State>,
+		protocol_version: u32,
+		compression: &OnceLock<usize>,
+		decryptor: &mut Option<Decryptor>,
+	) -> craftflow_protocol_core::Result<C2S> {
 		// wait for the length of the next packet
-		let packet_len = self.read_varint_at_pos(0).await?;
+		let packet_len = self.read_varint_at_pos(0, decryptor).await?;
 
 		let mut packet_start = packet_len.len();
 		let packet_len = packet_len.0 as usize;
 
 		let total_packet_len = packet_len + packet_start; // the length of the packet including the length prefix
 
-		if packet_len as usize > 2usize.pow(15) {
+		if packet_len as usize > MAX_PACKET_SIZE {
 			return Err(Error::InvalidData(format!(
-				"packet len must be less than 32768 bytes (got {packet_len} bytes)"
+				"packet len must be less than {MAX_PACKET_SIZE} bytes (got {packet_len} bytes)"
 			)));
 		}
 
-		let should_decompress = match self.compression() {
+		// if compression is enabled, read the uncompressed data length
+		// this will be set to Some(uncompressed_len) if the packet is compressed
+		// (threshold was reached)
+		let decompressed_len = match compression.get() {
 			None => None,
-			Some(threshold) => {
+			Some(&threshold) => {
 				// read the uncompressed data length
-				let length = self.read_varint_at_pos(packet_start).await?;
+				let length = self.read_varint_at_pos(packet_start, decryptor).await?;
 				packet_start += length.len();
 
-				if length.0 as usize >= threshold {
-					Some(length.0 as usize)
-				} else if length.0 == 0 {
+				let length = length.0;
+				if length >= threshold as i32 {
+					Some(length as usize)
+				} else if length == 0 {
 					None
 				} else {
 					return Err(Error::InvalidData(format!(
 						"Invalid decompressed data length: {}",
-						length.0
+						length
 					)));
 				}
 			}
 		};
-
-		let protocol_version = self.get_protocol_version();
 
 		// now get the actual packet byte slice without the length prefixes
 		let mut packet_bytes: &mut [u8] = loop {
@@ -71,20 +87,21 @@ impl PacketReader {
 			}
 
 			// otherwise read more
-			self.read().await?;
+			self.read(decryptor).await?;
 		};
 
-		if let Some(decompressed_length) = should_decompress {
+		// if compression enabled
+		if let Some(decompressed_len) = decompressed_len {
 			// decompress the packet bytes and make sure the length is correct
 			self.decompression_buffer.clear();
-			let mut writer = flate2::write::ZlibDecoder::new(&mut self.decompression_buffer);
+			let mut writer = ZlibDecoder::new(&mut self.decompression_buffer);
 			writer.write_all(packet_bytes)?;
 			writer.finish()?;
 
-			if self.decompression_buffer.len() != decompressed_length {
+			if self.decompression_buffer.len() != decompressed_len {
 				return Err(Error::InvalidData(format!(
 					"Decompressed data length mismatch: expected {}, got {}",
-					decompressed_length,
+					decompressed_len,
 					self.decompression_buffer.len()
 				)));
 			}
@@ -93,22 +110,27 @@ impl PacketReader {
 		}
 
 		// Parse the packet
-		let (remaining, packet) = match *self.state.read().unwrap() {
-			ConnState::Handshake => {
+		let (remaining, packet) = match *state.read().unwrap() {
+			State::Handshake => {
 				let (input, packet) = Handshaking::read_packet(packet_bytes, protocol_version)?;
 				(input, packet.into_state_enum())
 			}
-			ConnState::Status => {
+			State::Status => {
 				let (input, packet) = Status::read_packet(packet_bytes, protocol_version)?;
 				(input, packet.into_state_enum())
 			}
-			ConnState::Login => {
+			State::Login => {
 				let (input, packet) = Login::read_packet(packet_bytes, protocol_version)?;
 				(input, packet.into_state_enum())
 			}
-			_ => todo!(),
+			State::Configuration => {
+				let (input, packet) = Configuration::read_packet(packet_bytes, protocol_version)?;
+				(input, packet.into_state_enum())
+			}
+			State::Play => todo!(),
 		};
 
+		// simple sanity test of parsing the packet, all the bytes should have been used to parse it
 		if remaining.len() != 0 {
 			return Err(Error::InvalidData(format!(
 				"Parsed packet and got {} remaining bytes left",
@@ -123,7 +145,11 @@ impl PacketReader {
 	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	/// without removing the bytes from the buffer
-	async fn read_varint_at_pos(&mut self, pos: usize) -> craftflow_protocol_core::Result<VarInt> {
+	async fn read_varint_at_pos(
+		&mut self,
+		pos: usize,
+		decryptor: &mut Option<Decryptor>,
+	) -> craftflow_protocol_core::Result<VarInt> {
 		loop {
 			match VarInt::read(&mut self.buffer[pos..]) {
 				Ok((_input, varint)) => break Ok(varint),
@@ -136,14 +162,14 @@ impl PacketReader {
 					}
 
 					// Read more bytes
-					self.read().await?;
+					self.read(decryptor).await?;
 				}
 			}
 		}
 	}
 	/// Reads more data into the buffer
 	/// returns how many bytes were read
-	async fn read(&mut self) -> std::io::Result<usize> {
+	async fn read(&mut self, decryptor: &mut Option<Decryptor>) -> std::io::Result<usize> {
 		let mut temp = [0u8; 32 * 1024];
 
 		let n = self.stream.read(&mut temp[..]).await?;
@@ -153,55 +179,14 @@ impl PacketReader {
 		}
 
 		// Instantly decrypt the bytes we just read if encryption is enabled
-		self.if_encryption_enabled(|dec| {
+		if let Some(decryptor) = decryptor {
 			for i in 0..n {
-				dec.decrypt_block_mut(GenericArray::from_mut_slice(&mut temp[i..(i + 1)]));
-				// stupid ass cryptography crate with outdated ass generics
-				// FUCK GENERIC ARRAY
-				// hopefully mr compiler will optimize 🥺
+				decryptor.decrypt_block_mut(GenericArray::from_mut_slice(&mut temp[i..(i + 1)]));
 			}
-		});
+		}
 
 		self.buffer.extend_from_slice(&temp[..n]);
 
 		Ok(n)
-	}
-	fn compression(&self) -> Option<usize> {
-		self.compression.get().map(|t| *t)
-	}
-	pub(crate) fn get_protocol_version(&self) -> u32 {
-		match self.protocol_version.get() {
-			Some(&v) => {
-				// If the state is Status, then still give MIN_VERSION instead of real,
-				// because we might not support the real version, but status
-				// should be the same (or compatible) for all versions and we still want to respond.
-				if *self.state.read().unwrap() == ConnState::Status {
-					MIN_VERSION
-				} else {
-					v
-				}
-			}
-			None => {
-				// if protocol version is not set, we are in the handshake state,
-				// before receiving the handshake packet
-				// so just set to the minimal supported version so we can read the handshake
-				MIN_VERSION
-			}
-		}
-	}
-	fn if_encryption_enabled(&mut self, f: impl FnOnce(&mut cfb8::Decryptor<aes::Aes128>)) {
-		match &mut self.decryptor {
-			Some(dec) => f(dec),
-			None => {
-				// check if maybe the secret was set
-				if let Some(secret) = self.encryption_secret.get() {
-					let mut dec = cfb8::Decryptor::<aes::Aes128>::new(secret.into(), secret.into());
-
-					f(&mut dec);
-
-					self.decryptor = Some(dec);
-				}
-			}
-		}
 	}
 }

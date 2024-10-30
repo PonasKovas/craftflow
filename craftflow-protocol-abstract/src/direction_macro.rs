@@ -5,6 +5,15 @@ macro_rules! gen_direction_enum {
 		    $($variant($struct),)*
 		}
 
+		impl $name {
+		    /// Returns the str name of the abstract packet for debugging purposes
+		    pub fn variant_name(&self) -> &'static str {
+                match self {
+                    $( $name::$variant(_) => stringify!($variant), )*
+                }
+            }
+		}
+
 		impl crate::AbPacketWrite for $name {
             type Direction = craftflow_protocol_versions::$direction;
             type Iter = Box<dyn Iterator<Item = Self::Direction> + Send + Sync>;
@@ -12,10 +21,11 @@ macro_rules! gen_direction_enum {
             fn convert(
           		self,
           		protocol_version: u32,
+                state: crate::State,
            	) -> anyhow::Result<crate::WriteResult<Self::Iter>> {
                 Ok(match self {
                     $(
-                        $name::$variant(inner) => match inner.convert(protocol_version)? {
+                        $name::$variant(inner) => match inner.convert(protocol_version, state)? {
                             crate::WriteResult::Success(iter) => crate::WriteResult::Success(Box::new(iter)),
                             crate::WriteResult::Unsupported => crate::WriteResult::Unsupported,
                         },
@@ -120,7 +130,18 @@ macro_rules! gen_direction_enum {
         macro_rules! __gen_impls_for_packets_s2c {
             (impl $trait_name:ident for X $code:tt) => {
                 $(
-                    impl $trait_name for $crate::s2c::$struct $code
+                    const _: () = {
+                        type X = $crate::s2c::$struct;
+                        impl $trait_name for X $code
+                    };
+                )*
+            };
+            (impl $trait_name:ident for Post<X> $code:tt) => {
+                $(
+                    const _: () = {
+                        type X = $crate::s2c::$struct;
+                        impl $trait_name for Post<X> $code
+                    };
                 )*
             };
         }
@@ -143,7 +164,10 @@ macro_rules! gen_direction_enum {
         macro_rules! __gen_impls_for_packets_c2s {
             (impl $trait_name:ident for X $code:tt) => {
                 $(
-                    impl $trait_name for $crate::c2s::$struct $code
+                    const _: () = {
+                        type X = $crate::c2s::$struct;
+                        impl $trait_name for X $code
+                    };
                 )*
             };
         }

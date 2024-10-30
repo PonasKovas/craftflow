@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_core::datatypes::{Array, VarInt};
 use craftflow_protocol_versions::{
@@ -35,7 +35,11 @@ impl AbPacketWrite for AbConfTags {
 	type Direction = S2C;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
+	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+		if state != State::Configuration {
+			return Ok(WriteResult::Unsupported);
+		}
+
 		let pkt = match protocol_version {
 			764.. => TagsV00764 {
 				registries: Array::new(

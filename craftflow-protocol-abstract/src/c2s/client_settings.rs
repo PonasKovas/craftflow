@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State, WriteResult};
 use anyhow::{bail, Result};
 use craftflow_protocol_versions::{
 	c2s::{
@@ -93,7 +93,7 @@ impl AbPacketWrite for AbClientSettings {
 	type Direction = C2S;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
+	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		todo!()
 		// let pkt = match protocol_version {
 		// 	764.. => PongV00764 { id: self.id }.into_state_enum(),

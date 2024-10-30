@@ -12,7 +12,7 @@ pub mod packet_events;
 pub mod reactor;
 pub mod various_events;
 
-use connection::ConnectionHandle;
+use connection::{new_conn_interface, ConnectionInterface};
 use modules::Modules;
 use reactor::Reactor;
 use std::{
@@ -29,7 +29,7 @@ pub struct CraftFlow {
 }
 
 struct Connections {
-	connections: HashMap<u64, ConnectionHandle>,
+	connections: HashMap<u64, ConnectionInterface>,
 	next_conn_id: u64,
 }
 
@@ -55,7 +55,7 @@ impl CraftFlow {
 		loop {
 			let (stream, _) = listener.accept().await?;
 
-			let id = ConnectionHandle::add(&craftflow, stream);
+			let id = new_conn_interface(&craftflow, stream);
 
 			// Emit the new connection event
 			if craftflow
@@ -69,7 +69,7 @@ impl CraftFlow {
 		}
 	}
 	/// Accesses the connection handle of the given connection ID
-	pub fn get<'a>(&'a self, conn_id: u64) -> MappedRwLockReadGuard<'a, ConnectionHandle> {
+	pub fn get<'a>(&'a self, conn_id: u64) -> MappedRwLockReadGuard<'a, ConnectionInterface> {
 		RwLockReadGuard::map(self.connections.read().unwrap(), |inner| {
 			&inner.connections[&conn_id]
 		})
@@ -93,7 +93,9 @@ impl CraftFlow {
 	/// Accesses the connections map
 	/// There is no mutable access because it is not meant to be modified directly
 	/// Use the `disconnect` method to disconnect a client
-	pub fn connections<'a>(&'a self) -> MappedRwLockReadGuard<'a, HashMap<u64, ConnectionHandle>> {
+	pub fn connections<'a>(
+		&'a self,
+	) -> MappedRwLockReadGuard<'a, HashMap<u64, ConnectionInterface>> {
 		RwLockReadGuard::map(self.connections.read().unwrap(), |inner| &inner.connections)
 	}
 }

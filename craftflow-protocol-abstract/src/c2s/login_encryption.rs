@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State, WriteResult};
 use anyhow::{bail, Context, Result};
 use craftflow_protocol_core::datatypes::Array;
 use craftflow_protocol_versions::{
@@ -33,7 +33,11 @@ impl AbPacketWrite for AbLoginEncryption {
 	type Direction = C2S;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
+	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+		if state != State::Login {
+			return Ok(WriteResult::Unsupported);
+		}
+
 		let pkt = match protocol_version {
 			5..47 => EncryptionBeginV00005 {
 				shared_secret: Array::new(self.shared_secret),

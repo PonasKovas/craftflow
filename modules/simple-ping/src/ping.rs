@@ -8,7 +8,5 @@ pub fn ping<'a>(
 ) -> ControlFlow<(), (u64, &'a mut AbStatusPing)> {
 	cf.get(conn_id).send(AbStatusPong { id: request.id });
 
-	cf.disconnect(conn_id);
-
 	ControlFlow::Continue((conn_id, request))
 }

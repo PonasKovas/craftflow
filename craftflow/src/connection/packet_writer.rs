@@ -1,44 +1,59 @@
-use super::ConnState;
-use aes::cipher::{generic_array::GenericArray, BlockEncryptMut, KeyIvInit};
+use aes::cipher::{generic_array::GenericArray, BlockEncryptMut};
 use anyhow::bail;
+use craftflow_protocol_abstract::State;
 use craftflow_protocol_core::{datatypes::VarInt, MCPWrite};
-use craftflow_protocol_versions::{PacketWrite, MAX_VERSION, MIN_VERSION, S2C};
+use craftflow_protocol_versions::{PacketWrite, S2C};
 use flate2::write::ZlibEncoder;
-use std::{
-	io::Cursor,
-	sync::{Arc, OnceLock, RwLock},
-};
+use std::io::Write;
 use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf};
+
+// 0 is no compression, 9 - take as long as you'd like
+const COMPRESSION_LEVEL: u32 = 6;
+const DEFAULT_BUFFER_SIZE: usize = 4 * 1024;
+
+pub(crate) type Encryptor = cfb8::Encryptor<aes::Aes128>;
 
 /// Keeps track of the current state of the connection and allows to write packets easily
 pub(crate) struct PacketWriter {
 	pub(crate) stream: OwnedWriteHalf,
-	pub(crate) buffer: Cursor<Vec<u8>>,
-	pub(crate) state: Arc<RwLock<ConnState>>,
-	pub(crate) encryption_secret: Arc<OnceLock<[u8; 16]>>,
-	pub(crate) encryptor: Option<cfb8::Encryptor<aes::Aes128>>,
-	pub(crate) compression: Arc<OnceLock<usize>>,
-	pub(crate) protocol_version: Arc<OnceLock<u32>>,
+	pub(crate) buffer: Vec<u8>,
+	pub(crate) compression_buffer: Vec<u8>,
 }
 
 impl PacketWriter {
+	pub(crate) fn new(stream: OwnedWriteHalf) -> Self {
+		Self {
+			stream,
+			buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+			compression_buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+		}
+	}
 	/// Sends a packet to the client, automatically checking if the packet is valid for the current state
-	pub(crate) async fn send(&mut self, packet: &S2C) -> anyhow::Result<()> {
-		let state = *self.state.read().unwrap();
+	pub(crate) async fn send(
+		&mut self,
+		state: State,
+		protocol_version: u32,
+		compression: Option<usize>,
+		encryptor: &mut Option<Encryptor>,
+		packet: &S2C,
+	) -> anyhow::Result<()> {
 		match packet {
-			S2C::Status(p) if state == ConnState::Status => {
-				self.write_unchecked(p).await?;
+			S2C::Status(p) if state == State::Status => {
+				self.write_unchecked(protocol_version, compression, encryptor, p)
+					.await?;
 			}
-			S2C::Login(p) if state == ConnState::Login => {
-				self.write_unchecked(p).await?;
+			S2C::Login(p) if state == State::Login => {
+				self.write_unchecked(protocol_version, compression, encryptor, p)
+					.await?;
 			}
-			S2C::Configuration(p) if state == ConnState::Configuration => {
-				self.write_unchecked(p).await?;
+			S2C::Configuration(p) if state == State::Configuration => {
+				self.write_unchecked(protocol_version, compression, encryptor, p)
+					.await?;
 			}
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",
-					self.state,
+					state,
 					packet
 				);
 			}
@@ -49,84 +64,62 @@ impl PacketWriter {
 
 	/// Writes anything writable as a packet into the stream
 	/// Doesnt check if the packet is valid for the current state
-	pub(crate) async fn write_unchecked(
+	async fn write_unchecked(
 		&mut self,
+		protocol_version: u32,
+		compression: Option<usize>,
+		encryptor: &mut Option<Encryptor>,
 		packet: &impl PacketWrite,
 	) -> anyhow::Result<()> {
-		self.buffer.get_mut().clear();
+		self.buffer.clear();
+		self.compression_buffer.clear();
 
-		let protocol_version = self.get_protocol_version();
+		let mut buffer = &mut self.buffer;
 
-		// leave space at the start of the buffer for two potential varints (length and uncompressed length)
-		self.buffer.get_mut().extend([0u8; 5 * 2]);
-		self.buffer.set_position(10);
+		// leave space at the start of the buffer for two potential varints
+		// (length and uncompressed length)
+		const MAX_PREFIX: usize = 5 * 2; // 2 varints
+		buffer.extend([0u8; MAX_PREFIX]);
+		let mut packet_start = MAX_PREFIX;
 
-		// Write the packet to the buffer (applying compression if enabled)
-		let bytes: &mut [u8] = match self.compression() {
-			Some(compression_threshold) => {
-				// compress the packet
-				let mut zlib = ZlibEncoder::new(&mut self.buffer, flate2::Compression::new(6));
-				let mut uncompressed_len = packet.write_packet(&mut zlib, protocol_version)?;
+		// Write the packet to the buffer
+		let uncompressed_len = packet.write_packet(buffer, protocol_version)?;
+
+		// compress the packet if compression is enabled
+		'compression: {
+			if let Some(threshold) = compression {
+				if uncompressed_len < threshold {
+					// since compression is enabled but we're not compressing
+					// set the uncompressed length to 0
+					prepend_to_buffer(buffer, &mut packet_start, 0);
+
+					break 'compression;
+				}
+
+				self.compression_buffer.resize(packet_start, 0);
+				let mut zlib = ZlibEncoder::new(
+					&mut self.compression_buffer,
+					flate2::Compression::new(COMPRESSION_LEVEL),
+				);
+				zlib.write_all(&buffer[packet_start..])?;
 				zlib.finish()?;
 
-				// if turns out the packet was not big enough to be compressed
-				if uncompressed_len < compression_threshold {
-					// The packet was not big enough to be compressed
-					// so write again now without compression
-					self.buffer.get_mut().drain(10..);
-					self.buffer.set_position(10);
-					packet.write_packet(&mut self.buffer, protocol_version)?;
+				buffer = &mut self.compression_buffer;
 
-					// write 0 for the uncompressed data length to indicate no compression
-					uncompressed_len = 0;
-				};
-
-				// add the uncompressed length
-				let mut start_pos = 10 - VarInt(uncompressed_len as i32).len();
-				self.buffer.set_position(start_pos as u64);
-				VarInt(uncompressed_len as i32).write(&mut self.buffer)?;
-
-				// add the full length of the packet
-				let packet_len = self.buffer.get_ref().len() - start_pos;
-				start_pos -= VarInt(packet_len as i32).len();
-				self.buffer.set_position(start_pos as u64);
-				VarInt(packet_len as i32).write(&mut self.buffer)?;
-
-				&mut self.buffer.get_mut()[start_pos..]
+				// write the uncompressed packet length
+				prepend_to_buffer(buffer, &mut packet_start, uncompressed_len as i32);
 			}
-			None => {
-				// no compression so just write the packet
-				let len = packet.write_packet(&mut self.buffer, protocol_version)?;
+		}
 
-				// and then prepend the length
-				let start_pos = 10 - VarInt(len as i32).len();
-				self.buffer.set_position(start_pos as u64);
-				VarInt(len as i32).write(&mut self.buffer)?;
-
-				&mut self.buffer.get_mut()[start_pos..]
-			}
-		};
+		// write the total packet length
+		let total_packet_len = buffer.len() - packet_start;
+		prepend_to_buffer(buffer, &mut packet_start, total_packet_len as i32);
 
 		// encrypt the packet if encryption is enabled
-		let mut encrypt = |enc: &mut cfb8::Encryptor<aes::Aes128>| {
+		let bytes = &mut buffer[packet_start..];
+		if let Some(encryptor) = encryptor {
 			for i in 0..bytes.len() {
-				enc.encrypt_block_mut(GenericArray::from_mut_slice(&mut bytes[i..(i + 1)]));
-				// stupid ass cryptography crate with outdated ass generics
-				// FUCK GENERIC ARRAY
-				// hopefully mr compiler will optimize 🥺
-			}
-		};
-		match &mut self.encryptor {
-			Some(enc) => encrypt(enc),
-			None => {
-				// check if maybe the secret was set
-				if let Some(secret) = self.encryption_secret.get() {
-					let mut enc = cfb8::Encryptor::<aes::Aes128>::new(secret.into(), secret.into());
-
-					encrypt(&mut enc);
-
-					self.encryptor = Some(enc);
-				}
+				encryptor.encrypt_block_mut(GenericArray::from_mut_slice(&mut bytes[i..(i + 1)]));
 			}
 		}
 
@@ -135,26 +128,9 @@ impl PacketWriter {
 
 		Ok(())
 	}
-	fn compression(&self) -> Option<usize> {
-		self.compression.get().map(|t| *t)
-	}
-	pub(crate) fn get_protocol_version(&self) -> u32 {
-		let real_version = *self
-			.protocol_version
-			.get()
-			.expect("protocol version should be set by the time we try to send packets");
+}
 
-		// If the state is STATUS, we want to respond even if the version is not supported.
-		if *self.state.read().unwrap() == ConnState::Status {
-			if MIN_VERSION > real_version {
-				return MIN_VERSION;
-			} else if MAX_VERSION < real_version {
-				return MAX_VERSION;
-			} else {
-				return real_version;
-			}
-		}
-
-		real_version
-	}
+fn prepend_to_buffer(buffer: &mut Vec<u8>, cursor: &mut usize, value: i32) {
+	*cursor -= VarInt(value).len();
+	VarInt(value).write(&mut &mut buffer[*cursor..]).unwrap();
 }

@@ -1,105 +1,91 @@
 use super::{
-	connection_task, packet_reader::PacketReader, packet_writer::PacketWriter, ConnState,
-	ConnectionHandle,
+	connection_task::connection_task, packet_reader::PacketReader, packet_writer::PacketWriter,
+	ConnectionInterface,
 };
 use crate::CraftFlow;
+use craftflow_protocol_abstract::State;
 use futures::FutureExt;
 use std::{
-	io::Cursor,
 	panic::AssertUnwindSafe,
 	sync::{Arc, OnceLock, RwLock},
 };
 use tokio::{net::TcpStream, spawn, sync::mpsc};
 use tracing::error;
 
-impl ConnectionHandle {
-	/// Spawns the reading and writing tasks for a client connection.
-	/// And adds the connection handle to the craftflow instance
-	/// returns the ID of the connection
-	pub(crate) fn add(craftflow: &Arc<CraftFlow>, stream: TcpStream) -> u64 {
-		let peer_ip = stream.peer_addr().unwrap().ip();
+/// Spawns the reading and writing tasks for a client connection.
+/// And adds the connection interface to the craftflow instance
+/// returns the ID of the connection
+pub(crate) fn new_conn_interface(craftflow: &Arc<CraftFlow>, stream: TcpStream) -> u64 {
+	let peer_ip = stream.peer_addr().unwrap().ip();
 
-		let (packet_sender_in, packet_sender_out) = mpsc::unbounded_channel();
+	let (concrete_packet_sender_in, concrete_packet_sender_out) = mpsc::unbounded_channel();
+	let (abstract_packet_sender_in, abstract_packet_sender_out) = mpsc::unbounded_channel();
 
-		let state = Arc::new(RwLock::new(ConnState::Handshake));
-		let compression = Arc::new(OnceLock::new());
-		let encryption_secret = Arc::new(OnceLock::new());
+	let reader_state = Arc::new(RwLock::new(State::Handshake));
+	let writer_state = Arc::new(RwLock::new(State::Handshake));
+	let compression = Arc::new(OnceLock::new());
+	let encryption_secret = Arc::new(OnceLock::new());
+	let protocol_version = Arc::new(OnceLock::new());
 
-		let (reader, writer) = stream.into_split();
+	// Insert into the connections slab
+	let id = {
+		let mut lock = craftflow.connections.write().unwrap();
 
-		let protocol_version = Arc::new(OnceLock::new());
+		let id = lock.next_conn_id;
+		lock.next_conn_id += 1;
 
-		let packet_reader = PacketReader {
-			stream: reader,
-			buffer: Vec::with_capacity(1024 * 1024),
-			decompression_buffer: Vec::with_capacity(1024 * 1024),
-			state: Arc::clone(&state),
-			encryption_secret: Arc::clone(&encryption_secret),
-			decryptor: None,
-			compression: Arc::clone(&compression),
-			protocol_version: Arc::clone(&protocol_version),
-		};
-		let packet_writer = PacketWriter {
-			stream: writer,
-			buffer: Cursor::new(Vec::with_capacity(1024 * 1024)),
-			state: Arc::clone(&state),
-			encryption_secret: Arc::clone(&encryption_secret),
-			encryptor: None,
-			compression: Arc::clone(&compression),
-			protocol_version: Arc::clone(&protocol_version),
-		};
-
-		let protocol_version_clone = Arc::clone(&protocol_version);
-		let state_clone = Arc::clone(&state);
-
-		// Insert into the connections slab
-		let conn_id = {
-			let mut lock = craftflow.connections.write().unwrap();
-			let id = lock.next_conn_id;
-			lock.connections.insert(
+		lock.connections.insert(
+			id,
+			ConnectionInterface {
 				id,
-				Self {
-					craftflow: Arc::clone(&craftflow),
-					id,
-					ip: peer_ip,
-					packet_sender: RwLock::new(packet_sender_in),
-					encryption_secret,
-					compression,
-					state,
-					protocol_version,
-				},
-			);
+				ip: peer_ip,
+				concrete_packet_sender: concrete_packet_sender_in,
+				abstract_packet_sender: abstract_packet_sender_in,
+				encryption_secret: Arc::clone(&encryption_secret),
+				compression: Arc::clone(&compression),
+				writer_state: Arc::clone(&writer_state),
+				protocol_version: Arc::clone(&protocol_version),
+			},
+		);
 
-			lock.next_conn_id += 1;
-			id
-		};
+		id
+	};
 
-		let craftflow = Arc::clone(craftflow);
-		spawn(async move {
-			let r = AssertUnwindSafe(connection_task(
-				Arc::clone(&craftflow),
-				conn_id,
-				packet_reader,
-				packet_writer,
-				packet_sender_out,
-				protocol_version_clone,
-				state_clone,
-			))
-			.catch_unwind() // generally this shouldnt panic, but if it does, we still want to remove the connection
-			.await;
+	let (reader, writer) = stream.into_split();
 
-			match r {
-				Ok(Ok(_)) => {} // ended peacefully 😊
-				Ok(Err(e)) => {
-					error!("{e:?}");
-				}
-				Err(_) => {} // panicked... wow.. cringe
+	let packet_reader = PacketReader::new(reader);
+	let packet_writer = PacketWriter::new(writer);
+
+	// Spawn a task for handling this connection
+	let craftflow = Arc::clone(&craftflow);
+	spawn(async move {
+		let r = AssertUnwindSafe(connection_task(
+			Arc::clone(&craftflow),
+			id,
+			packet_reader,
+			packet_writer,
+			concrete_packet_sender_out,
+			abstract_packet_sender_out,
+			reader_state,
+			writer_state,
+			protocol_version,
+			compression,
+			encryption_secret,
+		))
+		.catch_unwind() // generally this shouldnt panic, but if it does, we still want to remove the connection
+		.await;
+
+		match r {
+			Ok(Ok(_)) => {} // ended peacefully 😊
+			Ok(Err(e)) => {
+				error!("{e:?}");
 			}
+			Err(_) => {} // panicked... wow.. cringe
+		}
 
-			// remove the connection from the list
-			craftflow.disconnect(conn_id);
-		});
+		// remove the connection from the list
+		craftflow.disconnect(id);
+	});
 
-		conn_id
-	}
+	id
 }

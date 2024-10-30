@@ -1,6 +1,8 @@
 // This file is raw SLOP. have fun
 
-use crate::{AbPacketConstructor, AbPacketNew, AbPacketWrite, ConstructorResult, WriteResult};
+use crate::{
+	AbPacketConstructor, AbPacketNew, AbPacketWrite, ConstructorResult, State, WriteResult,
+};
 use anyhow::{bail, Result};
 use craftflow_nbt::DynNBT;
 use craftflow_protocol_core::datatypes::{AnonymousNbt, Array, VarInt};
@@ -314,7 +316,11 @@ impl AbPacketWrite for AbConfRegistry {
 	type Direction = S2C;
 	type Iter = RegistryPacketIter;
 
-	fn convert(self, protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
+	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+		if state != State::Configuration {
+			return Ok(WriteResult::Unsupported);
+		}
+
 		let pkt = match protocol_version {
 			764..766 => RegistryPacketIter::V00764(Some(RegistryDataV00764 {
 				inner: AnonymousNbt { inner: self.into() },

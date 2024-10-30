@@ -4,9 +4,7 @@ pub mod legacy;
 mod packet_reader;
 mod packet_writer;
 
-use crate::{packet_events::trigger_s2c_abstract_pre, CraftFlow};
-use connection_task::connection_task;
-use craftflow_protocol_abstract::{AbPacketWrite, AbS2C, WriteResult};
+use craftflow_protocol_abstract::{AbS2C, State};
 use craftflow_protocol_versions::{IntoStateEnum, S2C};
 use std::{
 	fmt::Display,
@@ -16,125 +14,35 @@ use std::{
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::error;
 
-/// A handle to a client connection.
+pub(crate) use add::new_conn_interface;
+
+/// An interface to a client connection.
 /// Use this to send packets or end the connection (by dropping this handle).
-pub struct ConnectionHandle {
-	craftflow: Arc<CraftFlow>,
+pub struct ConnectionInterface {
 	id: u64,
 	ip: IpAddr,
-	// This is put in RwLock to allow threads to send multiple packets without anything in between
-	// from other threads, by requesting exclusive access to the sender.
-	packet_sender: RwLock<UnboundedSender<S2C>>,
+	concrete_packet_sender: UnboundedSender<S2C>,
+	abstract_packet_sender: UnboundedSender<AbS2C>,
 
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
 	compression: Arc<OnceLock<usize>>,
 	// the protocol version of the client
 	// it is set by the reader task when handshake is received
 	protocol_version: Arc<OnceLock<u32>>,
-	// the state of the connection. Certain packets change this
-	state: Arc<RwLock<ConnState>>,
+	// the state of the writing half of the connection.
+	// almost in all cases this will be the same as the reading half
+	writer_state: Arc<RwLock<State>>,
 }
 
-// Used to track the state of the connection
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ConnState {
-	Handshake,
-	Status,
-	Login,
-	Configuration,
-	Play,
-}
-
-/// Guarantees that packets are sent in a row without any other packets in between them
-pub struct PacketBatchSender<'a> {
-	craftflow: &'a CraftFlow,
-	id: u64,
-	version: u32,
-	lock: std::sync::RwLockWriteGuard<'a, UnboundedSender<S2C>>,
-}
-
-impl<'a> PacketBatchSender<'a> {
+impl ConnectionInterface {
 	/// Send an abstract packet to this client.
-	/// Ignores errors when converting, just logs them
-	pub fn send(&self, packet: impl Into<AbS2C>) -> WriteResult<()> {
-		let mut packet = packet.into();
-
-		trigger_s2c_abstract_pre(self.craftflow, self.id, &mut packet);
-
-		// convert the abstract packet to a series of concrete packets
-		let iter = match packet.convert(self.version) {
-			Ok(WriteResult::Success(iter)) => iter,
-			Ok(WriteResult::Unsupported) => {
-				return WriteResult::Unsupported;
-			}
-			Err(e) => {
-				error!("Failed to convert packet: {}", e);
-				return WriteResult::Success(());
-			}
-		};
-
-		for concrete in iter {
-			// dont care if the client is disconnected
-			let _ = self.lock.send(concrete);
-		}
-
-		WriteResult::Success(())
-	}
-	/// Send a concrete packet to this client.
-	pub fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C>) -> &Self {
-		// dont care if the client is disconnected
-		let _ = self.lock.send(packet.into_state_enum());
-
-		self
-	}
-}
-
-impl ConnectionHandle {
-	/// Send an abstract packet to this client.
-	/// Ignores errors when converting, just logs them
-	pub fn send(&self, packet: impl Into<AbS2C>) -> WriteResult<()> {
-		let mut packet = packet.into();
-
-		trigger_s2c_abstract_pre(&self.craftflow, self.id, &mut packet);
-
-		// convert the abstract packet to a series of concrete packets
-		let iter = match packet.convert(self.protocol_version()) {
-			Ok(WriteResult::Success(iter)) => iter,
-			Ok(WriteResult::Unsupported) => {
-				return WriteResult::Unsupported;
-			}
-			Err(e) => {
-				error!("Failed to convert packet: {}", e);
-				return WriteResult::Success(());
-			}
-		};
-
-		let lock = self.packet_sender.read().unwrap();
-		for concrete in iter {
-			// dont care if the client is disconnected
-			let _ = lock.send(concrete);
-		}
-
-		WriteResult::Success(())
+	pub fn send(&self, packet: impl Into<AbS2C>) {
+		let _ = self.abstract_packet_sender.send(packet.into());
 	}
 	/// Send a concrete packet to this client.
 	pub fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C>) {
 		// dont care if the client is disconnected
-		let _ = self
-			.packet_sender
-			.read()
-			.unwrap()
-			.send(packet.into_state_enum());
-	}
-	/// Send several packets to this client making sure nothing comes in-between
-	pub fn batch_sender(&self) -> PacketBatchSender {
-		let lock = self.packet_sender.write().unwrap();
-		PacketBatchSender {
-			version: self.protocol_version(),
-			lock,
-			craftflow: &self.craftflow,
-			id: self.id,
-		}
+		let _ = self.concrete_packet_sender.send(packet.into_state_enum());
 	}
 	/// Set the encryption shared secret for this client.
 	/// Make sure you send and handle the appropriate packets EncryptionRequest and EncryptionResponse
@@ -157,16 +65,13 @@ impl ConnectionHandle {
 		}
 	}
 	/// Returns the protocol version of the client
-	/// If handshake packet not received yet will panic
+	/// If handshake packet not received yet will return 0
 	pub fn protocol_version(&self) -> u32 {
-		self.protocol_version
-			.get()
-			.copied()
-			.expect("handshake not received yet")
+		self.protocol_version.get().copied().unwrap_or(0)
 	}
 	/// Returns the state of the connection
-	pub fn state(&self) -> ConnState {
-		*self.state.read().unwrap()
+	pub fn state(&self) -> State {
+		*self.writer_state.read().unwrap()
 	}
 	/// Returns the ip address of the client
 	pub fn ip(&self) -> IpAddr {
@@ -178,7 +83,7 @@ impl ConnectionHandle {
 	}
 }
 
-impl Display for ConnectionHandle {
+impl Display for ConnectionInterface {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "Connection[{}][{}]", self.id, self.ip)
 	}

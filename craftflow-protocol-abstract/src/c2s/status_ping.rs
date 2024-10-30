@@ -1,4 +1,4 @@
-use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, WriteResult};
+use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State, WriteResult};
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	c2s::{
@@ -22,7 +22,11 @@ impl AbPacketWrite for AbStatusPing {
 	type Direction = C2S;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, _protocol_version: u32) -> Result<WriteResult<Self::Iter>> {
+	fn convert(self, _protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+		if state != State::Status {
+			return Ok(WriteResult::Unsupported);
+		}
+
 		// This packet is identical in all protocol versions
 		Ok(WriteResult::Success(once(
 			PingV00005 {

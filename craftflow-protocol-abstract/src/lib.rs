@@ -19,7 +19,18 @@ pub use packet_new::*;
 pub use packet_write::*;
 pub use s2c::AbS2C;
 
+/// Contains all the possible states of a connection
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum State {
+	Handshake,
+	Status,
+	Login,
+	Configuration,
+	Play,
+}
+
 /// Returned by an abstract packet constructor to indicate the result of processing a packet
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum ConstructorResult<D, C, I> {
 	/// The constructor is done and the abstract packet is ready
 	Done(D),
@@ -31,10 +42,11 @@ pub enum ConstructorResult<D, C, I> {
 
 /// Returned by an abstract packet writer to indicate whether the packet can be written for
 /// the given protocol version
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum WriteResult<T> {
 	/// The writer successfully converted the abstract packet to concrete packets
 	Success(T),
-	/// This abstract packet has no implementation for the given protocol version
+	/// This abstract packet has no implementation for the given protocol version or state
 	Unsupported,
 }
 

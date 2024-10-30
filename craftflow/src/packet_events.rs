@@ -4,6 +4,7 @@
 //!  - [`S2C`] packet events will be emitted before a concrete packet is sent to the client
 //!  - [`AbS2C`] packet events will be emitted before an abstract packet is sent to the client
 //!  - [`Post<S2C>`] events will be emitted AFTER a concrete packet is sent to the client
+//!  - [`Post<AbS2C>`] events will be emitted AFTER an abstract packet is sent to the client
 
 // This is the slop file that uses macro slop to generate matching and impl blocks slop
 // for the purpose of the `Event` trait slop
@@ -22,7 +23,7 @@ use tracing::trace;
 craftflow_protocol_versions::__gen_impls_for_packets__! {
 	impl Event for X {
 		/// The arguments for this event are the connection ID and the packet
-		type Args<'a> = (u64, &'a mut Self);
+		type Args<'a> = (u64, &'a mut X);
 		/// For S2C packets, if the event is stopped, the packet will not be sent
 		type Return = ();
 	}
@@ -32,7 +33,7 @@ craftflow_protocol_versions::__gen_impls_for_packets__! {
 craftflow_protocol_abstract::__gen_impls_for_packets_s2c! {
 	impl Event for X {
 		/// The arguments for this event are the connection ID and the packet
-		type Args<'a> = (u64, &'a mut Self);
+		type Args<'a> = (u64, &'a mut X);
 		/// In the case of S2C packets, if the event is stopped, the packet will not be sent
 		type Return = ();
 	}
@@ -42,7 +43,7 @@ craftflow_protocol_abstract::__gen_impls_for_packets_s2c! {
 craftflow_protocol_abstract::__gen_impls_for_packets_c2s! {
 	impl Event for X {
 		/// The arguments for this event are the connection ID and the packet
-		type Args<'a> = (u64, &'a mut Self);
+		type Args<'a> = (u64, &'a mut X);
 		/// In the case of S2C packets, if the event is stopped, the packet will not be sent
 		type Return = ();
 	}
@@ -61,6 +62,16 @@ craftflow_protocol_versions::__gen_impls_for_packets__! {
 		/// The arguments for this event are the connection ID and the packet
 		type Args<'a> = (u64, &'a mut X);
 		/// For S2C packets, if the event is stopped, the packet will not be sent
+		type Return = ();
+	}
+}
+
+// POST Abstract packets
+craftflow_protocol_abstract::__gen_impls_for_packets_s2c! {
+	impl Event for Post<X> {
+		/// The arguments for this event are the connection ID and the packet
+		type Args<'a> = (u64, &'a mut X);
+		/// In the case of S2C packets, if the event is stopped, the packet will not be sent
 		type Return = ();
 	}
 }
@@ -141,6 +152,16 @@ pub(super) fn trigger_s2c_concrete_post(
 	packet: &mut S2C,
 ) -> ControlFlow<()> {
 	craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, packet -> inner {
+		helper_post(craftflow, conn_id, inner)
+	})
+}
+
+pub(super) fn trigger_s2c_abstract_post(
+	craftflow: &CraftFlow,
+	conn_id: u64,
+	packet: &mut AbS2C,
+) -> ControlFlow<()> {
+	craftflow_protocol_abstract::__destructure_s2c__!(packet -> inner {
 		helper_post(craftflow, conn_id, inner)
 	})
 }
