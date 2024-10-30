@@ -46,6 +46,8 @@ def gen_type(type, version, spec) -> str:
 
     return f"""
     #[allow(unused_imports)]
+    use std::borrow::Cow;
+    #[allow(unused_imports)]
     use craftflow_protocol_core::*;
     #[allow(unused_imports)]
     use craftflow_protocol_core::datatypes::*;

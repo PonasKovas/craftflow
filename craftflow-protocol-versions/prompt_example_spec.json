@@ -110,15 +110,6 @@
       ]
     },
     {
-      "name": "extraData",
-      "type": [
-        "topBitSetTerminatedArray",
-        {
-          "type": "i32"
-        }
-      ]
-    },
-    {
       "name": "associatedData",
       "type": "nbt"
     },

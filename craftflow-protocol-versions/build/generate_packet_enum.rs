@@ -84,7 +84,7 @@ pub fn generate_packet_enum(
         }}
 
         impl<'a> PacketRead<'a> for {enum_name}<'a> {{
-            fn read_packet(input: &'a mut [u8], protocol_version: u32) -> Result<(&'a mut [u8], Self)> {{
+            fn read_packet(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
                 let (input, packet_id) = VarInt::read(input)?;
                 let packet_id = packet_id.0;
                 match (protocol_version, packet_id) {{

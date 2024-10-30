@@ -4,6 +4,7 @@ use crate::types::v00764::*;
 use craftflow_protocol_core::datatypes::*;
 #[allow(unused_imports)]
 use craftflow_protocol_core::*;
+use std::borrow::Cow;
 
 #[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 pub struct CustomPayloadV00764<'a> {
@@ -23,7 +24,7 @@ impl<'a> MCPWrite for CustomPayloadV00764<'a> {
 }
 
 impl<'a> MCPRead<'a> for CustomPayloadV00764<'a> {
-	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
+	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
 		let (input, channel) = Cow::read(input)?;
 		let (input, data) = RestBuffer::read(input)?;
 

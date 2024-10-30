@@ -63,7 +63,7 @@ pub fn generate_version_enum(
         }}
 
         impl<'a> crate::PacketRead for {enum_name}<'a> {{
-            fn read_packet(input: &'a mut [u8], protocol_version: u32) -> Result<(&'a mut [u8], Self)> {{
+            fn read_packet(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
                     match protocol_version {{
                         {packet_read_match_arms}
                         _ => Err(Error::InvalidData(format!(\"This packet has no implementation for {{protocol_version}} protocol version\"))),

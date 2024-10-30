@@ -4,7 +4,7 @@ use std::io::Write;
 /// Packets that can be parsed from a byte slice given a specific protocol version.
 pub trait PacketRead<'a> {
 	/// Reads and parses the packet, returning the remaining data (if any) together with the parsed packet.
-	fn read_packet(input: &'a mut [u8], protocol_version: u32) -> Result<(&'a mut [u8], Self)>
+	fn read_packet(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)>
 	where
 		Self: Sized;
 }

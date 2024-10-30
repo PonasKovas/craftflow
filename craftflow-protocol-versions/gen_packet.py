@@ -14,6 +14,8 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
 
     return f"""
     #[allow(unused_imports)]
+    use std::borrow::Cow;
+    #[allow(unused_imports)]
     use craftflow_protocol_core::*;
     #[allow(unused_imports)]
     use craftflow_protocol_core::datatypes::*;
@@ -24,23 +26,23 @@ def gen_packet(spec, direction: str, state: str, packet: str, version: int) -> s
 
     {response}
 
-    impl crate::IntoVersionEnum for {struct_name} {{
-        type Packet = super::super::{packet_name};
+    impl<'a> crate::IntoVersionEnum for {struct_name}<'a> {{
+        type Packet = super::super::{packet_name}<'a>;
 
     	fn into_version_enum(self) -> Self::Packet {{
             super::super::{packet_name}::V{version:05}(self)
         }}
     }}
-    impl crate::IntoPacketEnum for {struct_name} {{
-        type State = super::super::super::{snake_to_pascal(state)};
+    impl<'a> crate::IntoPacketEnum for {struct_name}<'a> {{
+        type State = super::super::super::{snake_to_pascal(state)}<'a>;
 
     	fn into_packet_enum(self) -> Self::State {{
             let packet = crate::IntoVersionEnum::into_version_enum(self);
             super::super::super::{snake_to_pascal(state)}::{packet_name}(packet)
         }}
     }}
-    impl crate::IntoStateEnum for {struct_name} {{
-        type Direction = super::super::super::super::{direction.upper()};
+    impl<'a> crate::IntoStateEnum for {struct_name}<'a> {{
+        type Direction = super::super::super::super::{direction.upper()}<'a>;
 
     	fn into_state_enum(self) -> Self::Direction {{
             let state = crate::IntoPacketEnum::into_packet_enum(self);
