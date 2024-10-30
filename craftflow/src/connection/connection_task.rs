@@ -14,7 +14,7 @@ use crate::{
 use anyhow::{bail, Context};
 use craftflow_protocol_abstract::{
 	c2s::{handshake::NextState, AbHandshake},
-	s2c::AbLoginDisconnect,
+	s2c::AbDisconnect,
 	AbPacketNew, AbPacketWrite, AbS2C, State,
 };
 use craftflow_protocol_core::text;
@@ -105,7 +105,7 @@ pub(super) async fn connection_task(
 					client_version,
 					None,
 					&mut None,
-					&AbLoginDisconnect { message }
+					&AbDisconnect { message }
 						.convert(client_version, State::Login)?
 						.assume()
 						.next()
