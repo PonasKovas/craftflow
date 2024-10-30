@@ -2,7 +2,7 @@ use crate::{MCPRead, MCPWrite, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
-impl MCPRead for u8 {
+impl<'a> MCPRead<'a> for u8 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_u8()?;
 
@@ -17,7 +17,7 @@ impl MCPWrite for u8 {
 	}
 }
 
-impl MCPRead for u16 {
+impl<'a> MCPRead<'a> for u16 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_u16::<BigEndian>()?;
 
@@ -32,7 +32,7 @@ impl MCPWrite for u16 {
 	}
 }
 
-impl MCPRead for u32 {
+impl<'a> MCPRead<'a> for u32 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_u32::<BigEndian>()?;
 
@@ -47,7 +47,7 @@ impl MCPWrite for u32 {
 	}
 }
 
-impl MCPRead for u64 {
+impl<'a> MCPRead<'a> for u64 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_u64::<BigEndian>()?;
 
@@ -62,7 +62,7 @@ impl MCPWrite for u64 {
 	}
 }
 
-impl MCPRead for u128 {
+impl<'a> MCPRead<'a> for u128 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_u128::<BigEndian>()?;
 
@@ -77,7 +77,7 @@ impl MCPWrite for u128 {
 	}
 }
 
-impl MCPRead for i8 {
+impl<'a> MCPRead<'a> for i8 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_i8()?;
 
@@ -92,7 +92,7 @@ impl MCPWrite for i8 {
 	}
 }
 
-impl MCPRead for i16 {
+impl<'a> MCPRead<'a> for i16 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_i16::<BigEndian>()?;
 
@@ -107,7 +107,7 @@ impl MCPWrite for i16 {
 	}
 }
 
-impl MCPRead for i32 {
+impl<'a> MCPRead<'a> for i32 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_i32::<BigEndian>()?;
 
@@ -122,7 +122,7 @@ impl MCPWrite for i32 {
 	}
 }
 
-impl MCPRead for i64 {
+impl<'a> MCPRead<'a> for i64 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_i64::<BigEndian>()?;
 
@@ -137,7 +137,7 @@ impl MCPWrite for i64 {
 	}
 }
 
-impl MCPRead for i128 {
+impl<'a> MCPRead<'a> for i128 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_i128::<BigEndian>()?;
 

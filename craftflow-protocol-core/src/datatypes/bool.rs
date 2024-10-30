@@ -3,7 +3,7 @@ use crate::{MCPRead, MCPWrite};
 use byteorder::{ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
-impl MCPRead for bool {
+impl<'a> MCPRead<'a> for bool {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], bool)> {
 		let b = input.as_ref().read_u8()? != 0;
 

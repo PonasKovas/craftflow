@@ -1,3 +1,3 @@
 use super::Array;
 
-pub type Buffer<LEN> = Array<LEN, u8>;
+pub type Buffer<'a, LEN> = Array<'a, LEN, u8>;

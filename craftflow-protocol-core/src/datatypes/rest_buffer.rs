@@ -1,19 +1,20 @@
 use crate::{MCPRead, MCPWrite, Result};
-use std::io::Write;
+use std::{borrow::Cow, io::Write};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct RestBuffer(pub Vec<u8>);
+pub struct RestBuffer<'a>(pub Cow<'a, [u8]>);
 
-impl MCPRead for RestBuffer {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+impl<'a> MCPRead<'a> for RestBuffer<'a> {
+	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
 		let len = input.len();
-		let r = Self(input.to_vec());
+		let (l, r) = input.split_at_mut(len);
+		let result = Self(Cow::Borrowed(l));
 
-		Ok((&mut input[len..len], r))
+		Ok((r, result))
 	}
 }
 
-impl MCPWrite for RestBuffer {
+impl<'a> MCPWrite for RestBuffer<'a> {
 	fn write(&self, output: &mut impl Write) -> Result<usize> {
 		output.write_all(&self.0)?;
 

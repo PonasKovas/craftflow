@@ -1,10 +1,13 @@
 use crate::{MCPRead, MCPWrite, Result};
-use std::io::{self, Write};
+use std::{
+	borrow::Cow,
+	io::{self, Write},
+};
 
 /// Serializes elements sequentially, setting the first bit of the last element to 1 to indicate that
 /// its the last element.
 #[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Eq, Ord)]
-pub struct TopBitSetArray<T>(pub Vec<T>);
+pub struct TopBitSetArray<'a, T: Clone>(pub Cow<'a, [T]>);
 
 /// Wraps a `Write` and always writes the first bit as 1.
 struct LastWriteWrapper<W> {
@@ -42,7 +45,7 @@ impl<W: Write> Write for LastWriteWrapper<W> {
 	}
 }
 
-impl<T: MCPWrite> MCPWrite for TopBitSetArray<T> {
+impl<'a, T: MCPWrite + Clone> MCPWrite for TopBitSetArray<'a, T> {
 	fn write(&self, mut output: &mut impl Write) -> Result<usize> {
 		let mut written_bytes = 0;
 
@@ -60,8 +63,8 @@ impl<T: MCPWrite> MCPWrite for TopBitSetArray<T> {
 	}
 }
 
-impl<T: MCPRead> MCPRead for TopBitSetArray<T> {
-	fn read(mut input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+impl<'a, T: MCPRead<'a> + Clone> MCPRead<'a> for TopBitSetArray<'a, T> {
+	fn read(mut input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
 		let mut items = Vec::new();
 
 		if input.is_empty() {
@@ -88,6 +91,6 @@ impl<T: MCPRead> MCPRead for TopBitSetArray<T> {
 			}
 		}
 
-		Ok((input, Self(items)))
+		Ok((input, Self(items.into())))
 	}
 }

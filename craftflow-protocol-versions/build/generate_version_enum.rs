@@ -25,7 +25,7 @@ pub fn generate_version_enum(
 
 		enum_variants += &format!(
 			"/// This variant applies for {versions_comment} protocol versions.
-			{variant_name}({packet_name}::{version_name}::{struct_name}),\n"
+			{variant_name}({packet_name}::{version_name}::{struct_name}<'a>),\n"
 		);
 
 		let versions_pattern = versions
@@ -58,19 +58,19 @@ pub fn generate_version_enum(
 		use craftflow_protocol_core::{{Result, MCPRead, MCPWrite, Error}};
 
 		#[derive(Debug, PartialEq, Clone)]
-		pub enum {enum_name} {{
-                {enum_variants}
+		pub enum {enum_name}<'a> {{
+            {enum_variants}
         }}
 
-        impl crate::PacketRead for {enum_name} {{
-            fn read_packet(input: &mut [u8], protocol_version: u32) -> Result<(&mut [u8], Self)> {{
+        impl<'a> crate::PacketRead for {enum_name}<'a> {{
+            fn read_packet(input: &'a mut [u8], protocol_version: u32) -> Result<(&'a mut [u8], Self)> {{
                     match protocol_version {{
                         {packet_read_match_arms}
                         _ => Err(Error::InvalidData(format!(\"This packet has no implementation for {{protocol_version}} protocol version\"))),
                     }}
             }}
         }}
-        impl crate::PacketWrite for {enum_name} {{
+        impl<'a> crate::PacketWrite for {enum_name}<'a> {{
             fn write_packet(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {packet_write_match_arms}
@@ -78,22 +78,22 @@ pub fn generate_version_enum(
             }}
         }}
 
-        impl crate::IntoVersionEnum for {enum_name} {{
+        impl<'a> crate::IntoVersionEnum for {enum_name}<'a> {{
             type Packet = Self;
 
            	fn into_version_enum(self) -> Self::Packet {{
                 self
             }}
         }}
-        impl crate::IntoPacketEnum for {enum_name} {{
-            type State = crate::{direction}::{state_enum_name};
+        impl<'a> crate::IntoPacketEnum for {enum_name}<'a> {{
+            type State = crate::{direction}::{state_enum_name}<'a>;
 
             fn into_packet_enum(self) -> Self::State {{
                 crate::{direction}::{state_enum_name}::{enum_name}(self)
             }}
         }}
-        impl crate::IntoStateEnum for {enum_name} {{
-            type Direction = crate::{direction_enum_name};
+        impl<'a> crate::IntoStateEnum for {enum_name}<'a> {{
+            type Direction = crate::{direction_enum_name}<'a>;
 
            	fn into_state_enum(self) -> Self::Direction {{
                 crate::{direction_enum_name}::{state_enum_name}(crate::IntoPacketEnum::into_packet_enum(self))

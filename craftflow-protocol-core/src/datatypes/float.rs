@@ -2,7 +2,7 @@ use crate::{MCPRead, MCPWrite, Result};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::Write;
 
-impl MCPRead for f32 {
+impl<'a> MCPRead<'a> for f32 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_f32::<BigEndian>()?;
 
@@ -16,7 +16,7 @@ impl MCPWrite for f32 {
 	}
 }
 
-impl MCPRead for f64 {
+impl<'a> MCPRead<'a> for f64 {
 	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let r = input.as_ref().read_f64::<BigEndian>()?;
 

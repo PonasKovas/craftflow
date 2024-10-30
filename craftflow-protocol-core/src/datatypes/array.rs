@@ -1,27 +1,28 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
-use std::{fmt::Debug, io::Write, marker::PhantomData};
+use std::{borrow::Cow, fmt::Debug, io::Write, marker::PhantomData};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Array<LEN, T> {
-	pub data: Vec<T>,
+pub struct Array<'a, LEN, T: Clone> {
+	pub data: Cow<'a, [T]>,
 	_phantom: PhantomData<LEN>,
 }
 
-impl<LEN, T> Array<LEN, T> {
-	pub fn new(data: Vec<T>) -> Self {
+impl<'a, LEN, T: Clone> Array<'a, LEN, T> {
+	pub fn new(data: impl Into<Cow<'a, [T]>>) -> Self {
 		Self {
-			data,
+			data: data.into(),
 			_phantom: PhantomData,
 		}
 	}
 }
 
-impl<LEN: MCPRead, T: MCPRead> MCPRead for Array<LEN, T>
+impl<'a, LEN: MCPRead<'a>, T: MCPRead<'a> + Clone> MCPRead<'a> for Array<'a, LEN, T>
 where
 	LEN: TryInto<usize> + Debug + Copy,
-	// copy just makes stuff easier here, and I assume there wont be a type that isnt Copy
+	// copy isnt really required but just makes stuff easier here,
+	// and I assume there wont be a type that isnt Copy
 {
-	fn read(input: &mut [u8]) -> Result<(&mut [u8], Self)> {
+	fn read(input: &'a mut [u8]) -> Result<(&'a mut [u8], Self)> {
 		let mut data = Vec::new();
 
 		let (mut input, len) = LEN::read(input)?;
@@ -43,7 +44,7 @@ where
 	}
 }
 
-impl<LEN: MCPWrite, T: MCPWrite> MCPWrite for Array<LEN, T>
+impl<'a, LEN: MCPWrite, T: MCPWrite + Clone> MCPWrite for Array<'a, LEN, T>
 where
 	usize: TryInto<LEN>,
 {
@@ -60,7 +61,7 @@ where
 
 		written += len.write(output)?;
 
-		for element in &self.data {
+		for element in self.data.iter() {
 			written += element.write(output)?;
 		}
 

@@ -16,7 +16,7 @@ pub fn generate_packet_enum(
 	for (packet_name, packet) in state_packets {
 		let variant_name = snake_to_pascal_case(packet_name);
 
-		enum_variants += &format!("{variant_name}({state}::{variant_name}),\n");
+		enum_variants += &format!("{variant_name}({state}::{variant_name}<'a>),\n");
 
 		let mut inner_write_match_arms = String::new();
 
@@ -79,12 +79,12 @@ pub fn generate_packet_enum(
 		use crate::{{PacketRead, PacketWrite}};
 
 		#[derive(Debug, PartialEq, Clone)]
-		pub enum {enum_name} {{
+		pub enum {enum_name}<'a> {{
             {enum_variants}
         }}
 
-        impl PacketRead for {enum_name} {{
-            fn read_packet(input: &mut [u8], protocol_version: u32) -> Result<(&mut [u8], Self)> {{
+        impl<'a> PacketRead<'a> for {enum_name}<'a> {{
+            fn read_packet(input: &'a mut [u8], protocol_version: u32) -> Result<(&'a mut [u8], Self)> {{
                 let (input, packet_id) = VarInt::read(input)?;
                 let packet_id = packet_id.0;
                 match (protocol_version, packet_id) {{
@@ -93,7 +93,7 @@ pub fn generate_packet_enum(
                 }}
             }}
         }}
-        impl PacketWrite for {enum_name} {{
+        impl<'a> PacketWrite for {enum_name}<'a> {{
             fn write_packet(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {packet_write_match_arms}
@@ -101,15 +101,15 @@ pub fn generate_packet_enum(
             }}
         }}
 
-        impl crate::IntoPacketEnum for {enum_name} {{
+        impl<'a> crate::IntoPacketEnum for {enum_name}<'a> {{
             type State = Self;
 
             fn into_packet_enum(self) -> Self::State {{
                 self
             }}
         }}
-        impl crate::IntoStateEnum for {enum_name} {{
-            type Direction = crate::{direction_enum_name};
+        impl<'a> crate::IntoStateEnum for {enum_name}<'a> {{
+            type Direction = crate::{direction_enum_name}<'a>;
 
            	fn into_state_enum(self) -> Self::Direction {{
                 super::super::{direction_enum_name}::{enum_name}(self)

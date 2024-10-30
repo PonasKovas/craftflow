@@ -7,7 +7,7 @@ pub fn generate_state_enum(direction: &str, states: &Vec<String>) -> String {
 	for state in states {
 		let variant_name = snake_to_pascal_case(state);
 
-		enum_variants += &format!("{variant_name}({direction}::{variant_name}),\n");
+		enum_variants += &format!("{variant_name}({direction}::{variant_name}<'a>),\n");
 	}
 
 	format!(
@@ -16,11 +16,11 @@ pub fn generate_state_enum(direction: &str, states: &Vec<String>) -> String {
 		use super::*;
 
 		#[derive(Debug, PartialEq, Clone)]
-		pub enum {enum_name} {{
+		pub enum {enum_name}<'a> {{
             {enum_variants}
         }}
 
-        impl crate::IntoStateEnum for {enum_name} {{
+        impl<'a> crate::IntoStateEnum for {enum_name}<'a> {{
             type Direction = Self;
 
            	fn into_state_enum(self) -> Self::Direction {{

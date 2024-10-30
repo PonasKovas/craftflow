@@ -2,9 +2,9 @@ use craftflow_protocol_core::Result;
 use std::io::Write;
 
 /// Packets that can be parsed from a byte slice given a specific protocol version.
-pub trait PacketRead {
+pub trait PacketRead<'a> {
 	/// Reads and parses the packet, returning the remaining data (if any) together with the parsed packet.
-	fn read_packet(input: &mut [u8], protocol_version: u32) -> Result<(&mut [u8], Self)>
+	fn read_packet(input: &'a mut [u8], protocol_version: u32) -> Result<(&'a mut [u8], Self)>
 	where
 		Self: Sized;
 }

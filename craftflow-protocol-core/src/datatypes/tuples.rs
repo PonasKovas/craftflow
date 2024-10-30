@@ -7,8 +7,8 @@ impl<T1: MCPWrite, T2: MCPWrite> MCPWrite for (T1, T2) {
 		self.1.write(output)
 	}
 }
-impl<T1: MCPRead, T2: MCPRead> MCPRead for (T1, T2) {
-	fn read(input: &mut [u8]) -> crate::Result<(&mut [u8], Self)> {
+impl<'a, T1: MCPRead<'a>, T2: MCPRead<'a>> MCPRead<'a> for (T1, T2) {
+	fn read(input: &'a mut [u8]) -> crate::Result<(&'a mut [u8], Self)> {
 		let (input, v1) = T1::read(input)?;
 		let (input, v2) = T2::read(input)?;
 
@@ -23,8 +23,8 @@ impl<T1: MCPWrite, T2: MCPWrite, T3: MCPWrite> MCPWrite for (T1, T2, T3) {
 		self.2.write(output)
 	}
 }
-impl<T1: MCPRead, T2: MCPRead, T3: MCPRead> MCPRead for (T1, T2, T3) {
-	fn read(input: &mut [u8]) -> crate::Result<(&mut [u8], Self)> {
+impl<'a, T1: MCPRead<'a>, T2: MCPRead<'a>, T3: MCPRead<'a>> MCPRead<'a> for (T1, T2, T3) {
+	fn read(input: &'a mut [u8]) -> crate::Result<(&'a mut [u8], Self)> {
 		let (input, v1) = T1::read(input)?;
 		let (input, v2) = T2::read(input)?;
 		let (input, v3) = T3::read(input)?;

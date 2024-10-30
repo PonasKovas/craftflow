@@ -27,7 +27,7 @@ impl VarInt {
 	}
 }
 
-impl MCPRead for VarInt {
+impl<'a> MCPRead<'a> for VarInt {
 	fn read(mut input: &mut [u8]) -> Result<(&mut [u8], Self)> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed

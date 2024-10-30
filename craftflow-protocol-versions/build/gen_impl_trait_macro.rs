@@ -30,14 +30,14 @@ pub fn gen_impl_trait_macro() -> String {
 
 								let version_name = version.file_name().into_string().unwrap();
 
-								inner += &format!("const _: () = {{ type X = ::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct};
-impl $trait for X $code
+								inner += &format!("const _: () = {{ type X<'a> = ::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct}<'a>;
+impl<'a> $trait for X<'a> $code
 								}};",
 								    pkt_struct = snake_to_pascal_case(&packet_name) + &version_name.to_uppercase(),
                                 );
 								if direction == "s2c" {
-									inner_post += &format!("const _: () = {{ type X = ::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct};
-impl $trait for Post<X> $code
+									inner_post += &format!("const _: () = {{ type X<'a> = ::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct}<'a>;
+impl<'a> $trait for Post<X<'a>> $code
     								}};",
     								    pkt_struct = snake_to_pascal_case(&packet_name) + &version_name.to_uppercase(),
                                     );
