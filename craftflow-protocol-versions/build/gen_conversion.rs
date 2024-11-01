@@ -32,6 +32,7 @@ pub fn for_version(
 		),
 		pkt_lifetime,
 		&version.caps_mod_name(),
+		true,
 	);
 	r += &gen_impl_block(
 		Trait::Packet,
@@ -43,6 +44,7 @@ pub fn for_version(
 		),
 		st_lifetime,
 		&packet.enum_name(),
+		false,
 	);
 	r += &gen_impl_block(
 		Trait::State,
@@ -51,6 +53,7 @@ pub fn for_version(
 		&format!("crate::{dir_enum}", dir_enum = direction.enum_name()),
 		dir_lifetime,
 		&state.enum_name(),
+		false,
 	);
 
 	r
@@ -82,6 +85,7 @@ pub fn for_packet(
 		),
 		st_lifetime,
 		&packet.enum_name(),
+		true,
 	);
 	r += &gen_impl_block(
 		Trait::State,
@@ -90,6 +94,7 @@ pub fn for_packet(
 		&format!("crate::{dir_enum}", dir_enum = direction.enum_name()),
 		dir_lifetime,
 		&state.enum_name(),
+		false,
 	);
 	r
 }
@@ -115,6 +120,7 @@ pub fn for_state(
 			&super_path,
 			dir_lifetime,
 			&state.enum_name(),
+			true,
 		)
 }
 
@@ -169,6 +175,8 @@ fn gen_impl_block(
 	super_lifetime: bool,
 	// which variant of the superior enum it is
 	variant: &str,
+	// whether to put value as self or the lower enum
+	direct: bool,
 ) -> String {
 	let trait_name = t.trait_name();
 	let assoc_type = t.assoc_type();
@@ -177,13 +185,24 @@ fn gen_impl_block(
 	let lifetime = get_lifetime(lifetime);
 	let super_lifetime = get_lifetime(super_lifetime);
 
+	let value = if direct {
+		"self"
+	} else {
+		match t {
+			Trait::Version => "self",
+			Trait::Packet => "crate::IntoVersionEnum::into_version_enum(self)",
+			Trait::State => "crate::IntoPacketEnum::into_packet_enum(self)",
+		}
+	};
+
 	format!(
 		r#"
         impl {super_lifetime} crate::{trait_name} for {path} {lifetime} {{
             type {assoc_type} = {super_path} {super_lifetime};
 
             fn {method_name}(self) -> Self::{assoc_type} {{
-                {super_path}::{variant}(self)
+                let v = {value};
+                {super_path}::{variant}(v)
             }}
         }}
        "#

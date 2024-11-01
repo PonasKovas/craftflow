@@ -1,15 +1,13 @@
 //! For generating PacketRead and PacketWrite for packet enums
 
-use std::collections::HashMap;
-
 use crate::{
 	common::get_lifetime,
-	parse_packet_info::{Direction, PacketName, PacketType, Packets, State, Version, Versions},
+	parse_packet_info::{Direction, Packets, State},
 };
+use std::collections::HashMap;
 
 pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Packets) -> String {
 	let dir_mod = direction.mod_name();
-	let state_mod = state.mod_name();
 
 	let lifetime = get_lifetime(packets.iter().any(|(_, (has_lifetime, _))| *has_lifetime));
 	let path = format!(
@@ -40,14 +38,14 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
 
 			read_match_arms += &format!(
 				"({id}, {versions_pattern}) => {{
-     			    let (input, packet) = crate::MCPReadVersioned::read_versioned(input, protocol_version)
+     			    let (input, packet) = MCPReadVersioned::read_versioned(input, protocol_version)
                         .with_context(|| format!(\"packet id {id}, version {{protocol_version}}\"))?;
                     Ok((input, Self::{packet_variant}(packet)))
      			}},\n"
 			);
 
 			write_match_arms += &format!(
-    			"{versions_pattern} => {{
+    			"Self::{packet_variant}(packet) => {{
     		        let mut written = 0;
                     written += VarInt({id}).write(output)?;
                     written += packet.write_versioned(output, protocol_version)
@@ -60,9 +58,12 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
 
 	format!(
 		r#"
-		impl<'a> crate::PacketRead<'a> for {path} {lifetime} {{
-            fn read_packet(input: &'a [u8], protocol_version: u32) -> craftflow_protocol_core::Result<(&'a [u8], Self)> {{
-                let (input, packet_id) = craftflow_protocol_core::datatypes::VarInt::read(input)?;
+		use craftflow_protocol_core::{{Result, Error, Context, datatypes::VarInt, MCPWrite, MCPRead}};
+		use crate::{{MCPReadVersioned, MCPWriteVersioned, PacketRead, PacketWrite}};
+
+		impl<'a> PacketRead<'a> for {path} {lifetime} {{
+            fn read_packet(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
+                let (input, packet_id) = VarInt::read(input)?;
                 let packet_id = packet_id.0;
                 match (packet_id, protocol_version) {{
                     {read_match_arms}
@@ -70,8 +71,8 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
                 }}
             }}
         }}
-        impl {lifetime} crate::PacketWrite for {path} {lifetime} {{
-            fn write_packet(&self, output: &mut impl std::io::Write, protocol_version: u32) -> craftflow_protocol_core::Result<usize> {{
+        impl {lifetime} PacketWrite for {path} {lifetime} {{
+            fn write_packet(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {write_match_arms}
                 }}

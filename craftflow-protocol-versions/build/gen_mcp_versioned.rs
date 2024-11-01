@@ -52,7 +52,7 @@ pub fn gen_mcp_versioned(
 
 		read_match_arms += &format!(
 			"{versions_pattern} => {{
-		    let (input, packet) = craftflow_protocol_core::MCPRead::read(input)?;
+		    let (input, packet) = MCPRead::read(input)?;
 			Ok((input, Self::{version_variant}(packet)))
 		}},\n"
 		);
@@ -76,16 +76,19 @@ pub fn gen_mcp_versioned(
 
 	format!(
 		r#"
-        impl<'a> crate::MCPReadVersioned<'a> for {path} {lifetime} {{
-            fn read_versioned(input: &'a [u8], protocol_version: u32) -> craftflow_protocol_core::Result<(&'a [u8], Self)> {{
+		use craftflow_protocol_core::{{Error, Result, MCPRead, MCPWrite}};
+		use crate::{{MCPReadVersioned, MCPWriteVersioned}};
+
+        impl<'a> MCPReadVersioned<'a> for {path} {lifetime} {{
+            fn read_versioned(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
                     match protocol_version {{
                         {read_match_arms}
                         _ => Err(Error::InvalidData(format!("This packet has no implementation for {{protocol_version}} protocol version"))),
                     }}
             }}
         }}
-        impl {lifetime} crate::MCPWriteVersioned for {path} {lifetime} {{
-            fn write_versioned(&self, output: &mut impl std::io::Write, protocol_version: u32) -> craftflow_protocol_core::Result<usize> {{
+        impl {lifetime} MCPWriteVersioned for {path} {lifetime} {{
+            fn write_versioned(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {write_match_arms}
                 }}
