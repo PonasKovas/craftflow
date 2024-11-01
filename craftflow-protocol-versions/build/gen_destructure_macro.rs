@@ -1,67 +1,49 @@
-use crate::{
-	common::{read_dir_sorted, snake_to_pascal_case},
-	parse_packet_info::parse_packet_info,
-};
-use std::path::Path;
+use crate::parse_packet_info::{Directions, PacketType};
 
-pub fn gen_destructure_macro() -> String {
+pub fn gen_destructure_macro(directions: &Directions) -> String {
 	let mut inner = String::new();
 
-	for direction in ["c2s", "s2c"] {
+	for (direction, (_, states)) in directions {
 		let mut inner_direction = String::new();
 
-		let dir = direction.to_uppercase();
-		let direction_path = Path::new("src/").join(direction);
-		if direction_path.exists() {
-			for state in read_dir_sorted(&direction_path) {
-				if state.file_type().unwrap().is_dir() {
-					let mut inner_state = String::new();
+		let dir_mod = direction.mod_name();
+		let dir_enum = direction.enum_name();
+		for (state, (_, packets)) in states {
+			let mut inner_state = String::new();
 
-					let state_name = state.file_name().into_string().unwrap();
-					let state_variant = snake_to_pascal_case(&state_name);
-					for packet in read_dir_sorted(&state.path()) {
-						if packet.file_type().unwrap().is_dir() {
-							let mut inner_packet = String::new();
+			let st_mod = state.mod_name();
+			let st_enum = state.enum_name();
+			for (packet, (_, versions)) in packets {
+				let mut inner_packet = String::new();
 
-							let packet_name = packet.file_name().into_string().unwrap();
-							let packet_variant = snake_to_pascal_case(&packet_name);
-							for version in read_dir_sorted(&packet.path()) {
-								if !version.file_type().unwrap().is_dir() {
-									continue;
-								}
-
-								// we only need defined versions, not re-exports, since they dont have variants in the packet enum
-								let packet_info = parse_packet_info(version.path());
-								if packet_info.reexport.is_some() {
-									continue;
-								}
-
-								let version_name = version.file_name().into_string().unwrap();
-								let version_variant = snake_to_pascal_case(&version_name);
-
-								inner_packet += &format!(
-                                    "::craftflow_protocol_versions::{direction}::{state_name}::{packet_variant}::{version_variant}($inner) => $code,\n",
-                                );
-							}
-							inner_state += &format!(
-                                "::craftflow_protocol_versions::{direction}::{state_variant}::{packet_variant}(inner) => match inner {{
-                                    {inner_packet}
-                                }},\n",
-                            );
-						}
+				let pkt_enum = packet.enum_name();
+				for (version, info) in versions {
+					// skip re-exports
+					if let PacketType::ReExport { .. } = info.packet_type {
+						continue;
 					}
 
-					inner_direction += &format!(
-						"::craftflow_protocol_versions::{dir}::{state_variant}(inner) => match inner {{
-                        {inner_state}
-                    }},\n",
+					inner_packet += &format!(
+                        "::craftflow_protocol_versions::{dir_mod}::{st_mod}::{pkt_enum}::{version_variant}($inner) => $code,\n",
+                        version_variant = version.caps_mod_name(),
 					);
 				}
+				inner_state += &format!(
+                    "::craftflow_protocol_versions::{dir_mod}::{st_enum}::{pkt_enum}(inner) => match inner {{
+                        {inner_packet}
+                    }},\n",
+                );
 			}
+
+			inner_direction += &format!(
+				"::craftflow_protocol_versions::{dir_enum}::{st_enum}(inner) => match inner {{
+                    {inner_state}
+                }},\n",
+			);
 		}
 
 		inner += &format!(
-			"(direction={dir}, $enum_value:ident -> $inner:ident $code:tt) => {{
+			"(direction={dir_enum}, $enum_value:ident -> $inner:ident $code:tt) => {{
                 match $enum_value {{
                     {inner_direction}
                 }}

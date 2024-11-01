@@ -20,4 +20,5 @@ pub use into_traits::*;
 pub use packet_read_write::*;
 pub use supported_versions::*;
 
+// The generated code by build.rs
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));

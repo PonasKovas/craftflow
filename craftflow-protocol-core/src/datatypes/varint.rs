@@ -104,6 +104,20 @@ impl TryInto<i32> for VarInt {
 		self.0.try_into()
 	}
 }
+impl TryFrom<usize> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_from(value: usize) -> std::result::Result<Self, Self::Error> {
+		Ok(VarInt(value.try_into()?))
+	}
+}
+impl TryInto<usize> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_into(self) -> std::result::Result<usize, Self::Error> {
+		self.0.try_into()
+	}
+}
 
 #[cfg(test)]
 mod tests {

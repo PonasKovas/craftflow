@@ -25,10 +25,6 @@ pub type Packets = HashMap<PacketName, (HasLifetime, Versions)>;
 pub type Versions = HashMap<Version, PacketInfo>;
 
 pub struct PacketInfo {
-	pub direction: Direction,
-	pub state: State,
-	pub packet_name: PacketName,
-	pub version: Version,
 	pub packet_id: u32,
 	pub packet_type: PacketType,
 }
@@ -144,10 +140,6 @@ fn parse(direction: Direction, state: &State, packet: &PacketName, version: Vers
 	};
 
 	PacketInfo {
-		direction,
-		state: state.clone(),
-		packet_name: packet.clone(),
-		version,
 		packet_id,
 		packet_type,
 	}

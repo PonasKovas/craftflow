@@ -9,18 +9,12 @@
 pub mod common;
 #[path = "build/gen_conversion.rs"]
 mod gen_conversion;
-// #[path = "build/gen_destructure_macro.rs"]
-// mod gen_destructure_macro;
-#[path = "build/gen_impl_trait_macro.rs"]
-mod gen_impl_trait_macro;
-// #[path = "build/generate_packet_enum.rs"]
-// mod generate_packet_enum;
-// #[path = "build/generate_state_enum.rs"]
-// mod generate_state_enum;
-// #[path = "build/generate_version_enum.rs"]
-// mod generate_version_enum;
+#[path = "build/gen_destructure_macro.rs"]
+mod gen_destructure_macro;
 #[path = "build/gen_enum.rs"]
 mod gen_enum;
+#[path = "build/gen_impl_trait_macro.rs"]
+mod gen_impl_trait_macro;
 #[path = "build/gen_mcp_packet.rs"]
 mod gen_mcp_packet;
 #[path = "build/gen_mcp_versioned.rs"]
@@ -34,14 +28,13 @@ use std::{
 	path::{Path, PathBuf},
 };
 
+use gen_destructure_macro::gen_destructure_macro;
 use gen_enum::Variant;
+use gen_impl_trait_macro::gen_impl_trait_macro;
 use gen_mcp_packet::gen_mcp_packet_impls;
 use gen_mcp_versioned::gen_mcp_versioned;
-// use gen_destructure_macro::gen_destructure_macro;
-use gen_impl_trait_macro::gen_impl_trait_macro;
 use parse_packet_info::{
-	parse_packets, Direction, HasLifetime, PacketInfo, PacketName, PacketType, Packets, State,
-	States, Version, Versions,
+	parse_packets, Direction, HasLifetime, PacketName, PacketType, Packets, State, States, Versions,
 };
 
 fn main() {
@@ -59,7 +52,7 @@ fn main() {
 	}
 
 	root_code += &gen_impl_trait_macro(&packets);
-	// root_code += &gen_destructure_macro();
+	root_code += &gen_destructure_macro(&packets);
 
 	fs::write(&out.join("generated.rs"), root_code).unwrap();
 }
@@ -182,7 +175,16 @@ fn gen_packet(
 		});
 
 		let mut version_code = format!(
-			"include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{dir}/{st}/{pkt}/{v}/mod.rs\"));\n",
+			"
+			#[allow(unused_imports)]
+            use craftflow_protocol_core::datatypes::*;
+            #[allow(unused_imports)]
+            use craftflow_protocol_core::*;
+            #[allow(unused_imports)]
+            use std::borrow::Cow;
+
+            include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{dir}/{st}/{pkt}/{v}/mod.rs\"));
+            ",
 			dir = direction.0.mod_name(),
 			st = state.0.mod_name(),
 			pkt = packet.0.mod_name(),

@@ -4,4 +4,4 @@ use std::borrow::Cow;
 
 // This tests whether the LLM prompt example code is actually correct for the current codebase
 
-// include!("../prompt_example_code.rs");
+include!("../prompt_example_code.rs");
