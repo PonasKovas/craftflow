@@ -18,6 +18,9 @@ use tracing::trace;
 // All of these Event implementations could have been done without any of this macro slop
 // if rust wasnt a retarded language and allowed to specify mutually exclusive traits or negative bounds
 // but no,
+//
+// the problem is that we want to implement Event both for the concrete packets and the abstract packets
+// and rust doesnt allow to implement a trait generically more than once
 
 // Concrete packets
 craftflow_protocol_versions::__gen_impls_for_packets__! {

@@ -1,50 +1,40 @@
 use crate::{
-	common::{read_dir_sorted, snake_to_pascal_case},
-	parse_packet_info::parse_packet_info,
+	common::get_lifetime,
+	parse_packet_info::{Directions, PacketType},
 };
-use std::path::Path;
 
-pub fn gen_impl_trait_macro() -> String {
+/// Generates a macro that implements a given trait for all
+pub fn gen_impl_trait_macro(directions: &Directions) -> String {
 	let mut inner = String::new();
 	let mut inner_post = String::new();
 
-	for direction in ["c2s", "s2c"] {
-		let direction_path = Path::new("src/").join(direction);
-		if direction_path.exists() {
-			for state in read_dir_sorted(&direction_path) {
-				if state.file_type().unwrap().is_dir() {
-					let state_name = state.file_name().into_string().unwrap();
-					for packet in read_dir_sorted(&state.path()) {
-						if packet.file_type().unwrap().is_dir() {
-							let packet_name = packet.file_name().into_string().unwrap();
-							for version in read_dir_sorted(&packet.path()) {
-								if !version.file_type().unwrap().is_dir() {
-									continue;
-								}
+	for (direction, (_, states)) in directions {
+		let dir_mod = direction.mod_name();
 
-								// check if this is not a re-export
-								let packet_info = parse_packet_info(version.path());
-								if packet_info.reexport.is_some() {
-									continue;
-								}
+		for (state, (_, packets)) in states {
+			let st_mod = state.mod_name();
 
-								let version_name = version.file_name().into_string().unwrap();
+			for (packet, (_, versions)) in packets {
+				let pkt_mod = packet.mod_name();
 
-								inner += &format!("const _: () = {{ type X<'a> = ::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct}<'a>;
-impl<'a> $trait for X<'a> $code
-								}};",
-								    pkt_struct = snake_to_pascal_case(&packet_name) + &version_name.to_uppercase(),
-                                );
-								if direction == "s2c" {
-									inner_post += &format!("const _: () = {{ type X<'a> = ::craftflow_protocol_versions::{direction}::{state_name}::{packet_name}::{version_name}::{pkt_struct}<'a>;
-impl<'a> $trait for Post<X<'a>> $code
-    								}};",
-    								    pkt_struct = snake_to_pascal_case(&packet_name) + &version_name.to_uppercase(),
-                                    );
-								}
-							}
+				for (version, info) in versions {
+					// skip re-exports
+					let lifetime;
+					match &info.packet_type {
+						PacketType::ReExport { .. } => continue,
+						PacketType::Defined { type_name } => {
+							lifetime = type_name.contains("<'a>");
 						}
 					}
+					let v_mod = version.mod_name();
+
+					let path = format!(
+                        "::craftflow_protocol_versions::{dir_mod}::{st_mod}::{pkt_mod}::{v_mod}::{pkt_pascal}{v_caps}",
+                        pkt_pascal = packet.enum_name(),
+                        v_caps = version.caps_mod_name(),
+                    );
+					inner += &gen_impl(&path, lifetime, false);
+					inner_post += &gen_impl(&path, lifetime, true);
 				}
 			}
 		}
@@ -56,8 +46,26 @@ impl<'a> $trait for Post<X<'a>> $code
 		#[macro_export]
 		macro_rules! __gen_impls_for_packets__ {{
 		    (impl $trait:ident for X $code:tt) => {{ {inner} }};
-			// Instead of making this slop 50x more complicated, we just handle the specific case we need
+			// Instead of making this slop 100x more complicated, we just handle the specific Post newtype that we need
 		    (impl $trait:ident for Post<X> $code:tt) => {{ {inner_post} }};
 		}}"
+	)
+}
+
+fn gen_impl(path: &str, lifetime: bool, post: bool) -> String {
+	let lifetime = get_lifetime(lifetime);
+	let target = if post {
+		format!("Post<X {lifetime}>")
+	} else {
+		format!("X {lifetime}")
+	};
+
+	format!(
+		r#"
+        const _: () = {{
+			type X {lifetime} = {path} {lifetime};
+			impl {lifetime} $trait for {target} $code
+		}};
+	"#
 	)
 }

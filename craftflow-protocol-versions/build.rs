@@ -11,8 +11,8 @@ pub mod common;
 mod gen_conversion;
 // #[path = "build/gen_destructure_macro.rs"]
 // mod gen_destructure_macro;
-// #[path = "build/gen_impl_trait_macro.rs"]
-// mod gen_impl_trait_macro;
+#[path = "build/gen_impl_trait_macro.rs"]
+mod gen_impl_trait_macro;
 // #[path = "build/generate_packet_enum.rs"]
 // mod generate_packet_enum;
 // #[path = "build/generate_state_enum.rs"]
@@ -29,7 +29,6 @@ mod gen_mcp_versioned;
 mod parse_packet_info;
 
 use std::{
-	collections::{BTreeMap, HashMap},
 	env,
 	fs::{self},
 	path::{Path, PathBuf},
@@ -39,10 +38,7 @@ use gen_enum::Variant;
 use gen_mcp_packet::gen_mcp_packet_impls;
 use gen_mcp_versioned::gen_mcp_versioned;
 // use gen_destructure_macro::gen_destructure_macro;
-// use gen_impl_trait_macro::gen_impl_trait_macro;
-// use generate_packet_enum::generate_packet_enum;
-// use generate_state_enum::generate_state_enum;
-// use generate_version_enum::generate_version_enum;
+use gen_impl_trait_macro::gen_impl_trait_macro;
 use parse_packet_info::{
 	parse_packets, Direction, HasLifetime, PacketInfo, PacketName, PacketType, Packets, State,
 	States, Version, Versions,
@@ -50,12 +46,6 @@ use parse_packet_info::{
 
 fn main() {
 	let packets = parse_packets();
-
-	// fs::write(
-	// 	Path::new(&env::var("OUT_DIR").unwrap()).join("macros.rs"),
-	// 	format!("{}\n{}", gen_destructure_macro(), gen_impl_trait_macro()),
-	// )
-	// .unwrap();
 
 	let out = Path::new(&env::var("OUT_DIR").unwrap()).to_path_buf();
 
@@ -67,6 +57,9 @@ fn main() {
 		root_code += &gen_enum::gen_enum(&direction.enum_name(), &direction_enum_variants);
 		root_code += &gen_conversion::for_direction((direction, *dir_lifetime));
 	}
+
+	root_code += &gen_impl_trait_macro(&packets);
+	// root_code += &gen_destructure_macro();
 
 	fs::write(&out.join("generated.rs"), root_code).unwrap();
 }
