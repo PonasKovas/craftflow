@@ -197,7 +197,7 @@ fn gen_impl_block(
 
 	format!(
 		r#"
-        impl {super_lifetime} crate::{trait_name} for {path} {lifetime} {{
+        impl<'a> crate::{trait_name}<'a> for {path} {lifetime} {{
             type {assoc_type} = {super_path} {super_lifetime};
 
             fn {method_name}(self) -> Self::{assoc_type} {{
@@ -225,7 +225,7 @@ fn gen_self_impl_block(
 
 	format!(
 		r#"
-        impl {lifetime} crate::{trait_name} for {path} {lifetime} {{
+        impl<'a> crate::{trait_name}<'a> for {path} {lifetime} {{
             type {assoc_type} = Self;
 
             fn {method_name}(self) -> Self::{assoc_type} {{

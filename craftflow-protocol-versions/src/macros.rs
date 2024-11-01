@@ -20,7 +20,8 @@ macro_rules! define_type {
         }
 
         impl $( <$lifetime> )? MCPWrite for $name $( <$lifetime> )? {
-        	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
+        	fn write(&self, #[allow(unused_variables)] output: &mut impl std::io::Write) -> Result<usize> {
+                #[allow(unused_mut)]
         		let mut written_bytes = 0;
 
                 $(

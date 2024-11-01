@@ -115,19 +115,12 @@ def generate_protocols_direction(all_protocols, direction: str):
 
                         with open(f"{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
                             f.write(code)
-
-                        # add some info for the build.rs for generating enums
                         with open(f"{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
                             f.write(f"{packet_id}")
-                            with open(f"{direction}/{state}/{packet}/v{v:05}/name", "w") as f:
-                                f.write(f"{name}")
+                        with open(f"{direction}/{state}/{packet}/v{v:05}/name", "w") as f:
+                            f.write(f"{name}")
                     else:
                         # re-export the first version
-
-                        with open(f"{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
-                            f.write(f"pub use crate::{direction}::{state}::{packet}::v{group[0]['version']:05}::*;\n")
-
-                        # add some info for the build.rs for generating enums
                         with open(f"{direction}/{state}/{packet}/v{v:05}/packet_reexport", "w") as f:
                             f.write(f"{group[0]['version']}")
                         with open(f"{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
