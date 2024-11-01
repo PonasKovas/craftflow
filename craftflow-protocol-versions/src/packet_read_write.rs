@@ -14,3 +14,17 @@ pub trait PacketWrite {
 	/// Writes the packet and returns the number of bytes written
 	fn write_packet(&self, output: &mut impl Write, protocol_version: u32) -> Result<usize>;
 }
+
+/// MCPRead but generalised for protocol versions
+pub trait MCPReadVersioned<'a> {
+	/// Reads and parses the data, returning the remaining data (if any) together with the parsed data.
+	fn read_versioned(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)>
+	where
+		Self: Sized;
+}
+
+/// MCPWrite but generalised for protocol versions
+pub trait MCPWriteVersioned {
+	/// Writes the data and returns the number of bytes written
+	fn write_versioned(&self, output: &mut impl Write, protocol_version: u32) -> Result<usize>;
+}

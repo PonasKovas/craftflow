@@ -1,5 +1,3 @@
-use std::{fs::read_dir, path::Path};
-
 pub fn snake_to_pascal_case(s: &str) -> String {
 	let mut result = String::new();
 	let mut capitalize = true;
@@ -18,11 +16,10 @@ pub fn snake_to_pascal_case(s: &str) -> String {
 	result
 }
 
-pub fn read_dir_sorted(path: impl AsRef<Path>) -> Vec<std::fs::DirEntry> {
-	let mut entries = read_dir(path)
-		.unwrap()
-		.map(|d| d.unwrap())
-		.collect::<Vec<_>>();
-	entries.sort_by_key(|entry| entry.path());
-	entries
+pub fn get_lifetime(has_lifetime: bool) -> &'static str {
+	if has_lifetime {
+		"<'a>"
+	} else {
+		""
+	}
 }

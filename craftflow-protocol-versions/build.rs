@@ -1,127 +1,231 @@
-// This build script generates packet enums for every version and state.
+// This build script generates enums for states, packets and versions (3 nested enums)
+// implements the following traits:
+// - MCPReadVersioned/MCPWriteVersioned for version enums
+// - PacketRead/PacketWrite for packet enums
+// - Conversion traits (IntoStateEnum, IntoPacketEnum, IntoVersionEnum) for all of the enums AND
+//   the packets themselves
 
 #[path = "build/common.rs"]
 pub mod common;
-#[path = "build/gen_destructure_macro.rs"]
-mod gen_destructure_macro;
-#[path = "build/gen_impl_trait_macro.rs"]
-mod gen_impl_trait_macro;
-#[path = "build/generate_packet_enum.rs"]
-mod generate_packet_enum;
-#[path = "build/generate_state_enum.rs"]
-mod generate_state_enum;
-#[path = "build/generate_version_enum.rs"]
-mod generate_version_enum;
+#[path = "build/gen_conversion.rs"]
+mod gen_conversion;
+// #[path = "build/gen_destructure_macro.rs"]
+// mod gen_destructure_macro;
+// #[path = "build/gen_impl_trait_macro.rs"]
+// mod gen_impl_trait_macro;
+// #[path = "build/generate_packet_enum.rs"]
+// mod generate_packet_enum;
+// #[path = "build/generate_state_enum.rs"]
+// mod generate_state_enum;
+// #[path = "build/generate_version_enum.rs"]
+// mod generate_version_enum;
+#[path = "build/gen_enum.rs"]
+mod gen_enum;
+#[path = "build/gen_mcp_packet.rs"]
+mod gen_mcp_packet;
+#[path = "build/gen_mcp_versioned.rs"]
+mod gen_mcp_versioned;
 #[path = "build/parse_packet_info.rs"]
 mod parse_packet_info;
 
 use std::{
-	collections::BTreeMap,
+	collections::{BTreeMap, HashMap},
 	env,
 	fs::{self},
-	path::Path,
+	path::{Path, PathBuf},
 };
 
-use common::read_dir_sorted;
-use gen_destructure_macro::gen_destructure_macro;
-use gen_impl_trait_macro::gen_impl_trait_macro;
-use generate_packet_enum::generate_packet_enum;
-use generate_state_enum::generate_state_enum;
-use generate_version_enum::generate_version_enum;
-use parse_packet_info::parse_packet_info;
-
-struct Packet {
-	// [String] version_name -> Vec<(protocol_version, packet_id)>
-	version_variants: BTreeMap<String, Vec<(u32, u32)>>,
-}
+use gen_enum::Variant;
+use gen_mcp_packet::gen_mcp_packet_impls;
+use gen_mcp_versioned::gen_mcp_versioned;
+// use gen_destructure_macro::gen_destructure_macro;
+// use gen_impl_trait_macro::gen_impl_trait_macro;
+// use generate_packet_enum::generate_packet_enum;
+// use generate_state_enum::generate_state_enum;
+// use generate_version_enum::generate_version_enum;
+use parse_packet_info::{
+	parse_packets, Direction, HasLifetime, PacketInfo, PacketName, PacketType, Packets, State,
+	States, Version, Versions,
+};
 
 fn main() {
-	for direction in ["c2s", "s2c"] {
-		let direction_path = Path::new("src/").join(direction);
-		if !direction_path.exists() {
-			continue;
-		}
+	let packets = parse_packets();
 
-		let mut states = Vec::new();
+	// fs::write(
+	// 	Path::new(&env::var("OUT_DIR").unwrap()).join("macros.rs"),
+	// 	format!("{}\n{}", gen_destructure_macro(), gen_impl_trait_macro()),
+	// )
+	// .unwrap();
 
-		for state in read_dir_sorted(&direction_path) {
-			if !state.file_type().unwrap().is_dir() {
-				continue;
-			}
+	let out = Path::new(&env::var("OUT_DIR").unwrap()).to_path_buf();
 
-			let state_name = state.file_name().into_string().unwrap();
+	let mut root_code = String::new();
+	for (direction, (dir_lifetime, states)) in &packets {
+		let direction_enum_variants = gen_direction(&out, (direction, *dir_lifetime), states);
 
-			// [String] packet_name -> Packet
-			let mut state_packets = BTreeMap::new();
-
-			for packet in read_dir_sorted(&state.path()) {
-				if !packet.file_type().unwrap().is_dir() {
-					continue;
-				}
-
-				let packet_name = packet.file_name().into_string().unwrap();
-
-				let mut version_variants = Packet {
-					version_variants: BTreeMap::new(),
-				};
-
-				for version in read_dir_sorted(&packet.path()) {
-					if !version.file_type().unwrap().is_dir() {
-						continue;
-					}
-
-					let version_name = version.file_name().into_string().unwrap();
-					let numeric_version = version_name[1..].parse::<u32>().unwrap();
-
-					let packet_info = parse_packet_info(version.path());
-
-					let orig_version = match &packet_info.reexport {
-						Some(to) => to,
-						None => &version_name,
-					};
-
-					version_variants
-						.version_variants
-						.entry(orig_version.clone())
-						.or_insert_with(Vec::new)
-						.push((numeric_version, packet_info.packet_id));
-				}
-
-				let out_dir_state_path = Path::new(&env::var("OUT_DIR").unwrap())
-					.join(direction)
-					.join(&state_name);
-				fs::create_dir_all(&out_dir_state_path).unwrap();
-
-				fs::write(
-					out_dir_state_path.join(format!("{}_enum.rs", packet_name)),
-					generate_version_enum(direction, &state_name, &packet_name, &version_variants),
-				)
-				.unwrap();
-
-				state_packets.insert(packet_name.clone(), version_variants);
-			}
-
-			fs::write(
-				Path::new(&env::var("OUT_DIR").unwrap())
-					.join(direction)
-					.join(format!("{}_enum.rs", state_name)),
-				generate_packet_enum(direction, &state_name, &state_packets),
-			)
-			.unwrap();
-
-			states.push(state_name);
-		}
-
-		fs::write(
-			Path::new(&env::var("OUT_DIR").unwrap()).join(format!("{}_enum.rs", direction)),
-			generate_state_enum(direction, &states),
-		)
-		.unwrap();
+		root_code += &format!("pub mod {};\n", direction.mod_name());
+		root_code += &gen_enum::gen_enum(&direction.enum_name(), &direction_enum_variants);
+		root_code += &gen_conversion::for_direction((direction, *dir_lifetime));
 	}
 
+	fs::write(&out.join("generated.rs"), root_code).unwrap();
+}
+
+fn gen_direction(
+	out: &PathBuf,
+	direction: (&Direction, HasLifetime),
+	states: &States,
+) -> Vec<Variant> {
+	let mut enum_variants = Vec::new();
+	let mut code = String::new();
+
+	for (state, (st_lifetime, packets)) in states {
+		let state_enum_variants = gen_state(&out, direction, (state, *st_lifetime), packets);
+
+		enum_variants.push(Variant {
+			name: state.enum_name(),
+			value_path: format!(
+				"crate::{dir}::{st}",
+				dir = direction.0.mod_name(),
+				st = state.enum_name(),
+			),
+			has_lifetime: *st_lifetime,
+		});
+
+		code += &format!("pub mod {};\n", state.mod_name());
+		code += &gen_enum::gen_enum(&state.enum_name(), &state_enum_variants);
+		code += &gen_conversion::for_state(direction, (state, *st_lifetime));
+	}
+
+	fs::write(&out.join(direction.0.mod_name()).join("mod.rs"), code).unwrap();
+
+	enum_variants
+}
+
+fn gen_state(
+	out: &PathBuf,
+	direction: (&Direction, HasLifetime),
+	state: (&State, HasLifetime),
+	packets: &Packets,
+) -> Vec<Variant> {
+	let mut enum_variants = Vec::new();
+	let mut code = String::new();
+
+	for (packet, (pkt_lifetime, versions)) in packets {
+		let version_enum_variants =
+			gen_packet(&out, direction, state, (packet, *pkt_lifetime), versions);
+
+		enum_variants.push(Variant {
+			name: packet.enum_name(),
+			value_path: format!(
+				"crate::{dir}::{st}::{pkt}",
+				dir = direction.0.mod_name(),
+				st = state.0.mod_name(),
+				pkt = packet.enum_name(),
+			),
+			has_lifetime: *pkt_lifetime,
+		});
+
+		code += &format!("pub mod {};\n", packet.mod_name());
+		code += &gen_enum::gen_enum(&packet.enum_name(), &version_enum_variants);
+		code += &gen_conversion::for_packet(direction, state, (packet, *pkt_lifetime));
+	}
+	code += &gen_mcp_packet_impls(direction.0, state.0, packets);
+
 	fs::write(
-		Path::new(&env::var("OUT_DIR").unwrap()).join("macros.rs"),
-		format!("{}\n{}", gen_destructure_macro(), gen_impl_trait_macro()),
+		&out.join(direction.0.mod_name())
+			.join(&state.0.mod_name())
+			.join("mod.rs"),
+		code,
 	)
 	.unwrap();
+
+	enum_variants
+}
+
+fn gen_packet(
+	out: &PathBuf,
+	direction: (&Direction, HasLifetime),
+	state: (&State, HasLifetime),
+	packet: (&PacketName, HasLifetime),
+	versions: &Versions,
+) -> Vec<Variant> {
+	let mut enum_variants = Vec::new();
+	let mut packet_code = String::new();
+
+	let mut packet_enum_has_lifetime = false;
+	for (version, packet_info) in versions {
+		// only need to generate anything for defined packets, not re-exports
+		let has_lifetime;
+		match &packet_info.packet_type {
+			PacketType::ReExport { .. } => continue,
+			PacketType::Defined { type_name } => {
+				has_lifetime = type_name.contains("<'a>");
+				packet_enum_has_lifetime |= has_lifetime;
+			}
+		}
+
+		// prepare a directory to generate stuff in
+		fs::create_dir_all(
+			&out.join(direction.0.mod_name())
+				.join(&state.0.mod_name())
+				.join(&packet.0.mod_name())
+				.join(&version.mod_name()),
+		)
+		.unwrap();
+
+		enum_variants.push(Variant {
+			name: version.caps_mod_name(),
+			value_path: format!(
+				"crate::{dir}::{st}::{pkt}::{v}::{pkt_pascal}{v_caps}",
+				dir = direction.0.mod_name(),
+				st = state.0.mod_name(),
+				pkt = packet.0.mod_name(),
+				v = version.mod_name(),
+				pkt_pascal = packet.0.enum_name(),
+				v_caps = version.caps_mod_name(),
+			),
+			has_lifetime,
+		});
+
+		let mut version_code = format!(
+			"include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{dir}/{st}/{pkt}/{v}/mod.rs\"));\n",
+			dir = direction.0.mod_name(),
+			st = state.0.mod_name(),
+			pkt = packet.0.mod_name(),
+			v = version.mod_name(),
+		);
+		version_code +=
+			&gen_conversion::for_version(direction, state, packet, (version, has_lifetime));
+		fs::write(
+			&out.join(direction.0.mod_name())
+				.join(&state.0.mod_name())
+				.join(&packet.0.mod_name())
+				.join(&version.mod_name())
+				.join("mod.rs"),
+			version_code,
+		)
+		.unwrap();
+
+		packet_code += &format!("pub mod {};\n", version.mod_name());
+	}
+
+	packet_code += &gen_mcp_versioned(
+		direction.0,
+		state.0,
+		packet.0,
+		versions,
+		packet_enum_has_lifetime,
+	);
+
+	fs::write(
+		&out.join(direction.0.mod_name())
+			.join(&state.0.mod_name())
+			.join(&packet.0.mod_name())
+			.join("mod.rs"),
+		packet_code,
+	)
+	.unwrap();
+
+	enum_variants
 }

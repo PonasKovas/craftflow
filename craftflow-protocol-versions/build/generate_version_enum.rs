@@ -1,22 +1,21 @@
-use crate::{common::snake_to_pascal_case, Packet};
+//! Generates an enum for a packet containing all version variants of it, also conversion trait impls for the enum
+//! and for every single version variant itself.
+
+use crate::{
+	common::snake_to_pascal_case,
+	parse_packet_info::{Direction, HasLifetime, PacketName, State, Version},
+};
 
 pub fn generate_version_enum(
-	direction: &str,
-	state: &str,
-	packet_name: &str,
-	packet_versions: &Packet,
+	direction: Direction,
+	state: &State,
+	packet: &PacketName,
+	packet_versions: &[(Version, HasLifetime)],
 ) -> String {
-	let enum_name = snake_to_pascal_case(packet_name);
-	let state_enum_name = snake_to_pascal_case(state);
-	let direction_enum_name = direction.to_uppercase();
-
 	let mut enum_variants = String::new();
 	let mut packet_read_match_arms = String::new();
 	let mut packet_write_match_arms = String::new();
-	for (version_name, versions) in &packet_versions.version_variants {
-		let variant_name = version_name.to_uppercase();
-		let struct_name = format!("{}{}", enum_name, variant_name);
-
+	for (version, has_lifetime) in packet_versions {
 		let versions_comment = versions
 			.iter()
 			.map(|(v, _id)| v.to_string())
@@ -62,16 +61,16 @@ pub fn generate_version_enum(
             {enum_variants}
         }}
 
-        impl<'a> crate::PacketRead for {enum_name}<'a> {{
-            fn read_packet(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
+        impl<'a> crate::MCPReadVersioned<'a> for {enum_name}<'a> {{
+            fn read_versioned(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
                     match protocol_version {{
                         {packet_read_match_arms}
                         _ => Err(Error::InvalidData(format!(\"This packet has no implementation for {{protocol_version}} protocol version\"))),
                     }}
             }}
         }}
-        impl<'a> crate::PacketWrite for {enum_name}<'a> {{
-            fn write_packet(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
+        impl<'a> crate::MCPWriteVersioned for {enum_name}<'a> {{
+            fn write_versioned(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {packet_write_match_arms}
                 }}

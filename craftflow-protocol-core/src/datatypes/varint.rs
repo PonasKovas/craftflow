@@ -90,17 +90,17 @@ impl MCPWrite for VarInt {
 	}
 }
 
-impl TryFrom<usize> for VarInt {
+impl TryFrom<i32> for VarInt {
 	type Error = std::num::TryFromIntError;
 
-	fn try_from(value: usize) -> std::result::Result<Self, Self::Error> {
+	fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
 		Ok(VarInt(value.try_into()?))
 	}
 }
-impl TryInto<usize> for VarInt {
-	type Error = std::num::TryFromIntError;
+impl TryInto<i32> for VarInt {
+	type Error = std::convert::Infallible;
 
-	fn try_into(self) -> std::result::Result<usize, Self::Error> {
+	fn try_into(self) -> std::result::Result<i32, Self::Error> {
 		self.0.try_into()
 	}
 }
