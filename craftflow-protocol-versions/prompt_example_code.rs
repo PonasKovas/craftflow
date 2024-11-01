@@ -1,17 +1,17 @@
 define_type! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct EntityInformation<'a> {
-	pub entity_id: i32,
-	pub entity_type: VarInt,
-	pub entity_num: VarLong,
-	pub blob: Buffer<'a, u64>,
-	pub entity_uuid: u128,
-	pub is_player: Option<Cow<'a, str>>,
-	pub position: Position,
-	pub information: Information<'a>,
-	pub associated_data: Nbt,
-	pub block_nbt: AnonymousNbt,
-	pub history: Array<'a, VarInt, VarInt>,
+		pub entity_id: i32,
+		pub entity_type: VarInt,
+		pub entity_num: VarLong,
+		pub blob: Buffer<'a, u64>,
+		pub entity_uuid: u128,
+		pub is_player: Option<Cow<'a, str>>,
+		pub position: Position,
+		pub information: Information<'a>,
+		pub associated_data: Nbt,
+		pub block_nbt: AnonymousNbt,
+		pub history: Array<'a, VarInt, VarInt>,
 	}
 }
 

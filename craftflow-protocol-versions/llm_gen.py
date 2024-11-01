@@ -1,10 +1,30 @@
 import json
 from openai import OpenAI
 from pydantic import BaseModel
+from conf import COMMIT
 
 openai_client = OpenAI()
 
-def llm_gen(name, spec) -> str:
+def llm_gen(name: str, spec) -> tuple[str, str]:
+    name, code = llm_gen_inner(name, spec)
+
+    spec_pretty = json.dumps(spec, indent=4)
+    commented_spec = "\n".join("// " + line for line in spec_pretty.splitlines())
+
+    note = f"// GENERATED // MINECRAFT-DATA COMMIT HASH {COMMIT} //"
+    wall = "/" * len(note)
+
+    return name, f"""{wall}
+    {note}
+    {wall}
+
+    {commented_spec}
+
+
+    {code}
+    """
+
+def llm_gen_inner(name, spec):
     with open('packet_prompt.py', 'r') as file:
         prompt = file.read()
 
@@ -21,8 +41,8 @@ def llm_gen(name, spec) -> str:
     prompt = prompt.replace("{{{packet_name}}}", name)
 
     # LOL.
-    # i would have loaded this as json but gotta interpret it as a python dict
-    # so I can use multiline strings
+    # i would have loaded this as json but json doesnt support multiline strings
+    # gotta interpret it as a python dict i guess
     prompt = eval(prompt)
 
     response = openai_client.chat.completions.create(
@@ -36,6 +56,6 @@ def llm_gen(name, spec) -> str:
     if response is None:
         return "Failed to generate packet"
 
-    response = json.loads(response)["rust_code"]
+    response = json.loads(response)
 
-    return response
+    return response["name"], response["rust_code"]

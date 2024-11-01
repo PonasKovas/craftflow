@@ -3,8 +3,11 @@ import os
 from colorama import Fore, Style
 
 from conf import C2S_PACKETS, S2C_PACKETS
-from gen_packet import gen_packet
 from gen_types import gen_types
+from llm_gen import llm_gen
+
+def snake_to_pascal(snake_str: str) -> str:
+    return ''.join(word.capitalize() for word in snake_str.split('_'))
 
 def get_packet_spec(protocol, direction: str, state: str, packet: str):
     if state not in protocol:
@@ -28,43 +31,29 @@ def get_packet_id(protocol, direction: str, state: str, packet: str):
         if name == packet:
             return int(id, 16)
 
-# Prepares the src/{direction}/{state}/{packet}/v{version}/ directory
+# Prepares the {direction}/{state}/{packet}/v{version}/ directory
 # with all the mod.rs files for rust
 # creating any if they dont already exist
 def prepare_dir(direction, state, packet, version):
     # direction directory
-    direction_path = f"src/{direction}/"
+    direction_path = f"{direction}/"
     if not os.path.exists(direction_path):
         os.makedirs(direction_path)
-        with open("src/lib.rs", "a") as f:
-            f.write(f"pub mod {direction};\n")
-            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/{direction}_enum.rs\"));\n\n")
-        open(os.path.join(direction_path, "mod.rs"), "w").close() # create empty mod.rs
 
     # state directory
     state_path = os.path.join(direction_path, state)
     if not os.path.exists(state_path):
         os.makedirs(state_path)
-        with open(os.path.join(direction_path, "mod.rs"), "a") as f:
-            f.write(f"pub mod {state};\n")
-            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/{direction}/{state}_enum.rs\"));\n\n")
-        open(os.path.join(state_path, "mod.rs"), "w").close() # create empty mod.rs
 
     # packet directory
     packet_path = os.path.join(state_path, packet)
     if not os.path.exists(packet_path):
         os.makedirs(packet_path)
-        with open(os.path.join(state_path, "mod.rs"), "a") as f:
-            f.write(f"pub mod {packet};\n")
-            f.write(f"include!(concat!(env!(\"OUT_DIR\"), \"/{direction}/{state}/{packet}_enum.rs\"));\n\n")
-        open(os.path.join(packet_path, "mod.rs"), "w").close() # create empty mod.rs
 
     # version directory
     version_path = os.path.join(packet_path, f"v{version:05}")
     if not os.path.exists(version_path):
         os.makedirs(version_path)
-        with open(os.path.join(packet_path, "mod.rs"), "a") as f:
-            f.write(f"pub mod v{version:05};\n")
 
 def generate_protocols_direction(all_protocols, direction: str):
     states = C2S_PACKETS if direction == "c2s" else S2C_PACKETS
@@ -108,7 +97,7 @@ def generate_protocols_direction(all_protocols, direction: str):
                     v = v["version"]
 
                     # check if already generated
-                    if os.path.exists(f"src/{direction}/{state}/{packet}/v{v:05}/"):
+                    if os.path.exists(f"{direction}/{state}/{packet}/v{v:05}/"):
                         continue
 
                     prepare_dir(direction, state, packet, v)
@@ -118,25 +107,30 @@ def generate_protocols_direction(all_protocols, direction: str):
                     if i == 0:
                         spec = get_packet_spec(all_protocols[v], direction, state, packet)
 
-                        # use the LLM to generate the packet definition
-                        code = gen_packet(spec, direction, state, packet, v)
+                        name = snake_to_pascal(packet) + f"V{v:05}"
+                        print(f"Generating {direction} -> {state} -> {packet} -> {v:05} with an LLM")
 
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
+                        # use the LLM to generate the packet definition
+                        name, code = llm_gen(name, spec)
+
+                        with open(f"{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
                             f.write(code)
 
                         # add some info for the build.rs for generating enums
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
+                        with open(f"{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
                             f.write(f"{packet_id}")
+                            with open(f"{direction}/{state}/{packet}/v{v:05}/name", "w") as f:
+                                f.write(f"{name}")
                     else:
                         # re-export the first version
 
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
+                        with open(f"{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
                             f.write(f"pub use crate::{direction}::{state}::{packet}::v{group[0]['version']:05}::*;\n")
 
                         # add some info for the build.rs for generating enums
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_reexport", "w") as f:
-                            f.write(f"v{group[0]['version']:05}")
-                        with open(f"src/{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
+                        with open(f"{direction}/{state}/{packet}/v{v:05}/packet_reexport", "w") as f:
+                            f.write(f"{group[0]['version']}")
+                        with open(f"{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
                             f.write(f"{packet_id}")
 
 
