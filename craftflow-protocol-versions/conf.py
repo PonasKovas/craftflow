@@ -10,7 +10,7 @@ C2S_PACKETS = {
     #     "resource_pack_receive"],
 }
 S2C_PACKETS = {
-    # "status": ["server_info", "ping"],
+    "status": ["server_info", "ping"],
     # "login": ["disconnect", "encryption_begin", "success", "compress", "login_plugin_request"],
     # "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
     #     "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags", "tags", "reset_chat"],

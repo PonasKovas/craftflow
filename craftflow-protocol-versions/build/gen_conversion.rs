@@ -37,7 +37,7 @@ pub fn for_version(
 	r += &gen_impl_block(
 		Trait::Packet,
 		&path,
-		pkt_lifetime,
+		v_lifetime,
 		&format!(
 			"crate::{dir_mod}::{state_enum}",
 			state_enum = state.enum_name()
@@ -49,7 +49,7 @@ pub fn for_version(
 	r += &gen_impl_block(
 		Trait::State,
 		&path,
-		st_lifetime,
+		v_lifetime,
 		&format!("crate::{dir_enum}", dir_enum = direction.enum_name()),
 		dir_lifetime,
 		&state.enum_name(),
@@ -78,7 +78,7 @@ pub fn for_packet(
 	r += &gen_impl_block(
 		Trait::Packet,
 		&path,
-		st_lifetime,
+		pkt_lifetime,
 		&format!(
 			"crate::{dir_mod}::{state_enum}",
 			state_enum = state.enum_name()
@@ -90,7 +90,7 @@ pub fn for_packet(
 	r += &gen_impl_block(
 		Trait::State,
 		&path,
-		st_lifetime,
+		pkt_lifetime,
 		&format!("crate::{dir_enum}", dir_enum = direction.enum_name()),
 		dir_lifetime,
 		&state.enum_name(),
