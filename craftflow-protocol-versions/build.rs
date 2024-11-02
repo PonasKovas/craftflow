@@ -191,8 +191,8 @@ fn gen_packet(
             use std::borrow::Cow;
             #[allow(unused_imports)]
             use craftflow_protocol_core::common_structures::*;
-            // #[allow(unused_imports)]
-            // use crate::types::{v}::*;
+            #[allow(unused_imports)]
+            use crate::types::{v}::*;
 
             include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{dir}/{st}/{pkt}/{v}/mod.rs\"));
             ",

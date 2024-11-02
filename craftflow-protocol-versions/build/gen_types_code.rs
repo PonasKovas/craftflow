@@ -3,6 +3,8 @@ use std::{
 	path::Path,
 };
 
+use crate::common::snake_to_pascal_case;
+
 /// Reads the types/ directory and generates code to include it in the source tree
 pub fn gen_types_code() -> String {
 	let mut code = String::new();
@@ -16,6 +18,11 @@ pub fn gen_types_code() -> String {
 
 		for type_fs in read_dir(&version_fs.path()).unwrap().map(|f| f.unwrap()) {
 			let type_name = type_fs.file_name().into_string().unwrap();
+			if type_name == ".gitkeep" {
+				continue; // normally i write good code please ignore this
+			}
+
+			let type_name_pascal = snake_to_pascal_case(&type_name);
 
 			// there must be either a mod.rs for defined type
 			// or a reexport files for reexports
@@ -36,6 +43,7 @@ pub fn gen_types_code() -> String {
 
 				    include!({mod_path:?});
 				}}
+				pub use {type_name}::{type_name_pascal};
 				"#,
 				);
 			} else {
@@ -48,6 +56,7 @@ pub fn gen_types_code() -> String {
 				version_code += &format!(
 					r#"
 				pub mod {type_name} {{ pub use crate::types::v{reexported:05}::{type_name}::*; }}
+				pub use {type_name}::{type_name_pascal};
 				"#,
 				);
 			}
