@@ -1,52 +1,17 @@
 #!/usr/bin/env python
 
+# Running this script just prints a list of all packets that are defined in minecraft-data
+# but not added to conf.py lists to be implemented.
+
 from colorama import init, Fore, Style
 from conf import C2S_PACKETS, S2C_PACKETS, CACHE_DIR, VERSION_RANGE
 import os
 import json
 
+from get_defined_versions import get_defined_versions
+
 def check_missing_packets():
-    # Load protocol data like in main.py
-    repo_path = os.path.join(CACHE_DIR, "minecraft-data")
-    if not os.path.exists(repo_path):
-        print(Fore.RED + "minecraft-data repository not found")
-        return
-
-    # Load protocol versions from common data
-    with open(os.path.join(repo_path, "data", "pc", "common", "protocolVersions.json"), "r") as f:
-        common_protocol_versions = json.loads(f.read())
-
-
-    defined_versions = {}
-    all_versions_dir = os.path.join(repo_path, "data", "pc")
-    for version_dir in os.listdir(all_versions_dir):
-        version_dir_path = os.path.join(all_versions_dir, version_dir)
-        version_file = os.path.join(version_dir_path, "version.json")
-        protocol_file = os.path.join(version_dir_path, "protocol.json")
-
-        if not (os.path.isfile(version_file) and os.path.isfile(protocol_file)):
-            continue
-
-        with open(version_file, "r") as f:
-            version_data = json.loads(f.read())
-
-        # Skip versions not in common versions list
-        skip = True
-        for v in common_protocol_versions:
-            if v["minecraftVersion"] == version_data["minecraftVersion"]:
-                skip = False
-                break
-        if skip:
-            continue
-
-        # Skip snapshots
-        if not all(char.isdigit() or char == '.' for char in version_data["minecraftVersion"]):
-            continue
-
-        with open(protocol_file, "r") as f:
-            protocol = json.loads(f.read())
-
-        defined_versions[version_data["version"]] = protocol
+    defined_versions = get_defined_versions()
 
     defined_packets = {}
     # "packet_name" -> { direction: .., state: .., version: .. }

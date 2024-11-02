@@ -15,4 +15,4 @@ S2C_PACKETS = {
     # "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
     #     "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags", "tags", "reset_chat"],
 }
-TYPES = []#["tags"]
+TYPES = ["tags"]

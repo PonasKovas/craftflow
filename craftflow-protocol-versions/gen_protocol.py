@@ -31,30 +31,6 @@ def get_packet_id(protocol, direction: str, state: str, packet: str):
         if name == packet:
             return int(id, 16)
 
-# Prepares the {direction}/{state}/{packet}/v{version}/ directory
-# with all the mod.rs files for rust
-# creating any if they dont already exist
-def prepare_dir(direction, state, packet, version):
-    # direction directory
-    direction_path = f"{direction}/"
-    if not os.path.exists(direction_path):
-        os.makedirs(direction_path)
-
-    # state directory
-    state_path = os.path.join(direction_path, state)
-    if not os.path.exists(state_path):
-        os.makedirs(state_path)
-
-    # packet directory
-    packet_path = os.path.join(state_path, packet)
-    if not os.path.exists(packet_path):
-        os.makedirs(packet_path)
-
-    # version directory
-    version_path = os.path.join(packet_path, f"v{version:05}")
-    if not os.path.exists(version_path):
-        os.makedirs(version_path)
-
 def generate_protocols_direction(all_protocols, direction: str):
     states = C2S_PACKETS if direction == "c2s" else S2C_PACKETS
 
@@ -100,7 +76,7 @@ def generate_protocols_direction(all_protocols, direction: str):
                     if os.path.exists(f"{direction}/{state}/{packet}/v{v:05}/"):
                         continue
 
-                    prepare_dir(direction, state, packet, v)
+                    os.makedirs(f"{direction}/{state}/{packet}/v{v:05}/", exist_ok=True)
 
                     # if this is the first version in the group, generate the packet
                     # otherwise just re-export
@@ -115,6 +91,8 @@ def generate_protocols_direction(all_protocols, direction: str):
 
                         with open(f"{direction}/{state}/{packet}/v{v:05}/mod.rs", "w") as f:
                             f.write(code)
+                        os.system(f"cargo fmt -- {direction}/{state}/{packet}/v{v:05}/mod.rs")
+
                         with open(f"{direction}/{state}/{packet}/v{v:05}/packet_id", "w") as f:
                             f.write(f"{packet_id}")
                         with open(f"{direction}/{state}/{packet}/v{v:05}/name", "w") as f:

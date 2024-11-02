@@ -7,27 +7,6 @@ from llm_gen import llm_gen
 def snake_to_pascal(snake_str: str) -> str:
     return ''.join(word.capitalize() for word in snake_str.split('_'))
 
-# Prepares the types/v{version}/{type}/ directory
-# with all the mod.rs files for rust
-# creating any if they dont already exist
-def prepare_dir(type, version):
-    # types directory
-    types_path = f"types/"
-    if not os.path.exists(types_path):
-        os.makedirs(types_path)
-
-    # version directory
-    version_path = os.path.join(types_path, f"v{version:05}")
-    if not os.path.exists(version_path):
-        os.makedirs(version_path)
-
-    # specific type directory
-    type_path = os.path.join(version_path, type)
-    if not os.path.exists(type_path):
-        os.makedirs(type_path)
-
-
-
 # Generates a rust implementation for a type just from it's JSON specification using an LLM
 def gen_type(type, version, spec) -> tuple[str, str]:
     name = snake_to_pascal(type)
@@ -54,13 +33,11 @@ def gen_type(type, version, spec) -> tuple[str, str]:
 
 def gen_types(all_protocols):
     for type in TYPES:
-
         # find all versions that have an def of this type
         # format:
-        # [ [int] version, [int] version ] ]
+        # [ [int] ] - a list of lists of versions that have identical type def
         identical_versions = []
         # basically group identical versions together
-
         for v, p in all_protocols.items():
             if type not in p["types"]:
                 continue
@@ -90,7 +67,7 @@ def gen_types(all_protocols):
                 if os.path.exists(f"types/v{v:05}/{type}/"):
                     continue
 
-                prepare_dir(type, v)
+                os.makedirs(f"types/v{v:05}/{type}", exist_ok=True)
 
                 # if this is the first version in the group, generate the packet
                 # otherwise just re-export
@@ -104,8 +81,8 @@ def gen_types(all_protocols):
 
                     with open(f"types/v{v:05}/{type}/mod.rs", "w") as f:
                         f.write(code)
+                    os.system(f"cargo fmt -- types/v{v:05}/{type}/mod.rs")
                 else:
                     # re-export the first version
-
-                    with open(f"types/v{v:05}/{type}/mod.rs", "w") as f:
-                        f.write(f"pub use crate::types::v{group[0]:05}::{type}::*;\n")
+                    with open(f"types/v{v:05}/{type}/reexport", "w") as f:
+                        f.write(f"{group[0]}\n")
