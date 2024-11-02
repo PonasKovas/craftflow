@@ -29,6 +29,7 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
 				.push(*version);
 		}
 
+		let mut pattern_to_id = String::new();
 		for (id, versions) in versions_by_id {
 			let versions_pattern = versions
 				.iter()
@@ -39,21 +40,26 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
 			read_match_arms += &format!(
 				"({id}, {versions_pattern}) => {{
      			    let (input, packet) = MCPReadVersioned::read_versioned(input, protocol_version)
-                        .with_context(|| format!(\"packet id {id}, version {{protocol_version}}\"))?;
+                        .with_context(|| format!(\"packet id {id}\"))?;
                     Ok((input, Self::{packet_variant}(packet)))
      			}},\n"
 			);
 
-			write_match_arms += &format!(
-    			"Self::{packet_variant}(packet) => {{
-    		        let mut written = 0;
-                    written += VarInt({id}).write(output)?;
-                    written += packet.write_versioned(output, protocol_version)
-                        .with_context(|| format!(\"packet id {id}, version {{protocol_version}}\"))?;
-                    Ok(written)
-                }},\n"
-    		);
+			pattern_to_id += &format!("{} => {},\n", versions_pattern, id);
 		}
+
+		write_match_arms += &format!(
+			"Self::{packet_variant}(packet) => {{
+  		        let mut written = 0;
+                let id = match protocol_version {{
+                    {pattern_to_id}
+                    other => return Err(Error::InvalidData(format!(\"{{other}} protocol version not supported by this packet\"))),
+                }};
+                written += VarInt(id).write(output)?;
+                written += packet.write_versioned(output, protocol_version)?;
+                Ok(written)
+            }},\n"
+		);
 	}
 
 	format!(
