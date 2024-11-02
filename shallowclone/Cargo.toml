@@ -1,0 +1,7 @@
+[package]
+name = "shallowclone"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+shallowclone-derive = { path = "../shallowclone-derive/" }

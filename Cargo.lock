@@ -193,6 +193,7 @@ dependencies = [
  "craftflow-nbt",
  "serde",
  "serde_json",
+ "shallowclone",
  "thiserror",
 ]
 
@@ -833,6 +834,22 @@ dependencies = [
  "memchr",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "shallowclone"
+version = "0.1.0"
+dependencies = [
+ "shallowclone-derive",
+]
+
+[[package]]
+name = "shallowclone-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

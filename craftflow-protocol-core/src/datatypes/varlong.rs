@@ -2,10 +2,11 @@ use crate::Error;
 use crate::Result;
 use crate::{MCPRead, MCPWrite};
 use byteorder::{ReadBytesExt, WriteBytesExt};
+use shallowclone::ShallowClone;
 use std::io::Write;
 
 /// A Minecraft Protocol VarLong
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct VarLong(pub i64);
 
 impl VarLong {

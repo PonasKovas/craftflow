@@ -38,6 +38,6 @@ define_type! {
 		pub url: Cow<'a, str>,
 		pub hash: Cow<'a, str>,
 		pub forced: bool,
-		pub prompt_message: Option<AnonymousNbt>,
+		pub prompt_message: Option<AnonymousNbt<Text<'a>>>,
 	}
 }

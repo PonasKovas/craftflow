@@ -3,12 +3,15 @@ use anyhow::Result;
 use craftflow_protocol_core::{common_structures::Text, datatypes::AnonymousNbt};
 use craftflow_protocol_versions::{
 	s2c::{
-		configuration::{add_resource_pack::v00767::AddResourcePackV00765, AddResourcePack},
+		configuration::{add_resource_pack::v00765::AddResourcePackV00765, AddResourcePack},
 		Configuration,
 	},
 	IntoStateEnum, S2C,
 };
-use std::iter::{once, Once};
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfAddResourcePack {
@@ -16,14 +19,18 @@ pub struct AbConfAddResourcePack {
 	pub url: String,
 	pub hash: String,
 	pub forced: bool,
-	pub prompt_message: Option<Text>,
+	pub prompt_message: Option<Text<'static>>,
 }
 
 impl AbPacketWrite for AbConfAddResourcePack {
-	type Direction = S2C;
-	type Iter = Once<Self::Direction>;
+	type Direction<'a> = S2C<'a>;
+	type Iter<'a> = Once<Self::Direction<'a>>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert<'a>(
+		&'a self,
+		protocol_version: u32,
+		state: State,
+	) -> Result<WriteResult<Self::Iter<'a>>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -31,8 +38,8 @@ impl AbPacketWrite for AbConfAddResourcePack {
 		let pkt = match protocol_version {
 			765.. => AddResourcePackV00765 {
 				uuid: self.uuid,
-				url: self.url,
-				hash: self.hash,
+				url: Cow::Borrowed(&self.url),
+				hash: Cow::Borrowed(&self.hash),
 				forced: self.forced,
 				prompt_message: self.prompt_message.map(|m| AnonymousNbt { inner: m }),
 			}

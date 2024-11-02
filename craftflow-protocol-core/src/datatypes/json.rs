@@ -1,9 +1,11 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
 use serde::{Deserialize, Serialize};
+use shallowclone::ShallowClone;
 use std::{borrow::Cow, io::Write};
 
-#[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-pub struct Json<T> {
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
+#[shallowclone(target = "Json<T::Target>")]
+pub struct Json<#[shallowclone] T> {
 	pub inner: T,
 }
 

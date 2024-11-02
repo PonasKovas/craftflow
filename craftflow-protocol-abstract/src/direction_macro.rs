@@ -1,5 +1,5 @@
 macro_rules! gen_direction_enum {
-	(@DIRECTION=$direction:ident; $( #[$attr:meta] )* pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* $(,)? }) => {
+    (@DIRECTION=$direction:ident; $( #[$attr:meta] )* pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* $(,)? }) => {
 	    $( #[$attr] )*
 		pub enum $name {
 		    $($variant($struct),)*
@@ -15,14 +15,14 @@ macro_rules! gen_direction_enum {
 		}
 
 		impl crate::AbPacketWrite for $name {
-            type Direction = craftflow_protocol_versions::$direction;
-            type Iter = Box<dyn Iterator<Item = Self::Direction> + Send + Sync>;
+            type Direction<'a> = craftflow_protocol_versions::$direction<'a>;
+            type Iter<'a> = Box<dyn Iterator<Item = Self::Direction<'a>> + Send + Sync>;
 
-            fn convert(
-          		self,
+            fn convert<'a>(
+          		&'a self,
           		protocol_version: u32,
                 state: crate::State,
-           	) -> anyhow::Result<crate::WriteResult<Self::Iter>> {
+           	) -> anyhow::Result<crate::WriteResult<Self::Iter<'a>>> {
                 Ok(match self {
                     $(
                         $name::$variant(inner) => match inner.convert(protocol_version, state)? {

@@ -1,15 +1,18 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
 use craftflow_nbt::DynNBT;
 use serde::{Deserialize, Serialize};
+use shallowclone::ShallowClone;
 use std::io::Write;
 
-#[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-pub struct Nbt<T = DynNBT> {
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
+#[shallowclone(target = "Nbt<T::Target>")]
+pub struct Nbt<#[shallowclone] T = DynNBT> {
 	pub inner: T,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-pub struct AnonymousNbt<T = DynNBT> {
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
+#[shallowclone(target = "Nbt<T::Target>")]
+pub struct AnonymousNbt<#[shallowclone] T = DynNBT> {
 	pub inner: T,
 }
 

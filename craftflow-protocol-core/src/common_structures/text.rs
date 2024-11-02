@@ -1,25 +1,41 @@
 use serde::{Deserialize, Serialize};
+use shallowclone::ShallowClone;
 use std::{
 	borrow::Cow,
 	ops::{Add, AddAssign},
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
+#[shallowclone(target = "Text<'shallowclone, 'b>")]
 #[serde(untagged)]
-pub enum Text<'a> {
+pub enum Text<'a, 'b> {
 	String(Cow<'a, str>),
-	Array(Vec<Text<'a>>),
-	Object(Box<TextObject<'a>>),
+	Array(Vec<Text<'a, 'b>>),
+	Object(Box<TextObject<'a, 'b>>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	Debug,
+	Clone,
+	Default,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
+)]
+#[shallowclone(target = "TextObject<'shallowclone, 'b>")]
 #[serde(rename_all = "camelCase")]
-pub struct TextObject<'a> {
+pub struct TextObject<'a, 'b> {
 	#[serde(flatten)]
-	pub content: TextContent<'a>,
+	pub content: TextContent<'a, 'b>,
 	#[serde(default)]
-	#[serde(skip_serializing_if = "Vec::is_empty")]
-	pub extra: Vec<Text<'a>>,
+	pub extra: Cow<'a, [Text<'b, 'b>]>,
 	/// The text color, which may be a color name or a #-prefixed hexadecimal RGB specification
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -50,12 +66,15 @@ pub struct TextObject<'a> {
 	pub click_event: Option<ClickEvent<'a>>,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub hover_event: Option<HoverEvent<'a>>,
+	pub hover_event: Option<HoverEvent<'a, 'b>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
+#[shallowclone(target = "TextContent<'shallowclone, 'b>")]
 #[serde(untagged)]
-pub enum TextContent<'a> {
+pub enum TextContent<'a, 'b> {
 	Text {
 		/// Set as the content directly, with no additional processing.
 		text: Cow<'a, str>,
@@ -67,7 +86,7 @@ pub enum TextContent<'a> {
 		/// Replacements for placeholders in the translation text.
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		with: Option<Cow<'a, [Text<'a>]>>,
+		with: Option<Cow<'a, [Text<'b, 'b>]>>,
 	},
 	Keybind {
 		/// The name of a keybinding. The client's current setting for the specified keybinding becomes the component's content.
@@ -84,7 +103,7 @@ pub enum TextContent<'a> {
 		/// Separator to place between results. If omitted, defaults to {"color":"gray","text":", "}
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		separator: Option<Text<'a>>,
+		separator: Option<Text<'a, 'b>>,
 	},
 	Nbt {
 		/// NBT path to be queried.
@@ -96,12 +115,14 @@ pub enum TextContent<'a> {
 		/// Separator to place between results. If omitted, defaults to {"text":", "}.
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		separator: Option<Text<'a>>,
+		separator: Option<Text<'a, 'b>>,
 		data_source: TextNbtDataSource<'a>,
 	},
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
 #[serde(untagged)]
 pub enum TextNbtDataSource<'a> {
 	Block {
@@ -118,7 +139,9 @@ pub enum TextNbtDataSource<'a> {
 	},
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
 pub struct Score<'a> {
 	/// A player username, player or entity UUID, entity selector (that selects one entity), or * to match the sending player.
 	pub name: Cow<'a, str>,
@@ -126,13 +149,17 @@ pub struct Score<'a> {
 	pub objective: Cow<'a, str>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
 pub struct ClickEvent<'a> {
 	pub action: ClickEventAction,
 	pub value: Cow<'a, str>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ClickEventAction {
 	OpenUrl,
@@ -142,17 +169,23 @@ pub enum ClickEventAction {
 	CopyToClipboard,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct HoverEvent<'a> {
-	pub action: HoverEventAction<'a>,
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
+#[shallowclone(target = "HoverEvent<'shallowclone, 'b>")]
+pub struct HoverEvent<'a, 'b> {
+	pub action: HoverEventAction<'a, 'b>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
+#[shallowclone(target = "HoverEventAction<'shallowclone, 'b>")]
 #[serde(rename_all = "snake_case")]
-pub enum HoverEventAction<'a> {
+pub enum HoverEventAction<'a, 'b> {
 	ShowText {
 		#[serde(flatten)]
-		contents: Text<'a>,
+		contents: Text<'a, 'b>,
 	},
 	ShowItem {
 		#[serde(flatten)]
@@ -164,7 +197,9 @@ pub enum HoverEventAction<'a> {
 	},
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
 pub struct HoverActionShowItem<'a> {
 	/// The textual identifier of the item's type. If unrecognized, defaults to minecraft:air.
 	pub id: Cow<'a, str>,
@@ -178,7 +213,9 @@ pub struct HoverActionShowItem<'a> {
 	pub tag: Option<Cow<'a, str>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
 pub struct HoverActionShowEntity<'a> {
 	/// The textual identifier of the entity's type. If unrecognized, defaults to minecraft:pig.
 	#[serde(rename = "type")]
@@ -191,8 +228,8 @@ pub struct HoverActionShowEntity<'a> {
 	pub name: Option<Cow<'a, str>>,
 }
 
-impl<'a> Add for Text<'a> {
-	type Output = Text<'a>;
+impl<'a, 'b> Add for Text<'a, 'b> {
+	type Output = Text<'a, 'b>;
 
 	fn add(self, rhs: Self) -> Self::Output {
 		Text::Array(vec![
@@ -205,8 +242,8 @@ impl<'a> Add for Text<'a> {
 	}
 }
 
-impl<'a> Add<&Text<'a>> for Text<'a> {
-	type Output = Text<'a>;
+impl<'a, 'b> Add<&Text<'a, 'b>> for Text<'a, 'b> {
+	type Output = Text<'a, 'b>;
 
 	fn add(self, rhs: &Self) -> Self::Output {
 		Text::Array(vec![
@@ -219,20 +256,20 @@ impl<'a> Add<&Text<'a>> for Text<'a> {
 	}
 }
 
-impl<'a> AddAssign for Text<'a> {
+impl<'a, 'b> AddAssign for Text<'a, 'b> {
 	fn add_assign(&mut self, rhs: Self) {
 		// 🤷
 		*self = self.clone() + rhs;
 	}
 }
 
-impl<'a> AddAssign<&Text<'a>> for Text<'a> {
+impl<'a, 'b> AddAssign<&Text<'a, 'b>> for Text<'a, 'b> {
 	fn add_assign(&mut self, rhs: &Self) {
 		*self = self.clone() + rhs.clone();
 	}
 }
 
-impl<'a> Default for TextContent<'a> {
+impl<'a, 'b> Default for TextContent<'a, 'b> {
 	fn default() -> Self {
 		TextContent::Text { text: "".into() }
 	}

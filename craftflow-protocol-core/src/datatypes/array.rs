@@ -1,7 +1,9 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
+use shallowclone::ShallowClone;
 use std::{borrow::Cow, fmt::Debug, io::Write, marker::PhantomData};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[shallowclone(target = "Array<'shallowclone, LEN, T>")]
 pub struct Array<'a, LEN, T: Clone> {
 	pub data: Cow<'a, [T]>,
 	_phantom: PhantomData<LEN>,
