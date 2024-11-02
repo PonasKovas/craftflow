@@ -4,6 +4,8 @@
 // - PacketRead/PacketWrite for packet enums
 // - Conversion traits (IntoStateEnum, IntoPacketEnum, IntoVersionEnum) for all of the enums AND
 //   the packets themselves
+//
+// Additionally, it also generates some code to add the types to the source tree.
 
 #[path = "build/common.rs"]
 pub mod common;
@@ -19,6 +21,8 @@ mod gen_impl_trait_macro;
 mod gen_mcp_packet;
 #[path = "build/gen_mcp_versioned.rs"]
 mod gen_mcp_versioned;
+#[path = "build/gen_types_code.rs"]
+mod gen_types_code;
 #[path = "build/parse_packet_info.rs"]
 mod parse_packet_info;
 
@@ -33,6 +37,7 @@ use gen_enum::Variant;
 use gen_impl_trait_macro::gen_impl_trait_macro;
 use gen_mcp_packet::gen_mcp_packet_impls;
 use gen_mcp_versioned::gen_mcp_versioned;
+use gen_types_code::gen_types_code;
 use parse_packet_info::{
 	parse_packets, Direction, HasLifetime, PacketName, PacketType, Packets, State, States, Versions,
 };
@@ -53,6 +58,8 @@ fn main() {
 
 	root_code += &gen_impl_trait_macro(&packets);
 	root_code += &gen_destructure_macro(&packets);
+
+	root_code += &gen_types_code();
 
 	fs::write(&out.join("generated.rs"), root_code).unwrap();
 }

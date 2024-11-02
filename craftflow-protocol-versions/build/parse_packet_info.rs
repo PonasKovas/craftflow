@@ -53,30 +53,18 @@ pub fn parse_packets() -> Directions {
 		let mut direction_has_lifetime = false;
 
 		for state_fs in read_dir(&direction_path).unwrap().map(|f| f.unwrap()) {
-			if !state_fs.file_type().unwrap().is_dir() {
-				continue;
-			}
-
 			let state = State(state_fs.file_name().into_string().unwrap());
 
 			let mut state_map = HashMap::new();
 			let mut state_has_lifetime = false;
 
 			for packet_fs in read_dir(&state_fs.path()).unwrap().map(|f| f.unwrap()) {
-				if !packet_fs.file_type().unwrap().is_dir() {
-					continue;
-				}
-
 				let packet = PacketName(packet_fs.file_name().into_string().unwrap());
 
 				let mut packet_map = HashMap::new();
 				let mut packet_has_lifetime = false;
 
 				for version_fs in read_dir(&packet_fs.path()).unwrap().map(|f| f.unwrap()) {
-					if !version_fs.file_type().unwrap().is_dir() {
-						continue;
-					}
-
 					let version = version_fs.file_name().into_string().unwrap();
 					let version = Version(version[1..].parse::<u32>().unwrap());
 
