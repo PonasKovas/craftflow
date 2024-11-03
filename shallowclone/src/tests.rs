@@ -1,6 +1,5 @@
-use std::borrow::Cow;
-
 use crate::ShallowClone;
+use std::borrow::Cow;
 
 #[derive(ShallowClone)]
 struct UnitStruct;
@@ -40,4 +39,10 @@ enum Enum<'a, #[shallowclone] T> {
 #[shallowclone(target = "Complex<'shallowclone, 'b>")]
 struct Complex<'a, 'b> {
 	field: Cow<'a, [Complex<'b, 'b>]>,
+}
+
+#[derive(ShallowClone)]
+#[shallowclone(target = "Array<'shallowclone, T>")]
+pub struct Array<'a, T: Clone> {
+	pub data: Cow<'a, [T]>,
 }

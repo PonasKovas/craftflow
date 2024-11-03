@@ -32,12 +32,12 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
-	pub struct AddResourcePackV00765<'a> {
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	pub struct AddResourcePackV00765<'a, 'b> {
 		pub uuid: u128,
 		pub url: Cow<'a, str>,
 		pub hash: Cow<'a, str>,
 		pub forced: bool,
-		pub prompt_message: Option<AnonymousNbt<Text<'a>>>,
+		pub prompt_message: Option<AnonymousNbt<Text<'a, 'b>>>,
 	}
 }

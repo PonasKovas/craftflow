@@ -40,6 +40,8 @@ pub fn gen_types_code() -> String {
                     use std::borrow::Cow;
                     #[allow(unused_imports)]
                     use craftflow_protocol_core::common_structures::*;
+                    #[allow(unused_imports)]
+                    use shallowclone::ShallowClone;
 
 				    include!({mod_path:?});
 				}}

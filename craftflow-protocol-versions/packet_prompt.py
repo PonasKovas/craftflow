@@ -16,7 +16,7 @@ deeper structure. Do not reply with any words or text formatting, ONLY the code.
 Do not make any assumptions about the packet that are not provided in the specification. If you make any unprovided
 assumptions or write anything more than is requested of you, you will be fired. All types that are used but not given a
 definition are ALREADY DEFINED and have MCPRead and MCPWrite traits implemented for them. Do not import anything,
-everything you need is already imported. Derive essential traits for all types (Debug, PartialEq, Clone, Hash, PartialOrd,
+everything you need is already imported. Derive essential traits for all types (ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd,
 Ord and Eq if possible). There is a macro define_type!{} that automatically implements MCPRead and MCPWrite for straightforward
 structures. Use it where appropriate. It does not support enums of any kind. If the data is not just fields in a sequence
 you must implement MCPRead and MCPWrite manually. Do not use the macro in those cases.

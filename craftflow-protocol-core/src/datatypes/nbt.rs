@@ -11,7 +11,7 @@ pub struct Nbt<#[shallowclone] T = DynNBT> {
 }
 
 #[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-#[shallowclone(target = "Nbt<T::Target>")]
+#[shallowclone(target = "AnonymousNbt<T::Target>")]
 pub struct AnonymousNbt<#[shallowclone] T = DynNBT> {
 	pub inner: T,
 }

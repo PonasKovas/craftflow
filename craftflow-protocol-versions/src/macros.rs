@@ -1,10 +1,10 @@
 /// Automatically implements MCPRead, MCPWrite traits
 /// Requires that all fields implement MCPRead, MCPWrite
-/// If using a lifetime, it must be 'a, no other generics or lifetimes allowed
+/// No generics allowed, only 0-2 lifetimes. If using a lifetime, the first one must be 'a
 macro_rules! define_type {
 	(
         $(#[$attr:meta])*
-        pub struct $name:ident $( <$lifetime:lifetime> )? {
+        pub struct $name:ident {
             $(
                 $(#[$field_attr:meta])*
                 pub $field_name:ident: $field_type:ty
@@ -12,14 +12,14 @@ macro_rules! define_type {
         }
     ) => {
         $(#[$attr])*
-        pub struct $name $( <$lifetime> )? {
+            pub struct $name {
             $(
                 $(#[$field_attr])*
                 pub $field_name: $field_type,
             )*
         }
 
-        impl $( <$lifetime> )? MCPWrite for $name $( <$lifetime> )? {
+        impl MCPWrite for $name {
         	fn write(&self, #[allow(unused_variables)] output: &mut impl std::io::Write) -> Result<usize> {
                 #[allow(unused_mut)]
         		let mut written_bytes = 0;
@@ -31,7 +31,7 @@ macro_rules! define_type {
         		Ok(written_bytes)
         	}
         }
-        impl<'a> MCPRead<'a> for $name $( <$lifetime> )? {
+        impl<'a> MCPRead<'a> for $name {
         	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
                 $(
                     let (input, $field_name) = MCPRead::read(input)?;
@@ -48,58 +48,96 @@ macro_rules! define_type {
         	}
         }
     };
-	// Simple enums with no fields
-	// More complex enums will need manual implementations
-	(
-	    tag $tag_type:ty;  // the type that will be used to encode the tag, must implement MCPRead, MCPWrite
-					       // and also Self: TryInto<i32> and i32: TryInto<Self>
-
+    (
         $(#[$attr:meta])*
-        pub enum $name:ident $( <$lifetime:lifetime> )? {
+        pub struct $name:ident<'a> {
             $(
                 $(#[$field_attr:meta])*
-                $variant_name:ident = $variant_value:expr
+                pub $field_name:ident: $field_type:ty
             ),* $(,)?
         }
     ) => {
         $(#[$attr])*
-        pub enum $name $( <$lifetime> )? {
+            pub struct $name<'a> {
             $(
                 $(#[$field_attr])*
-                $variant_name = $variant_value,
+                pub $field_name: $field_type,
             )*
         }
 
-        impl $( <$lifetime> )? MCPWrite for $name $( <$lifetime> )? {
-        	fn write(&self, output: &mut impl std::io::Write) -> Result<usize> {
-                match self {
-                    $(
-                        Self::$variant_name => {
-                            $variant_value.try_into::<$tag_type>()
-                                .map_err(Error::InvalidData(
-                                    format!("cant convert enum tag {} to {}", $variant_value, stringify!($tag_type))
-                                ))
-                                .write(output)
-                        }
-                    )*
-                }
+        impl<'a> MCPWrite for $name<'a> {
+           	fn write(&self, #[allow(unused_variables)] output: &mut impl std::io::Write) -> Result<usize> {
+                    #[allow(unused_mut)]
+              		let mut written_bytes = 0;
 
-        	}
+                    $(
+                        written_bytes += self.$field_name.write(output)?;
+                    )*
+
+              		Ok(written_bytes)
+           	}
         }
-        impl<'a> MCPRead<'a> for $name $( <$lifetime> )? {
-        	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
-                let (input, tag) = $tag_type::read(input)?;
-                let tag: i32 = tag.try_into().map_err(Error::InvalidData(
-                    format!("cant convert enum tag {tag} to i32")
-                ));
-
-                match tag {
+        impl<'a> MCPRead<'a> for $name<'a> {
+           	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
                     $(
-                        $variant_value => Ok((input, Self::$variant_name)),
+                        let (input, $field_name) = MCPRead::read(input)?;
                     )*
-                    _ => Err(Error::InvalidData(format!("unknown enum tag {tag}"))),
-                }
-        	}
+
+              		Ok((
+             			input,
+             			Self {
+                				$(
+                                $field_name,
+                            )*
+             			},
+              		))
+           	}
+        }
+    };
+    (
+        $(#[$attr:meta])*
+        pub struct $name:ident<'a, $l2:lifetime> {
+            $(
+                $(#[$field_attr:meta])*
+                pub $field_name:ident: $field_type:ty
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$attr])*
+            pub struct $name<'a, $l2> {
+            $(
+                $(#[$field_attr])*
+                pub $field_name: $field_type,
+            )*
+        }
+
+        impl<'a, $l2> MCPWrite for $name<'a, $l2> {
+           	fn write(&self, #[allow(unused_variables)] output: &mut impl std::io::Write) -> Result<usize> {
+                    #[allow(unused_mut)]
+              		let mut written_bytes = 0;
+
+                    $(
+                        written_bytes += self.$field_name.write(output)?;
+                    )*
+
+              		Ok(written_bytes)
+           	}
+        }
+        impl<'a> MCPRead<'a> for $name<'a, 'a> {
+           	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+                    $(
+                        let (input, $field_name) = MCPRead::read(input)?;
+                    )*
+
+              		Ok((
+             			input,
+             			Self {
+                				$(
+                                $field_name,
+                            )*
+             			},
+              		))
+           	}
         }
     };
 }

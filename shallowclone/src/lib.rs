@@ -1,7 +1,5 @@
 mod tests;
 
-use std::{borrow::Cow, marker::PhantomData};
-
 pub use shallowclone_derive::ShallowClone;
 
 /// The same as [`Clone`], but doesnt clone `Cow`s, instead it just borrows them.
@@ -10,6 +8,8 @@ pub trait ShallowClone<'a> {
 
 	fn shallow_clone(&'a self) -> Self::Target;
 }
+
+use std::{borrow::Cow, collections::HashMap, hash::Hash, marker::PhantomData};
 
 impl<'a, 'b, T: ToOwned + ?Sized> ShallowClone<'a> for Cow<'b, T>
 where
@@ -80,5 +80,17 @@ impl<'a, T: ShallowClone<'a>> ShallowClone<'a> for Box<T> {
 
 	fn shallow_clone(&'a self) -> Self::Target {
 		Box::new(self.as_ref().shallow_clone())
+	}
+}
+impl<'a, K: ShallowClone<'a>, V: ShallowClone<'a>> ShallowClone<'a> for HashMap<K, V>
+where
+	K::Target: Eq + Hash,
+{
+	type Target = HashMap<K::Target, V::Target>;
+
+	fn shallow_clone(&'a self) -> Self::Target {
+		self.iter()
+			.map(|(k, v)| (k.shallow_clone(), v.shallow_clone()))
+			.collect()
 	}
 }

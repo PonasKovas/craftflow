@@ -193,6 +193,8 @@ fn gen_packet(
             use craftflow_protocol_core::common_structures::*;
             #[allow(unused_imports)]
             use crate::types::{v}::*;
+            #[allow(unused_imports)]
+            use shallowclone::ShallowClone;
 
             include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{dir}/{st}/{pkt}/{v}/mod.rs\"));
             ",
