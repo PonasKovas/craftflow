@@ -1,15 +1,18 @@
 //! For generating PacketRead and PacketWrite for packet enums
 
-use crate::{
-	common::get_lifetime,
-	parse_packet_info::{Direction, Packets, State},
-};
+use crate::parse_packet_info::{Direction, Generics, Packets, State};
 use std::collections::HashMap;
 
 pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Packets) -> String {
 	let dir_mod = direction.mod_name();
 
-	let lifetime = get_lifetime(packets.iter().any(|(_, (has_lifetime, _))| *has_lifetime));
+	let generics = packets
+		.iter()
+		.fold(Generics::new(), |acc, (_, (generics, _))| {
+			acc.union(generics)
+		});
+	let read_generics = Generics(vec!["'read".to_string(); generics.0.len()]).as_str();
+	let generics = generics.as_str();
 	let path = format!(
 		"crate::{dir_mod}::{state_enum}",
 		state_enum = state.enum_name(),
@@ -67,8 +70,8 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
 		use craftflow_protocol_core::{{Result, Error, Context, datatypes::VarInt, MCPWrite, MCPRead}};
 		use crate::{{MCPReadVersioned, MCPWriteVersioned, PacketRead, PacketWrite}};
 
-		impl<'a> PacketRead<'a> for {path} {lifetime} {{
-            fn read_packet(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
+		impl<'read> PacketRead<'read> for {path} {read_generics} {{
+            fn read_packet(input: &'read [u8], protocol_version: u32) -> Result<(&'read [u8], Self)> {{
                 let (input, packet_id) = VarInt::read(input)?;
                 let packet_id = packet_id.0;
                 match (packet_id, protocol_version) {{
@@ -77,7 +80,7 @@ pub fn gen_mcp_packet_impls(direction: &Direction, state: &State, packets: &Pack
                 }}
             }}
         }}
-        impl {lifetime} PacketWrite for {path} {lifetime} {{
+        impl {generics} PacketWrite for {path} {generics} {{
             fn write_packet(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {write_match_arms}

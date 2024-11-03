@@ -41,7 +41,7 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct SettingsV00764<'a> {
 		pub locale: Cow<'a, str>,
 		pub view_distance: i8,

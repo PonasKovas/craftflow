@@ -1,9 +1,8 @@
+use crate::common::snake_to_pascal_case;
 use std::{
 	fs::{self, read_dir},
 	path::Path,
 };
-
-use crate::common::snake_to_pascal_case;
 
 /// Reads the types/ directory and generates code to include it in the source tree
 pub fn gen_types_code() -> String {

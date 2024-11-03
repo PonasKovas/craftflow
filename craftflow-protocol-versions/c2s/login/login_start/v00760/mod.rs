@@ -53,7 +53,7 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
 	pub struct LoginStartV00760<'a> {
 		pub username: Cow<'a, str>,
 		pub signature: Option<Signature<'a>>,
@@ -62,7 +62,7 @@ define_type! {
 }
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
 	pub struct Signature<'a> {
 		pub timestamp: i64,
 		pub public_key: Buffer<'a, VarInt>,

@@ -31,8 +31,8 @@ macro_rules! define_type {
         		Ok(written_bytes)
         	}
         }
-        impl<'a> MCPRead<'a> for $name {
-        	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+        impl<'read> MCPRead<'read> for $name {
+        	fn read(input: &'read [u8]) -> Result<(&'read [u8], Self)> {
                 $(
                     let (input, $field_name) = MCPRead::read(input)?;
                 )*
@@ -77,8 +77,8 @@ macro_rules! define_type {
               		Ok(written_bytes)
            	}
         }
-        impl<'a> MCPRead<'a> for $name<'a> {
-           	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+        impl<'read> MCPRead<'read> for $name<'read> {
+           	fn read(input: &'read [u8]) -> Result<(&'read [u8], Self)> {
                     $(
                         let (input, $field_name) = MCPRead::read(input)?;
                     )*
@@ -123,8 +123,8 @@ macro_rules! define_type {
               		Ok(written_bytes)
            	}
         }
-        impl<'a> MCPRead<'a> for $name<'a, 'a> {
-           	fn read(input: &'a [u8]) -> Result<(&'a [u8], Self)> {
+        impl<'read> MCPRead<'read> for $name<'read, 'read> {
+           	fn read(input: &'read [u8]) -> Result<(&'read [u8], Self)> {
                     $(
                         let (input, $field_name) = MCPRead::read(input)?;
                     )*

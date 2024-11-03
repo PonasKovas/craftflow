@@ -1,5 +1,7 @@
 #[path = "parse_packet_info/direction.rs"]
 mod direction;
+#[path = "parse_packet_info/generics.rs"]
+mod generics;
 #[path = "parse_packet_info/packet_name.rs"]
 mod packet_name;
 #[path = "parse_packet_info/state.rs"]
@@ -8,6 +10,7 @@ mod state;
 mod version;
 
 pub use direction::Direction;
+pub use generics::Generics;
 pub use packet_name::PacketName;
 pub use state::State;
 pub use version::Version;
@@ -18,10 +21,9 @@ use std::{
 	path::Path,
 };
 
-pub type HasLifetime = bool;
-pub type Directions = HashMap<Direction, (HasLifetime, States)>;
-pub type States = HashMap<State, (HasLifetime, Packets)>;
-pub type Packets = HashMap<PacketName, (HasLifetime, Versions)>;
+pub type Directions = HashMap<Direction, (Generics, States)>;
+pub type States = HashMap<State, (Generics, Packets)>;
+pub type Packets = HashMap<PacketName, (Generics, Versions)>;
 pub type Versions = HashMap<Version, PacketInfo>;
 
 pub struct PacketInfo {
@@ -34,8 +36,9 @@ pub enum PacketType {
 		version: Version,
 	},
 	Defined {
-		/// the name of the struct/enum, complete with lifetime generics
+		/// the name of the struct/enum
 		type_name: String,
+		generics: Generics,
 	},
 }
 
@@ -50,19 +53,19 @@ pub fn parse_packets() -> Directions {
 		}
 
 		let mut direction_map = HashMap::new();
-		let mut direction_has_lifetime = false;
+		let mut direction_generics = Generics::new();
 
 		for state_fs in read_dir(&direction_path).unwrap().map(|f| f.unwrap()) {
 			let state = State(state_fs.file_name().into_string().unwrap());
 
 			let mut state_map = HashMap::new();
-			let mut state_has_lifetime = false;
+			let mut state_generics = Generics::new();
 
 			for packet_fs in read_dir(&state_fs.path()).unwrap().map(|f| f.unwrap()) {
 				let packet = PacketName(packet_fs.file_name().into_string().unwrap());
 
 				let mut packet_map = HashMap::new();
-				let mut packet_has_lifetime = false;
+				let mut packet_generics = Generics::new();
 
 				for version_fs in read_dir(&packet_fs.path()).unwrap().map(|f| f.unwrap()) {
 					let version = version_fs.file_name().into_string().unwrap();
@@ -72,22 +75,22 @@ pub fn parse_packets() -> Directions {
 
 					// if at least one defined packet version has a lifetime
 					// the packet has a lifetime
-					if let PacketType::Defined { type_name } = &packet_info.packet_type {
-						packet_has_lifetime |= type_name.contains("<'a>");
+					if let PacketType::Defined { generics, .. } = &packet_info.packet_type {
+						packet_generics = packet_generics.union(generics);
 					}
 
 					packet_map.insert(version, packet_info);
 				}
 
-				state_map.insert(packet.clone(), (packet_has_lifetime, packet_map));
-				state_has_lifetime |= packet_has_lifetime;
+				state_generics = state_generics.union(&packet_generics);
+				state_map.insert(packet.clone(), (packet_generics, packet_map));
 			}
 
-			direction_map.insert(state.clone(), (state_has_lifetime, state_map));
-			direction_has_lifetime |= state_has_lifetime;
+			direction_generics = direction_generics.union(&state_generics);
+			direction_map.insert(state.clone(), (state_generics, state_map));
 		}
 
-		packets.insert(direction, (direction_has_lifetime, direction_map));
+		packets.insert(direction, (direction_generics, direction_map));
 	}
 
 	packets
@@ -119,11 +122,27 @@ fn parse(direction: Direction, state: &State, packet: &PacketName, version: Vers
 			),
 		}
 	} else {
+		let full = fs::read_to_string(&name_path)
+			.expect(&format!("name read {:?}", packet))
+			.trim()
+			.to_owned();
+
+		let (type_name, generics) = if let Some(i) = full.find('<') {
+			let type_name = full[..i].to_owned();
+			let generics = Generics(
+				full[i + 1..full.len() - 1]
+					.split(',')
+					.map(|s| s.trim().to_owned())
+					.collect(),
+			);
+			(type_name, generics)
+		} else {
+			(full, Generics::new())
+		};
+
 		PacketType::Defined {
-			type_name: fs::read_to_string(&name_path)
-				.expect(&format!("name read {:?}", packet))
-				.trim()
-				.to_owned(),
+			type_name,
+			generics,
 		}
 	};
 

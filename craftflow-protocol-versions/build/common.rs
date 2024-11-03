@@ -15,11 +15,3 @@ pub fn snake_to_pascal_case(s: &str) -> String {
 	}
 	result
 }
-
-pub fn get_lifetime(has_lifetime: bool) -> &'static str {
-	if has_lifetime {
-		"<'a>"
-	} else {
-		""
-	}
-}

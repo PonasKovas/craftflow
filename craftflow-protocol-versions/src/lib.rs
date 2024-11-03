@@ -6,6 +6,7 @@
 )]
 
 mod into_traits;
+mod mcp_versioned;
 mod packet_read_write;
 mod supported_versions;
 
@@ -17,6 +18,7 @@ include!("macros.rs");
 mod test_prompt_example;
 
 pub use into_traits::*;
+pub use mcp_versioned::*;
 pub use packet_read_write::*;
 pub use supported_versions::*;
 

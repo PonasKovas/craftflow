@@ -1,7 +1,4 @@
-use crate::{
-	common::get_lifetime,
-	parse_packet_info::{Directions, PacketType},
-};
+use crate::parse_packet_info::{Directions, Generics, PacketType};
 
 /// Generates a macro that implements a given trait for all
 pub fn gen_impl_trait_macro(directions: &Directions) -> String {
@@ -19,22 +16,20 @@ pub fn gen_impl_trait_macro(directions: &Directions) -> String {
 
 				for (version, info) in versions {
 					// skip re-exports
-					let lifetime;
-					match &info.packet_type {
+					let (type_name, generics) = match &info.packet_type {
 						PacketType::ReExport { .. } => continue,
-						PacketType::Defined { type_name } => {
-							lifetime = type_name.contains("<'a>");
-						}
-					}
+						PacketType::Defined {
+							type_name,
+							generics,
+						} => (type_name, generics),
+					};
 					let v_mod = version.mod_name();
 
 					let path = format!(
-                        "::craftflow_protocol_versions::{dir_mod}::{st_mod}::{pkt_mod}::{v_mod}::{pkt_pascal}{v_caps}",
-                        pkt_pascal = packet.enum_name(),
-                        v_caps = version.caps_mod_name(),
+                        "::craftflow_protocol_versions::{dir_mod}::{st_mod}::{pkt_mod}::{v_mod}::{type_name}"
                     );
-					inner += &gen_impl(&path, lifetime, false);
-					inner_post += &gen_impl(&path, lifetime, true);
+					inner += &gen_impl(&path, generics, false);
+					inner_post += &gen_impl(&path, generics, true);
 				}
 			}
 		}
@@ -52,19 +47,19 @@ pub fn gen_impl_trait_macro(directions: &Directions) -> String {
 	)
 }
 
-fn gen_impl(path: &str, lifetime: bool, post: bool) -> String {
-	let lifetime = get_lifetime(lifetime);
+fn gen_impl(path: &str, generics: &Generics, post: bool) -> String {
+	let generics = generics.as_str();
 	let target = if post {
-		format!("Post<X {lifetime}>")
+		format!("Post<X {generics}>")
 	} else {
-		format!("X {lifetime}")
+		format!("X {generics}")
 	};
 
 	format!(
 		r#"
         const _: () = {{
-			type X {lifetime} = {path} {lifetime};
-			impl {lifetime} $trait for {target} $code
+			type X {generics} = {path} {generics};
+			impl {generics} $trait for {target} $code
 		}};
 	"#
 	)

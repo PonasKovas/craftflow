@@ -17,7 +17,7 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
 	pub struct CustomPayloadV00764<'a> {
 		pub channel: Cow<'a, str>,
 		pub data: RestBuffer<'a>,

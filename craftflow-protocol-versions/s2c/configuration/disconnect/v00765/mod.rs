@@ -13,7 +13,7 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
 	pub struct DisconnectV00765 {
 		pub reason: AnonymousNbt,
 	}

@@ -33,6 +33,7 @@
 
 define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[shallowclone(target = "AddResourcePackV00765<'shallowclone, 'b>")]
 	pub struct AddResourcePackV00765<'a, 'b> {
 		pub uuid: u128,
 		pub url: Cow<'a, str>,

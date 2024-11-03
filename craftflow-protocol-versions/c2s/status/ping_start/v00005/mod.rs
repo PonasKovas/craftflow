@@ -8,6 +8,6 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct PingStartV00005 {}
 }

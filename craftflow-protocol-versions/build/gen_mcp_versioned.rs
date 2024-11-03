@@ -1,8 +1,7 @@
 //! For generating MCPReadVersioned and MCPWriteVersioned for version enums
 
-use crate::{
-	common::get_lifetime,
-	parse_packet_info::{Direction, PacketName, PacketType, State, Version, Versions},
+use crate::parse_packet_info::{
+	Direction, Generics, PacketName, PacketType, State, Version, Versions,
 };
 use std::collections::HashMap;
 
@@ -11,7 +10,7 @@ pub fn gen_mcp_versioned(
 	state: &State,
 	packet: &PacketName,
 	versions: &Versions,
-	lifetime: bool,
+	generics: &Generics,
 ) -> String {
 	let dir_mod = direction.mod_name();
 	let state_mod = state.mod_name();
@@ -68,7 +67,8 @@ pub fn gen_mcp_versioned(
 	);
 	}
 
-	let lifetime = get_lifetime(lifetime);
+	let read_generics = Generics(vec!["'read".to_string(); generics.0.len()]).as_str();
+	let generics = generics.as_str();
 	let path = format!(
 		"crate::{dir_mod}::{state_mod}::{pkt}",
 		pkt = packet.enum_name(),
@@ -79,15 +79,15 @@ pub fn gen_mcp_versioned(
 		use craftflow_protocol_core::{{Error, Result, MCPRead, MCPWrite}};
 		use crate::{{MCPReadVersioned, MCPWriteVersioned}};
 
-        impl<'a> MCPReadVersioned<'a> for {path} {lifetime} {{
-            fn read_versioned(input: &'a [u8], protocol_version: u32) -> Result<(&'a [u8], Self)> {{
+        impl<'read> MCPReadVersioned<'read> for {path} {read_generics} {{
+            fn read_versioned(input: &'read [u8], protocol_version: u32) -> Result<(&'read [u8], Self)> {{
                     match protocol_version {{
                         {read_match_arms}
                         _ => Err(Error::InvalidData(format!("This packet has no implementation for {{protocol_version}} protocol version"))),
                     }}
             }}
         }}
-        impl {lifetime} MCPWriteVersioned for {path} {lifetime} {{
+        impl {generics} MCPWriteVersioned for {path} {generics} {{
             fn write_versioned(&self, output: &mut impl std::io::Write, protocol_version: u32) -> Result<usize> {{
                 match self {{
                     {write_match_arms}

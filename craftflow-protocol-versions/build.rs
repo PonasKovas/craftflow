@@ -39,7 +39,7 @@ use gen_mcp_packet::gen_mcp_packet_impls;
 use gen_mcp_versioned::gen_mcp_versioned;
 use gen_types_code::gen_types_code;
 use parse_packet_info::{
-	parse_packets, Direction, HasLifetime, PacketName, PacketType, Packets, State, States, Versions,
+	parse_packets, Direction, Generics, PacketName, PacketType, Packets, State, States, Versions,
 };
 
 fn main() {
@@ -47,13 +47,13 @@ fn main() {
 
 	let out = Path::new(&env::var("OUT_DIR").unwrap()).to_path_buf();
 
-	let mut root_code = String::new();
-	for (direction, (dir_lifetime, states)) in &packets {
-		let direction_enum_variants = gen_direction(&out, (direction, *dir_lifetime), states);
+	let mut root_code = format!("use shallowclone::ShallowClone;\n");
+	for (direction, (dir_generics, states)) in &packets {
+		let direction_enum_variants = gen_direction(&out, (direction, dir_generics), states);
 
 		root_code += &format!("pub mod {};\n", direction.mod_name());
 		root_code += &gen_enum::gen_enum(&direction.enum_name(), &direction_enum_variants);
-		root_code += &gen_conversion::for_direction((direction, *dir_lifetime));
+		root_code += &gen_conversion::for_direction((direction, dir_generics));
 	}
 
 	root_code += &gen_impl_trait_macro(&packets);
@@ -66,14 +66,14 @@ fn main() {
 
 fn gen_direction(
 	out: &PathBuf,
-	direction: (&Direction, HasLifetime),
+	direction: (&Direction, &Generics),
 	states: &States,
 ) -> Vec<Variant> {
 	let mut enum_variants = Vec::new();
-	let mut code = String::new();
+	let mut code = format!("use shallowclone::ShallowClone;\n");
 
-	for (state, (st_lifetime, packets)) in states {
-		let state_enum_variants = gen_state(&out, direction, (state, *st_lifetime), packets);
+	for (state, (st_generics, packets)) in states {
+		let state_enum_variants = gen_state(&out, direction, (state, st_generics), packets);
 
 		enum_variants.push(Variant {
 			name: state.enum_name(),
@@ -82,12 +82,12 @@ fn gen_direction(
 				dir = direction.0.mod_name(),
 				st = state.enum_name(),
 			),
-			has_lifetime: *st_lifetime,
+			value_generics: st_generics.clone(),
 		});
 
 		code += &format!("pub mod {};\n", state.mod_name());
 		code += &gen_enum::gen_enum(&state.enum_name(), &state_enum_variants);
-		code += &gen_conversion::for_state(direction, (state, *st_lifetime));
+		code += &gen_conversion::for_state(direction, (state, st_generics));
 	}
 
 	fs::write(&out.join(direction.0.mod_name()).join("mod.rs"), code).unwrap();
@@ -97,16 +97,16 @@ fn gen_direction(
 
 fn gen_state(
 	out: &PathBuf,
-	direction: (&Direction, HasLifetime),
-	state: (&State, HasLifetime),
+	direction: (&Direction, &Generics),
+	state: (&State, &Generics),
 	packets: &Packets,
 ) -> Vec<Variant> {
 	let mut enum_variants = Vec::new();
-	let mut code = String::new();
+	let mut code = format!("use shallowclone::ShallowClone;\n");
 
-	for (packet, (pkt_lifetime, versions)) in packets {
+	for (packet, (pkt_generics, versions)) in packets {
 		let version_enum_variants =
-			gen_packet(&out, direction, state, (packet, *pkt_lifetime), versions);
+			gen_packet(&out, direction, state, (packet, pkt_generics), versions);
 
 		enum_variants.push(Variant {
 			name: packet.enum_name(),
@@ -116,12 +116,12 @@ fn gen_state(
 				st = state.0.mod_name(),
 				pkt = packet.enum_name(),
 			),
-			has_lifetime: *pkt_lifetime,
+			value_generics: pkt_generics.clone(),
 		});
 
 		code += &format!("pub mod {};\n", packet.mod_name());
 		code += &gen_enum::gen_enum(&packet.enum_name(), &version_enum_variants);
-		code += &gen_conversion::for_packet(direction, state, (packet, *pkt_lifetime));
+		code += &gen_conversion::for_packet(direction, state, (packet, pkt_generics));
 	}
 	code += &gen_mcp_packet_impls(direction.0, state.0, packets);
 
@@ -138,25 +138,25 @@ fn gen_state(
 
 fn gen_packet(
 	out: &PathBuf,
-	direction: (&Direction, HasLifetime),
-	state: (&State, HasLifetime),
-	packet: (&PacketName, HasLifetime),
+	direction: (&Direction, &Generics),
+	state: (&State, &Generics),
+	packet: (&PacketName, &Generics),
 	versions: &Versions,
 ) -> Vec<Variant> {
 	let mut enum_variants = Vec::new();
-	let mut packet_code = String::new();
+	let mut packet_code = format!("#[allow(unused_imports)] use shallowclone::ShallowClone;\n");
 
-	let mut packet_enum_has_lifetime = false;
+	let mut packet_enum_generics = Generics::new();
 	for (version, packet_info) in versions {
 		// only need to generate anything for defined packets, not re-exports
-		let has_lifetime;
-		match &packet_info.packet_type {
+		let (type_name, generics) = match &packet_info.packet_type {
 			PacketType::ReExport { .. } => continue,
-			PacketType::Defined { type_name } => {
-				has_lifetime = type_name.contains("<'a>");
-				packet_enum_has_lifetime |= has_lifetime;
-			}
-		}
+			PacketType::Defined {
+				type_name,
+				generics,
+			} => (type_name, generics),
+		};
+		packet_enum_generics = packet_enum_generics.union(generics);
 
 		// prepare a directory to generate stuff in
 		fs::create_dir_all(
@@ -170,15 +170,13 @@ fn gen_packet(
 		enum_variants.push(Variant {
 			name: version.caps_mod_name(),
 			value_path: format!(
-				"crate::{dir}::{st}::{pkt}::{v}::{pkt_pascal}{v_caps}",
+				"crate::{dir}::{st}::{pkt}::{v}::{type_name}",
 				dir = direction.0.mod_name(),
 				st = state.0.mod_name(),
 				pkt = packet.0.mod_name(),
 				v = version.mod_name(),
-				pkt_pascal = packet.0.enum_name(),
-				v_caps = version.caps_mod_name(),
 			),
-			has_lifetime,
+			value_generics: generics.clone(),
 		});
 
 		let mut version_code = format!(
@@ -203,8 +201,7 @@ fn gen_packet(
 			pkt = packet.0.mod_name(),
 			v = version.mod_name(),
 		);
-		version_code +=
-			&gen_conversion::for_version(direction, state, packet, (version, has_lifetime));
+		version_code += &gen_conversion::for_version(direction, state, packet, (version, generics));
 		fs::write(
 			&out.join(direction.0.mod_name())
 				.join(&state.0.mod_name())
@@ -223,7 +220,7 @@ fn gen_packet(
 		state.0,
 		packet.0,
 		versions,
-		packet_enum_has_lifetime,
+		&packet_enum_generics,
 	);
 
 	fs::write(

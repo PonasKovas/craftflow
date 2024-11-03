@@ -5,6 +5,9 @@ use syn::{DeriveInput, GenericParam};
 // Commented out while we figure out whats wrong with rust
 // https://github.com/rust-lang/rust/issues/132561
 
+// after that is fixed we probably want to use shallowclone(skip) instead of shallowclone
+// since most generics will be included most of the time
+
 // pub fn get_target_type(input: &DeriveInput) -> TokenStream {
 // 	let name = &input.ident;
 // 	let generics = input.generics.params.iter().map(|g| match g {

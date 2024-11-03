@@ -13,7 +13,7 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct KeepAliveV00764 {
 		pub keep_alive_id: i64,
 	}

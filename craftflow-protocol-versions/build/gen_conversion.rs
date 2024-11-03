@@ -1,14 +1,11 @@
-use crate::{
-	common::get_lifetime,
-	parse_packet_info::{Direction, HasLifetime, PacketName, State, Version},
-};
+use crate::parse_packet_info::{Direction, Generics, PacketName, State, Version};
 
 /// Generates IntoVersionEnum, IntoPacketEnum and IntoStateEnum for a specific packet version
 pub fn for_version(
-	(direction, dir_lifetime): (&Direction, HasLifetime),
-	(state, st_lifetime): (&State, HasLifetime),
-	(packet, pkt_lifetime): (&PacketName, HasLifetime),
-	(version, v_lifetime): (&Version, HasLifetime),
+	(direction, dir_generics): (&Direction, &Generics),
+	(state, st_generics): (&State, &Generics),
+	(packet, pkt_generics): (&PacketName, &Generics),
+	(version, v_generics): (&Version, &Generics),
 ) -> String {
 	let dir_mod = direction.mod_name();
 	let state_mod = &state.0;
@@ -25,33 +22,33 @@ pub fn for_version(
 	r += &gen_impl_block(
 		Trait::Version,
 		&path,
-		v_lifetime,
+		v_generics,
 		&format!(
 			"crate::{dir_mod}::{state_mod}::{packet_enum}",
 			packet_enum = packet.enum_name()
 		),
-		pkt_lifetime,
+		pkt_generics,
 		&version.caps_mod_name(),
 		true,
 	);
 	r += &gen_impl_block(
 		Trait::Packet,
 		&path,
-		v_lifetime,
+		v_generics,
 		&format!(
 			"crate::{dir_mod}::{state_enum}",
 			state_enum = state.enum_name()
 		),
-		st_lifetime,
+		st_generics,
 		&packet.enum_name(),
 		false,
 	);
 	r += &gen_impl_block(
 		Trait::State,
 		&path,
-		v_lifetime,
+		v_generics,
 		&format!("crate::{dir_enum}", dir_enum = direction.enum_name()),
-		dir_lifetime,
+		dir_generics,
 		&state.enum_name(),
 		false,
 	);
@@ -61,9 +58,9 @@ pub fn for_version(
 
 /// Generates IntoVersionEnum, IntoPacketEnum and IntoStateEnum for a specific packet (version enum)
 pub fn for_packet(
-	(direction, dir_lifetime): (&Direction, HasLifetime),
-	(state, st_lifetime): (&State, HasLifetime),
-	(packet, pkt_lifetime): (&PacketName, HasLifetime),
+	(direction, dir_generics): (&Direction, &Generics),
+	(state, st_generics): (&State, &Generics),
+	(packet, pkt_generics): (&PacketName, &Generics),
 ) -> String {
 	let dir_mod = direction.mod_name();
 
@@ -74,25 +71,25 @@ pub fn for_packet(
 	);
 
 	let mut r = String::new();
-	r += &gen_self_impl_block(Trait::Version, &path, pkt_lifetime);
+	r += &gen_self_impl_block(Trait::Version, &path, pkt_generics);
 	r += &gen_impl_block(
 		Trait::Packet,
 		&path,
-		pkt_lifetime,
+		pkt_generics,
 		&format!(
 			"crate::{dir_mod}::{state_enum}",
 			state_enum = state.enum_name()
 		),
-		st_lifetime,
+		st_generics,
 		&packet.enum_name(),
 		true,
 	);
 	r += &gen_impl_block(
 		Trait::State,
 		&path,
-		pkt_lifetime,
+		pkt_generics,
 		&format!("crate::{dir_enum}", dir_enum = direction.enum_name()),
-		dir_lifetime,
+		dir_generics,
 		&state.enum_name(),
 		false,
 	);
@@ -101,8 +98,8 @@ pub fn for_packet(
 
 /// Generates IntoPacketEnum and IntoStateEnum for a specific state (packet enum)
 pub fn for_state(
-	(direction, dir_lifetime): (&Direction, HasLifetime),
-	(state, st_lifetime): (&State, HasLifetime),
+	(direction, dir_generics): (&Direction, &Generics),
+	(state, st_generics): (&State, &Generics),
 ) -> String {
 	let path = format!(
 		"crate::{dir_mod}::{state_enum}",
@@ -112,23 +109,23 @@ pub fn for_state(
 
 	let super_path = format!("crate::{}", direction.enum_name());
 
-	gen_self_impl_block(Trait::Packet, &path, st_lifetime)
+	gen_self_impl_block(Trait::Packet, &path, st_generics)
 		+ &gen_impl_block(
 			Trait::State,
 			&path,
-			st_lifetime,
+			st_generics,
 			&super_path,
-			dir_lifetime,
+			dir_generics,
 			&state.enum_name(),
 			true,
 		)
 }
 
 /// Generates IntoStateEnum for a specific direction (state enum)
-pub fn for_direction((direction, dir_lifetime): (&Direction, HasLifetime)) -> String {
+pub fn for_direction((direction, dir_generics): (&Direction, &Generics)) -> String {
 	let path = format!("crate::{dir_enum}", dir_enum = direction.enum_name());
 
-	gen_self_impl_block(Trait::State, &path, dir_lifetime)
+	gen_self_impl_block(Trait::State, &path, dir_generics)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -167,12 +164,12 @@ fn gen_impl_block(
 	t: Trait,
 	// path of the item for which to implement
 	path: &str,
-	// whether the item has a lifetime
-	lifetime: bool,
+	// generics of the item
+	generics: &Generics,
 	// path to the superior enum
 	super_path: &str,
-	// whether the superior enum has a lifetime
-	super_lifetime: bool,
+	// generics of the superior enum
+	super_generics: &Generics,
 	// which variant of the superior enum it is
 	variant: &str,
 	// whether to put value as self or the lower enum
@@ -182,8 +179,8 @@ fn gen_impl_block(
 	let assoc_type = t.assoc_type();
 	let method_name = t.method_name();
 
-	let lifetime = get_lifetime(lifetime);
-	let super_lifetime = get_lifetime(super_lifetime);
+	let super_generics = super_generics.fill_with(generics).as_str();
+	let generics = generics.as_str();
 
 	let value = if direct {
 		"self"
@@ -197,8 +194,8 @@ fn gen_impl_block(
 
 	format!(
 		r#"
-        impl<'a> crate::{trait_name}<'a> for {path} {lifetime} {{
-            type {assoc_type} = {super_path} {super_lifetime};
+        impl {generics} crate::{trait_name} for {path} {generics} {{
+            type {assoc_type} = {super_path} {super_generics};
 
             fn {method_name}(self) -> Self::{assoc_type} {{
                 let v = {value};
@@ -214,18 +211,18 @@ fn gen_self_impl_block(
 	t: Trait,
 	// path of the item for which to implement (WITH lifetime)
 	path: &str,
-	// whether this item has a lifetime
-	lifetime: bool,
+	// generics of the item
+	generics: &Generics,
 ) -> String {
 	let trait_name = t.trait_name();
 	let assoc_type = t.assoc_type();
 	let method_name = t.method_name();
 
-	let lifetime = get_lifetime(lifetime);
+	let generics = generics.as_str();
 
 	format!(
 		r#"
-        impl<'a> crate::{trait_name}<'a> for {path} {lifetime} {{
+        impl {generics} crate::{trait_name} for {path} {generics} {{
             type {assoc_type} = Self;
 
             fn {method_name}(self) -> Self::{assoc_type} {{

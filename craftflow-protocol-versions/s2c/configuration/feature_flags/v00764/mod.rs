@@ -19,8 +19,9 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
-	pub struct FeatureFlagsV00764<'a> {
-		pub features: Array<'a, VarInt, Cow<'a, str>>,
+	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[shallowclone(target = "FeatureFlagsV00764<'shallowclone, 'b>")]
+	pub struct FeatureFlagsV00764<'a, 'b> {
+		pub features: Array<'a, VarInt, Cow<'b, str>>,
 	}
 }

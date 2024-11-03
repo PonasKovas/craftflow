@@ -46,16 +46,17 @@
 // ]
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
-	pub struct SuccessV00759<'a> {
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[shallowclone(target = "SuccessV00759<'shallowclone, 'b>")]
+	pub struct SuccessV00759<'a, 'b> {
 		pub uuid: u128,
 		pub username: Cow<'a, str>,
-		pub properties: Array<'a, VarInt, Property<'a>>,
+		pub properties: Array<'a, VarInt, Property<'b>>,
 	}
 }
 
 define_type! {
-	#[derive(Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, Debug, PartialEq, Clone)]
 	pub struct Property<'a> {
 		pub name: Cow<'a, str>,
 		pub value: Cow<'a, str>,
