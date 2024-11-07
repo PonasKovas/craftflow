@@ -5,14 +5,12 @@ use shallowclone::ShallowClone;
 use std::io::Write;
 
 #[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-#[shallowclone(target = "Nbt<T::Target>")]
-pub struct Nbt<#[shallowclone] T = DynNBT> {
+pub struct Nbt<T = DynNBT> {
 	pub inner: T,
 }
 
 #[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-#[shallowclone(target = "AnonymousNbt<T::Target>")]
-pub struct AnonymousNbt<#[shallowclone] T = DynNBT> {
+pub struct AnonymousNbt<T = DynNBT> {
 	pub inner: T,
 }
 

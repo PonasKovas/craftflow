@@ -4,8 +4,7 @@ use shallowclone::ShallowClone;
 use std::{borrow::Cow, io::Write};
 
 #[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-#[shallowclone(target = "Json<T::Target>")]
-pub struct Json<#[shallowclone] T> {
+pub struct Json<T> {
 	pub inner: T,
 }
 

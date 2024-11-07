@@ -3,8 +3,7 @@ use shallowclone::ShallowClone;
 use std::{borrow::Cow, fmt::Debug, io::Write, marker::PhantomData};
 
 #[derive(ShallowClone, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[shallowclone(target = "Array<'shallowclone, LEN, T>")]
-pub struct Array<'a, LEN, T: Clone> {
+pub struct Array<'a, #[shallowclone(skip)] LEN, #[shallowclone(skip)] T: Clone> {
 	pub data: Cow<'a, [T]>,
 	_phantom: PhantomData<LEN>,
 }

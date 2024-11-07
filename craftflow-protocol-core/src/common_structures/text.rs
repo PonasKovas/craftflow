@@ -2,18 +2,30 @@ use serde::{Deserialize, Serialize};
 use shallowclone::ShallowClone;
 use std::{
 	borrow::Cow,
-	ops::{Add, AddAssign},
+	ops::{Add, AddAssign, Deref, DerefMut},
 };
 
 #[derive(
 	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
 )]
-#[shallowclone(target = "Text<'shallowclone, 'b>")]
 #[serde(untagged)]
-pub enum Text<'a, 'b> {
+pub enum Text<'a> {
 	String(Cow<'a, str>),
-	Array(Vec<Text<'a, 'b>>),
-	Object(Box<TextObject<'a, 'b>>),
+	Array(TextList<'a>),
+	Object(Box<TextObject<'a>>),
+}
+
+#[derive(
+	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+)]
+#[serde(untagged)]
+#[shallowclone(cow)]
+pub enum TextList<'a> {
+	#[shallowclone(owned)]
+	Owned(Vec<Text<'a>>),
+	#[serde(skip_deserializing)]
+	#[shallowclone(borrowed)]
+	Borrowed(&'a [Text<'a>]),
 }
 
 #[derive(
@@ -29,13 +41,12 @@ pub enum Text<'a, 'b> {
 	PartialOrd,
 	Ord,
 )]
-#[shallowclone(target = "TextObject<'shallowclone, 'b>")]
 #[serde(rename_all = "camelCase")]
-pub struct TextObject<'a, 'b> {
+pub struct TextObject<'a> {
 	#[serde(flatten)]
-	pub content: TextContent<'a, 'b>,
+	pub content: TextContent<'a>,
 	#[serde(default)]
-	pub extra: Cow<'a, [Text<'b, 'b>]>,
+	pub extra: TextList<'a>,
 	/// The text color, which may be a color name or a #-prefixed hexadecimal RGB specification
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -66,15 +77,14 @@ pub struct TextObject<'a, 'b> {
 	pub click_event: Option<ClickEvent<'a>>,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub hover_event: Option<HoverEvent<'a, 'b>>,
+	pub hover_event: Option<HoverEvent<'a>>,
 }
 
 #[derive(
 	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
 )]
-#[shallowclone(target = "TextContent<'shallowclone, 'b>")]
 #[serde(untagged)]
-pub enum TextContent<'a, 'b> {
+pub enum TextContent<'a> {
 	Text {
 		/// Set as the content directly, with no additional processing.
 		text: Cow<'a, str>,
@@ -86,7 +96,7 @@ pub enum TextContent<'a, 'b> {
 		/// Replacements for placeholders in the translation text.
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		with: Option<Cow<'a, [Text<'b, 'b>]>>,
+		with: Option<TextList<'a>>,
 	},
 	Keybind {
 		/// The name of a keybinding. The client's current setting for the specified keybinding becomes the component's content.
@@ -103,7 +113,7 @@ pub enum TextContent<'a, 'b> {
 		/// Separator to place between results. If omitted, defaults to {"color":"gray","text":", "}
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		separator: Option<Text<'a, 'b>>,
+		separator: Option<Text<'a>>,
 	},
 	Nbt {
 		/// NBT path to be queried.
@@ -115,7 +125,7 @@ pub enum TextContent<'a, 'b> {
 		/// Separator to place between results. If omitted, defaults to {"text":", "}.
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		separator: Option<Text<'a, 'b>>,
+		separator: Option<Text<'a>>,
 		data_source: TextNbtDataSource<'a>,
 	},
 }
@@ -172,20 +182,18 @@ pub enum ClickEventAction {
 #[derive(
 	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
 )]
-#[shallowclone(target = "HoverEvent<'shallowclone, 'b>")]
-pub struct HoverEvent<'a, 'b> {
-	pub action: HoverEventAction<'a, 'b>,
+pub struct HoverEvent<'a> {
+	pub action: HoverEventAction<'a>,
 }
 
 #[derive(
 	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
 )]
-#[shallowclone(target = "HoverEventAction<'shallowclone, 'b>")]
 #[serde(rename_all = "snake_case")]
-pub enum HoverEventAction<'a, 'b> {
+pub enum HoverEventAction<'a> {
 	ShowText {
 		#[serde(flatten)]
-		contents: Text<'a, 'b>,
+		contents: Text<'a>,
 	},
 	ShowItem {
 		#[serde(flatten)]
@@ -228,50 +236,89 @@ pub struct HoverActionShowEntity<'a> {
 	pub name: Option<Cow<'a, str>>,
 }
 
-impl<'a, 'b> Add for Text<'a, 'b> {
-	type Output = Text<'a, 'b>;
+impl<'a> From<Vec<Text<'a>>> for TextList<'a> {
+	fn from(v: Vec<Text<'a>>) -> Self {
+		Self::Owned(v)
+	}
+}
+
+impl<'a> Add for Text<'a> {
+	type Output = Text<'a>;
 
 	fn add(self, rhs: Self) -> Self::Output {
-		Text::Array(vec![
-			// the first one counts as the parent of the following ones, so we add an empty one
-			// to not change any styles
-			Text::String("".into()),
-			self,
-			rhs,
-		])
+		Text::Array(
+			vec![
+				// the first one counts as the parent of the following ones, so we add an empty one
+				// to not change any styles
+				Text::String("".into()),
+				self,
+				rhs,
+			]
+			.into(),
+		)
 	}
 }
 
-impl<'a, 'b> Add<&Text<'a, 'b>> for Text<'a, 'b> {
-	type Output = Text<'a, 'b>;
+impl<'a> Add<&Text<'a>> for Text<'a> {
+	type Output = Text<'a>;
 
 	fn add(self, rhs: &Self) -> Self::Output {
-		Text::Array(vec![
-			// the first one counts as the parent of the following ones, so we add an empty one
-			// to not change any styles
-			Text::String("".into()),
-			self,
-			rhs.clone(),
-		])
+		Text::Array(
+			vec![
+				// the first one counts as the parent of the following ones, so we add an empty one
+				// to not change any styles
+				Text::String("".into()),
+				self,
+				rhs.clone(),
+			]
+			.into(),
+		)
 	}
 }
 
-impl<'a, 'b> AddAssign for Text<'a, 'b> {
+impl<'a> AddAssign for Text<'a> {
 	fn add_assign(&mut self, rhs: Self) {
 		// 🤷
 		*self = self.clone() + rhs;
 	}
 }
 
-impl<'a, 'b> AddAssign<&Text<'a, 'b>> for Text<'a, 'b> {
+impl<'a> AddAssign<&Text<'a>> for Text<'a> {
 	fn add_assign(&mut self, rhs: &Self) {
 		*self = self.clone() + rhs.clone();
 	}
 }
 
-impl<'a, 'b> Default for TextContent<'a, 'b> {
+impl<'a> Default for TextContent<'a> {
 	fn default() -> Self {
 		TextContent::Text { text: "".into() }
+	}
+}
+
+impl<'a> Default for TextList<'a> {
+	fn default() -> Self {
+		TextList::Owned(Vec::new())
+	}
+}
+impl<'a> Deref for TextList<'a> {
+	type Target = [Text<'a>];
+
+	fn deref(&self) -> &Self::Target {
+		match self {
+			TextList::Borrowed(v) => v,
+			TextList::Owned(v) => &v,
+		}
+	}
+}
+impl<'a> DerefMut for TextList<'a> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		match self {
+			TextList::Owned(vec) => vec,
+			TextList::Borrowed(_) => {
+				*self = TextList::Owned(self.to_vec());
+				self
+			}
+		}
 	}
 }
 

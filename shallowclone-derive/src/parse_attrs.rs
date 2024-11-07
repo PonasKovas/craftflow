@@ -44,11 +44,11 @@ impl Attributes {
 		};
 
 		for attr in attrs {
-			if let syn::Meta::List(list) = &attr.meta {
-				if !list.path.is_ident("shallowclone") {
-					continue;
-				}
+			if !attr.path().is_ident("shallowclone") {
+				continue;
+			}
 
+			if let syn::Meta::List(list) = &attr.meta {
 				if let Ok(parsed) = list.parse_args::<Ident>() {
 					match parsed.to_string().as_str() {
 						"skip" => result.skip = true,
@@ -60,6 +60,8 @@ impl Attributes {
 					continue;
 				}
 			}
+
+			panic!("invalid attribute");
 		}
 
 		result
