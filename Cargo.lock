@@ -184,6 +184,7 @@ dependencies = [
  "indexmap",
  "serde",
  "serde_json",
+ "shallowclone",
 ]
 
 [[package]]

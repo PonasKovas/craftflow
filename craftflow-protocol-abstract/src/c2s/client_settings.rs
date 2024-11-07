@@ -3,17 +3,21 @@ use anyhow::{bail, Result};
 use craftflow_protocol_core::datatypes::VarInt;
 use craftflow_protocol_versions::{
 	c2s::{
-		configuration::{settings::v00767::SettingsV00764, Settings},
+		configuration::{settings::v00764::SettingsV00764, Settings},
 		Configuration,
 	},
 	IntoStateEnum, C2S,
 };
-use std::iter::{once, Once};
+use shallowclone::ShallowClone;
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
 /// Client settings, can be send both during configuration or play states.
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbClientSettings {
-	pub locale: String,
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct AbClientSettings<'a> {
+	pub locale: Cow<'a, str>,
 	pub view_distance: u8,
 	pub chat_flags: ChatMode,
 	pub chat_colors: bool,
@@ -23,19 +27,19 @@ pub struct AbClientSettings {
 	pub enable_server_listing: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum ChatMode {
 	Enabled = 0,
 	CommandsOnly,
 	Hidden,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum MainHand {
 	Left = 0,
 	Right,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct SkinParts {
 	pub cape: bool,
 	pub jacket: bool,
@@ -90,15 +94,15 @@ impl SkinParts {
 	}
 }
 
-impl AbPacketWrite for AbClientSettings {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbClientSettings<'a> {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		let pkt = match state {
 			State::Configuration => match protocol_version {
 				764.. => SettingsV00764 {
-					locale: self.locale,
+					locale: self.locale.shallow_clone(),
 					view_distance: self.view_distance as i8,
 					chat_flags: VarInt(self.chat_flags as i32),
 					chat_colors: self.chat_colors,
@@ -117,17 +121,17 @@ impl AbPacketWrite for AbClientSettings {
 	}
 }
 
-impl AbPacketNew for AbClientSettings {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbClientSettings<'a> {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, Self::Direction>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			C2S::Configuration(Configuration::Settings(pkt)) => match pkt {
 				Settings::V00764(pkt) => ConstructorResult::Done(Self {
-					locale: pkt.locale,
+					locale: pkt.locale.shallow_clone(),
 					view_distance: pkt.view_distance as u8,
 					chat_flags: ChatMode::from_byte(pkt.chat_flags.0 as u8)?,
 					chat_colors: pkt.chat_colors,
@@ -137,7 +141,7 @@ impl AbPacketNew for AbClientSettings {
 					enable_server_listing: pkt.enable_server_listing,
 				}),
 			},
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

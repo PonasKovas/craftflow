@@ -31,13 +31,13 @@ pub enum State {
 
 /// Returned by an abstract packet constructor to indicate the result of processing a packet
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-pub enum ConstructorResult<D, C, I> {
+pub enum ConstructorResult<D, C> {
 	/// The constructor is done and the abstract packet is ready
 	Done(D),
 	/// The constructor needs more packets to finish
 	Continue(C),
 	/// The packet was not of use for this constructor
-	Ignore(I),
+	Ignore,
 }
 
 /// Returned by an abstract packet writer to indicate whether the packet can be written for
@@ -50,13 +50,13 @@ pub enum WriteResult<T> {
 	Unsupported,
 }
 
-impl<D, C, I> ConstructorResult<D, C, I> {
+impl<D, C> ConstructorResult<D, C> {
 	/// Maps the inner value of the `Continue` variant
-	pub fn map_continue<T>(self, f: impl FnOnce(C) -> T) -> ConstructorResult<D, T, I> {
+	pub fn map_continue<T>(self, f: impl FnOnce(C) -> T) -> ConstructorResult<D, T> {
 		match self {
 			Self::Done(d) => ConstructorResult::Done(d),
 			Self::Continue(c) => ConstructorResult::Continue(f(c)),
-			Self::Ignore(i) => ConstructorResult::Ignore(i),
+			Self::Ignore => ConstructorResult::Ignore,
 		}
 	}
 	/// Unwraps the `Done` variant, panicking if it's not `Done`

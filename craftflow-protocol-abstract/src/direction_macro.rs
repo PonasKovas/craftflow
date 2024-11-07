@@ -1,11 +1,18 @@
 macro_rules! gen_direction_enum {
-    (@DIRECTION=$direction:ident; $( #[$attr:meta] )* pub enum $name:ident { $( $variant:ident ( $struct:ident ) ),* $(,)? }) => {
+    (
+        @DIRECTION=$direction:ident;
+        $( #[$attr:meta] )*
+        pub enum $name:ident <$($enum_lifetime:lifetime),*> {
+            $( $variant:ident ( $struct:ident $( <$($var_lifetime:lifetime),*> )? ) ),*
+            $(,)?
+        }
+    ) => {
 	    $( #[$attr] )*
-		pub enum $name {
-		    $($variant($struct),)*
+		pub enum $name <$($enum_lifetime),*> {
+		    $($variant($struct $(<$($var_lifetime),*>)? ), )*
 		}
 
-		impl $name {
+		impl<$($enum_lifetime),*> $name <$($enum_lifetime),*> {
 		    /// Returns the str name of the abstract packet for debugging purposes
 		    pub fn variant_name(&self) -> &'static str {
                 match self {
@@ -14,15 +21,15 @@ macro_rules! gen_direction_enum {
             }
 		}
 
-		impl crate::AbPacketWrite for $name {
-            type Direction<'a> = craftflow_protocol_versions::$direction<'a>;
-            type Iter<'a> = Box<dyn Iterator<Item = Self::Direction<'a>> + Send + Sync>;
+		impl<$($enum_lifetime),*> crate::AbPacketWrite<'a> for $name <$($enum_lifetime),*> {
+            type Direction = craftflow_protocol_versions::$direction<'a>;
+            type Iter = Box<dyn Iterator<Item = Self::Direction> + Send + Sync>;
 
-            fn convert<'a>(
+            fn convert(
           		&'a self,
           		protocol_version: u32,
                 state: crate::State,
-           	) -> anyhow::Result<crate::WriteResult<Self::Iter<'a>>> {
+           	) -> anyhow::Result<crate::WriteResult<Self::Iter>> {
                 Ok(match self {
                     $(
                         $name::$variant(inner) => match inner.convert(protocol_version, state)? {

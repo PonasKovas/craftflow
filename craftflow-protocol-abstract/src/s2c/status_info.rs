@@ -3,54 +3,63 @@ use anyhow::Result;
 use craftflow_protocol_core::common_structures::Text;
 use craftflow_protocol_versions::{
 	s2c::{
-		status::{server_info::v00765::ServerInfoV00005, ServerInfo},
+		status::{server_info::v00005::ServerInfoV00005, ServerInfo},
 		Status,
 	},
 	IntoStateEnum, S2C,
 };
 use serde::{Deserialize, Serialize};
+use shallowclone::ShallowClone;
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`][crate::c2s::AbStatusRequestInfo] packet
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(
+	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
+#[shallowclone(target = "AbStatusInfo<'shallowclone, 'b>")]
 #[serde(rename_all = "camelCase")]
-pub struct AbStatusInfo {
+pub struct AbStatusInfo<'a, 'b> {
 	/// The version info about the server (string name, and protocol version)
-	pub version: Version,
+	pub version: Version<'a>,
 	/// Player information, such as online/max and sample
 	#[serde(default)]
-	pub players: Option<Players>,
+	pub players: Option<Players<'a, 'b>>,
 	/// The MOTD of the server
 	#[serde(default)]
-	pub description: Option<Text>,
+	pub description: Option<Text<'a, 'b>>,
 	/// The favicon of the server, if any. This should be the raw PNG data.
 	/// It must be exactly 64x64 pixels.
 	#[serde(with = "favicon")]
 	#[serde(skip_serializing_if = "Option::is_none")]
-	pub favicon: Option<Cow<'static, [u8]>>,
+	pub favicon: Option<Cow<'a, [u8]>>,
 	#[serde(default)]
 	#[serde(skip_serializing_if = "std::ops::Not::not")]
 	pub enforces_secure_chat: bool,
 }
 
 /// Information about the version of the server.
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Version {
+#[derive(
+	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
+pub struct Version<'a> {
 	/// The text name of the version of the server.
 	/// This has no logical significance, only for display.
 	/// You can use legacy formatting here (§c, §l, etc.)
-	pub name: String,
+	pub name: Cow<'a, str>,
 	/// The protocol version of the server. If this doesn't match the client,
 	/// the client will show "outdated server" or "outdated client" in the server list.
 	pub protocol: u32,
 }
 
 /// Information about the players on the server.
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Players {
+#[derive(
+	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
+#[shallowclone(target = "Players<'shallowclone, 'b>")]
+pub struct Players<'a, 'b> {
 	/// The maximum number of players that can connect to the server. Only for display.
 	pub max: i32,
 	/// The number of players currently connected to the server.
@@ -58,24 +67,26 @@ pub struct Players {
 	/// A sample of currently connected players. Shown, when the cursor is over the
 	/// player count in the server list.
 	#[serde(default)]
-	pub sample: Vec<PlayerSample>,
+	pub sample: Cow<'a, PlayerSample<'b>>,
 }
 
 /// An entry in the player sample list in [`Players`]
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct PlayerSample {
+#[derive(
+	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
+pub struct PlayerSample<'a> {
 	/// The username of the player
-	pub name: String,
+	pub name: Cow<'a, str>,
 	/// UUID of the player. Unused by the vanilla client.
 	#[serde(with = "uuid")]
 	pub id: u128,
 }
 
-impl AbPacketWrite for AbStatusInfo {
-	type Direction = S2C;
+impl<'a, 'b> AbPacketWrite<'a> for AbStatusInfo<'a, 'b> {
+	type Direction = S2C<'a, 'b>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, _protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, _protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Status {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -83,25 +94,23 @@ impl AbPacketWrite for AbStatusInfo {
 		// This packet is identical in all protocol versions
 		Ok(WriteResult::Success(once(
 			ServerInfoV00005 {
-				response: serde_json::to_string(&self)?,
+				response: Cow::Owned(serde_json::to_string(&self)?),
 			}
 			.into_state_enum(),
 		)))
 	}
 }
 
-impl AbPacketNew for AbStatusInfo {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a, 'b> AbPacketNew<'a> for AbStatusInfo<'a, 'b> {
+	type Direction = S2C<'a, 'b>;
+	type Constructor = NoConstructor<Self, Self::Direction>;
 
-	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+	fn construct(packet: Self::Direction) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		match packet {
 			S2C::Status(Status::ServerInfo(ServerInfo::V00005(packet))) => Ok(
 				ConstructorResult::Done(serde_json::from_str(&packet.response)?),
 			),
-			_ => Ok(ConstructorResult::Ignore(packet)),
+			_ => Ok(ConstructorResult::Ignore),
 		}
 	}
 }

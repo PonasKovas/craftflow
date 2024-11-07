@@ -1,18 +1,20 @@
 mod gen_impl_code;
-mod get_extra_bounds;
 mod get_target_type;
+mod parse_attrs;
 
 use gen_impl_code::gen_impl_code;
-use get_extra_bounds::get_extra_bounds;
 use get_target_type::get_target_type;
+use parse_attrs::Attributes;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Attribute};
+use syn::parse_macro_input;
 use syn::{DeriveInput, GenericParam};
 
 #[proc_macro_derive(ShallowClone, attributes(shallowclone))]
 pub fn derive(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
+
+	let is_cow = Attributes::parse_item(&input.attrs).cow;
 
 	let target_type = get_target_type(&input);
 
@@ -41,19 +43,19 @@ pub fn derive(input: TokenStream) -> TokenStream {
 		}
 	});
 
-	let extra_user_bounds = get_extra_bounds(&input);
-
 	let extra_bounds = input.generics.params.iter().filter_map(|p| match p {
 		GenericParam::Lifetime(lifetime_param) => {
 			let lifetime = &lifetime_param.lifetime;
 			Some(quote! { #lifetime: 'shallowclone, })
 		}
 		GenericParam::Type(type_param) => {
-			let name = &type_param.ident;
-			if has_shallow_clone_bound(&type_param.attrs) {
-				Some(quote! { #name: ShallowClone<'shallowclone>, })
-			} else {
+			let skip = Attributes::parse_generic(&type_param.attrs).skip;
+
+			if skip {
 				None
+			} else {
+				let name = &type_param.ident;
+				Some(quote! { #name: ShallowClone<'shallowclone>, })
 			}
 		}
 		GenericParam::Const(_const_param) => None,
@@ -62,17 +64,15 @@ pub fn derive(input: TokenStream) -> TokenStream {
 		Some(where_clause) => {
 			quote! {
 				#where_clause,
-				#extra_user_bounds
 				#(#extra_bounds)*
 			}
 		}
 		None => quote! {
-			where #extra_user_bounds
-			#(#extra_bounds)*
+			where #(#extra_bounds)*
 		},
 	};
 
-	let impl_code = gen_impl_code(&input.data);
+	let impl_code = gen_impl_code(&input.ident, &input.data, is_cow);
 	let ident = &input.ident;
 	quote! {
 		impl<'shallowclone, #(#impl_generics),*> ShallowClone<'shallowclone> for #ident #type_generics #where_clause {
@@ -83,10 +83,4 @@ pub fn derive(input: TokenStream) -> TokenStream {
 			}
 		}
 	}.into()
-}
-
-fn has_shallow_clone_bound(attrs: &[Attribute]) -> bool {
-	attrs
-		.iter()
-		.any(|attr| attr.path().is_ident("shallowclone"))
 }
