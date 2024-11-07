@@ -18,14 +18,12 @@ struct Struct {
 }
 
 #[derive(ShallowClone)]
-#[shallowclone(target = "StructGeneric<T::Target>")]
-struct StructGeneric<#[shallowclone] T> {
+struct StructGeneric<T> {
 	field: Option<T>,
 }
 
 #[derive(ShallowClone)]
-#[shallowclone(target = "Enum<'shallowclone, T::Target>")]
-enum Enum<'a, #[shallowclone] T> {
+enum Enum<'a, T> {
 	UnitVariant,
 	TupleVariant(u16, u32, String),
 	StructVariant {
@@ -35,14 +33,22 @@ enum Enum<'a, #[shallowclone] T> {
 	},
 }
 
-#[derive(ShallowClone, Clone)]
-#[shallowclone(target = "Complex<'shallowclone, 'b>")]
-struct Complex<'a, 'b> {
-	field: Cow<'a, [Complex<'b, 'b>]>,
+#[derive(ShallowClone)]
+pub struct Array<'a, #[shallowclone(skip)] T: Clone> {
+	pub data: Cow<'a, [T]>,
 }
 
-#[derive(ShallowClone)]
-#[shallowclone(target = "Array<'shallowclone, T>")]
-pub struct Array<'a, T: Clone> {
-	pub data: Cow<'a, [T]>,
+#[derive(ShallowClone, Clone)]
+struct Complex<'a> {
+	field: ComplexCow<'a>,
+}
+
+#[derive(ShallowClone, Clone)]
+#[shallowclone(cow)]
+enum ComplexCow<'a> {
+	#[allow(dead_code)]
+	#[shallowclone(owned)]
+	Owned(Vec<Complex<'a>>),
+	#[shallowclone(borrowed)]
+	Borrowed(&'a [Complex<'a>]),
 }

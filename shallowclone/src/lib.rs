@@ -22,7 +22,7 @@ where
 	}
 }
 
-impl<'a, 'b, T> ShallowClone<'a> for &'b T
+impl<'a, 'b, T: ?Sized> ShallowClone<'a> for &'b T
 where
 	'b: 'a,
 {
