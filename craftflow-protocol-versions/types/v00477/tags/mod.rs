@@ -30,9 +30,8 @@
 
 define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
-	#[shallowclone(target = "Tags<'shallowclone, 'b>")]
-	pub struct Tags<'a, 'b> {
-		pub tags: Array<'a, VarInt, Tag<'b>>,
+	pub struct Tags<'a> {
+		pub tags: Array<'a, VarInt, Tag<'a>>,
 	}
 }
 
