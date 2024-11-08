@@ -33,12 +33,11 @@
 
 define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone)]
-	#[shallowclone(target = "AddResourcePackV00765<'shallowclone, 'b>")]
-	pub struct AddResourcePackV00765<'a, 'b> {
+	pub struct AddResourcePackV00765<'a> {
 		pub uuid: u128,
 		pub url: Cow<'a, str>,
 		pub hash: Cow<'a, str>,
 		pub forced: bool,
-		pub prompt_message: Option<AnonymousNbt<Text<'a, 'b>>>,
+		pub prompt_message: Option<AnonymousNbt<Text<'a>>>,
 	}
 }

@@ -51,11 +51,10 @@
 
 define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
-	#[shallowclone(target = "SuccessV00766<'shallowclone, 'b>")]
-	pub struct SuccessV00766<'a, 'b> {
+	pub struct SuccessV00766<'a> {
 		pub uuid: u128,
 		pub username: Cow<'a, str>,
-		pub properties: Array<'a, VarInt, Property<'b>>,
+		pub properties: Array<'a, VarInt, Property<'a>>,
 		pub strict_error_handling: bool,
 	}
 }

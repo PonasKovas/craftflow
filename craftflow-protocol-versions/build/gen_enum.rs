@@ -11,11 +11,6 @@ pub fn gen_enum(name: &str, variants: &[Variant]) -> String {
 		.iter()
 		.fold(Generics::new(), |acc, g| acc.union(&g.value_generics));
 
-	let mut target_generics = enum_generics.clone();
-	if !target_generics.0.is_empty() {
-		target_generics.0[0] = "'shallowclone".to_string();
-	}
-	let target_generics = target_generics.as_str();
 	let enum_generics = enum_generics.as_str();
 
 	let mut variants_code = String::new();
@@ -33,7 +28,6 @@ pub fn gen_enum(name: &str, variants: &[Variant]) -> String {
 	format!(
 		r#"
 	#[derive(ShallowClone, Debug, PartialEq, Clone)]
-	#[shallowclone(target = "{name}{target_generics}")]
 	pub enum {name} {enum_generics} {{
         {variants_code}
     }}

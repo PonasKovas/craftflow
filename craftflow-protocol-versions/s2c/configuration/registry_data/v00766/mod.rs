@@ -39,10 +39,9 @@
 
 define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone)]
-	#[shallowclone(target = "RegistryDataV00766<'shallowclone, 'b>")]
-	pub struct RegistryDataV00766<'a, 'b> {
+	pub struct RegistryDataV00766<'a> {
 		pub id: Cow<'a, str>,
-		pub entries: Array<'a, VarInt, Entry<'b>>,
+		pub entries: Array<'a, VarInt, Entry<'a>>,
 	}
 }
 
