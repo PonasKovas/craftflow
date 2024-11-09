@@ -3,7 +3,7 @@ use anyhow::Result;
 use craftflow_protocol_core::datatypes::Array;
 use craftflow_protocol_versions::{
 	s2c::{
-		configuration::{feature_flags::v00767::FeatureFlagsV00764, FeatureFlags},
+		configuration::{feature_flags::v00764::FeatureFlagsV00764, FeatureFlags},
 		Configuration,
 	},
 	IntoStateEnum, S2C,
@@ -17,8 +17,8 @@ pub struct AbConfFeatureFlags {
 	pub trade_rebalance: bool,
 }
 
-impl AbPacketWrite for AbConfFeatureFlags {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbConfFeatureFlags {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
 	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
@@ -28,16 +28,16 @@ impl AbPacketWrite for AbConfFeatureFlags {
 
 		let pkt = match protocol_version {
 			764.. => FeatureFlagsV00764 {
-				features: Array::new({
+				features: Array::from({
 					let mut arr = Vec::new();
 					if self.vanilla {
-						arr.push("minecraft:vanilla".to_string());
+						arr.push("minecraft:vanilla".into());
 					}
 					if self.bundle {
-						arr.push("minecraft:bundle".to_string());
+						arr.push("minecraft:bundle".into());
 					}
 					if self.trade_rebalance {
-						arr.push("minecraft:trade_rebalance".to_string());
+						arr.push("minecraft:trade_rebalance".into());
 					}
 					arr
 				}),
@@ -50,26 +50,25 @@ impl AbPacketWrite for AbConfFeatureFlags {
 	}
 }
 
-impl AbPacketNew for AbConfFeatureFlags {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbConfFeatureFlags {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::FeatureFlags(FeatureFlags::V00764(pkt))) => {
 				ConstructorResult::Done(Self {
-					vanilla: pkt.features.data.iter().any(|x| x == "minecraft:vanilla"),
-					bundle: pkt.features.data.iter().any(|x| x == "minecraft:bundle"),
+					vanilla: pkt.features.iter().any(|x| x == "minecraft:vanilla"),
+					bundle: pkt.features.iter().any(|x| x == "minecraft:bundle"),
 					trade_rebalance: pkt
 						.features
-						.data
 						.iter()
 						.any(|x| x == "minecraft:trade_rebalance"),
 				})
 			}
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

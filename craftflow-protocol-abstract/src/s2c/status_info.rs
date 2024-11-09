@@ -13,23 +13,23 @@ use shallowclone::ShallowClone;
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
+	ops::{Deref, DerefMut},
 };
 
 /// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`][crate::c2s::AbStatusRequestInfo] packet
 #[derive(
 	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
 )]
-#[shallowclone(target = "AbStatusInfo<'shallowclone, 'b>")]
 #[serde(rename_all = "camelCase")]
-pub struct AbStatusInfo<'a, 'b> {
+pub struct AbStatusInfo<'a> {
 	/// The version info about the server (string name, and protocol version)
 	pub version: Version<'a>,
 	/// Player information, such as online/max and sample
 	#[serde(default)]
-	pub players: Option<Players<'a, 'b>>,
+	pub players: Option<Players<'a>>,
 	/// The MOTD of the server
 	#[serde(default)]
-	pub description: Option<Text<'a, 'b>>,
+	pub description: Option<Text<'a>>,
 	/// The favicon of the server, if any. This should be the raw PNG data.
 	/// It must be exactly 64x64 pixels.
 	#[serde(with = "favicon")]
@@ -58,8 +58,7 @@ pub struct Version<'a> {
 #[derive(
 	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
 )]
-#[shallowclone(target = "Players<'shallowclone, 'b>")]
-pub struct Players<'a, 'b> {
+pub struct Players<'a> {
 	/// The maximum number of players that can connect to the server. Only for display.
 	pub max: i32,
 	/// The number of players currently connected to the server.
@@ -67,7 +66,19 @@ pub struct Players<'a, 'b> {
 	/// A sample of currently connected players. Shown, when the cursor is over the
 	/// player count in the server list.
 	#[serde(default)]
-	pub sample: Cow<'a, PlayerSample<'b>>,
+	pub sample: PlayersInner<'a>,
+}
+
+#[derive(
+	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
+#[shallowclone(cow)]
+pub enum PlayersInner<'a> {
+	#[shallowclone(owned)]
+	Owned(Vec<PlayerSample<'a>>),
+	#[shallowclone(borrowed)]
+	#[serde(skip_deserializing)]
+	Borrowed(&'a [PlayerSample<'a>]),
 }
 
 /// An entry in the player sample list in [`Players`]
@@ -82,8 +93,8 @@ pub struct PlayerSample<'a> {
 	pub id: u128,
 }
 
-impl<'a, 'b> AbPacketWrite<'a> for AbStatusInfo<'a, 'b> {
-	type Direction = S2C<'a, 'b>;
+impl<'a> AbPacketWrite<'a> for AbStatusInfo<'a> {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
 	fn convert(&'a self, _protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
@@ -101,16 +112,48 @@ impl<'a, 'b> AbPacketWrite<'a> for AbStatusInfo<'a, 'b> {
 	}
 }
 
-impl<'a, 'b> AbPacketNew<'a> for AbStatusInfo<'a, 'b> {
-	type Direction = S2C<'a, 'b>;
+impl<'a> AbPacketNew<'a> for AbStatusInfo<'a> {
+	type Direction = S2C<'a>;
 	type Constructor = NoConstructor<Self, Self::Direction>;
 
-	fn construct(packet: Self::Direction) -> Result<ConstructorResult<Self, Self::Constructor>> {
+	fn construct(
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		match packet {
 			S2C::Status(Status::ServerInfo(ServerInfo::V00005(packet))) => Ok(
 				ConstructorResult::Done(serde_json::from_str(&packet.response)?),
 			),
 			_ => Ok(ConstructorResult::Ignore),
+		}
+	}
+}
+
+impl<'a> Default for PlayersInner<'a> {
+	fn default() -> Self {
+		Self::Owned(Vec::new())
+	}
+}
+impl<'a> Deref for PlayersInner<'a> {
+	type Target = [PlayerSample<'a>];
+
+	fn deref(&self) -> &Self::Target {
+		match self {
+			PlayersInner::Owned(v) => v,
+			PlayersInner::Borrowed(v) => v,
+		}
+	}
+}
+impl<'a> DerefMut for PlayersInner<'a> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		match self {
+			PlayersInner::Owned(v) => v,
+			PlayersInner::Borrowed(v) => {
+				*self = PlayersInner::Owned(v.to_vec());
+				match self {
+					PlayersInner::Owned(v) => v,
+					PlayersInner::Borrowed(_) => unreachable!(),
+				}
+			}
 		}
 	}
 }
@@ -147,7 +190,7 @@ mod favicon {
 	use serde::Deserialize;
 	use std::borrow::Cow;
 
-	pub fn serialize<S>(id: &Option<Cow<'static, [u8]>>, serializer: S) -> Result<S::Ok, S::Error>
+	pub fn serialize<'a, S>(id: &Option<Cow<'a, [u8]>>, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
 	{

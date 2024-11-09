@@ -8,19 +8,23 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use std::iter::{once, Once};
+use shallowclone::ShallowClone;
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
 /// Sends a plugin request to the client
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbConfPlugin {
+pub struct AbConfPlugin<'a> {
 	/// Channel name of the plugin
-	pub channel: String,
+	pub channel: Cow<'a, str>,
 	/// Any data that the plugin wants to send
-	pub data: Vec<u8>,
+	pub data: Cow<'a, [u8]>,
 }
 
-impl AbPacketWrite for AbConfPlugin {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbConfPlugin<'a> {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
 	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
@@ -31,7 +35,7 @@ impl AbPacketWrite for AbConfPlugin {
 		let pkt = match protocol_version {
 			764.. => CustomPayloadV00764 {
 				channel: self.channel,
-				data: RestBuffer(self.data),
+				data: RestBuffer::from(self.data),
 			}
 			.into_state_enum(),
 			_ => return Ok(WriteResult::Unsupported),
@@ -41,21 +45,21 @@ impl AbPacketWrite for AbConfPlugin {
 	}
 }
 
-impl AbPacketNew for AbConfPlugin {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbConfPlugin<'a> {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::CustomPayload(CustomPayload::V00764(pkt))) => {
 				ConstructorResult::Done(Self {
-					channel: pkt.channel,
-					data: pkt.data.0,
+					channel: pkt.channel.shallow_clone(),
+					data: pkt.data.data.shallow_clone(),
 				})
 			}
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

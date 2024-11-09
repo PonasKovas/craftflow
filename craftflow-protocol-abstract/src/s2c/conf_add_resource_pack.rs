@@ -8,29 +8,26 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
+use shallowclone::ShallowClone;
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 #[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbConfAddResourcePack {
+pub struct AbConfAddResourcePack<'a> {
 	pub uuid: u128,
-	pub url: String,
-	pub hash: String,
+	pub url: Cow<'a, str>,
+	pub hash: Cow<'a, str>,
 	pub forced: bool,
-	pub prompt_message: Option<Text<'static>>,
+	pub prompt_message: Option<Text<'a>>,
 }
 
-impl AbPacketWrite for AbConfAddResourcePack {
-	type Direction<'a> = S2C<'a>;
-	type Iter<'a> = Once<Self::Direction<'a>>;
+impl<'a> AbPacketWrite<'a> for AbConfAddResourcePack<'a> {
+	type Direction = S2C<'a>;
+	type Iter = Once<Self::Direction>;
 
-	fn convert<'a>(
-		&'a self,
-		protocol_version: u32,
-		state: State,
-	) -> Result<WriteResult<Self::Iter<'a>>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -38,10 +35,13 @@ impl AbPacketWrite for AbConfAddResourcePack {
 		let pkt = match protocol_version {
 			765.. => AddResourcePackV00765 {
 				uuid: self.uuid,
-				url: Cow::Borrowed(&self.url),
-				hash: Cow::Borrowed(&self.hash),
+				url: self.url.shallow_clone(),
+				hash: self.hash.shallow_clone(),
 				forced: self.forced,
-				prompt_message: self.prompt_message.map(|m| AnonymousNbt { inner: m }),
+				prompt_message: self
+					.prompt_message
+					.shallow_clone()
+					.map(|m| AnonymousNbt { inner: m }),
 			}
 			.into_state_enum(),
 			_ => return Ok(WriteResult::Unsupported),
@@ -51,24 +51,24 @@ impl AbPacketWrite for AbConfAddResourcePack {
 	}
 }
 
-impl AbPacketNew for AbConfAddResourcePack {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbConfAddResourcePack<'a> {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::AddResourcePack(AddResourcePack::V00765(pkt))) => {
 				ConstructorResult::Done(Self {
 					uuid: pkt.uuid,
-					url: pkt.url,
-					hash: pkt.hash,
+					url: pkt.url.shallow_clone(),
+					hash: pkt.hash.shallow_clone(),
 					forced: pkt.forced,
-					prompt_message: pkt.prompt_message.map(|m| m.inner),
+					prompt_message: pkt.prompt_message.shallow_clone().map(|m| m.inner),
 				})
 			}
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

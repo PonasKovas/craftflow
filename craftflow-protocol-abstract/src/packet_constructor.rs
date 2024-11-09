@@ -22,9 +22,11 @@ pub trait AbPacketConstructor<'a> {
 
 /// A constructor to be used when the packet is never gonna use a constructor.
 /// That means that the abstract packet will always be constructed from a single concrete packet.
-pub struct NoConstructor<P, D>(PhantomData<fn(P, D)>);
+// invariant both over P and D for now, i just dont bother thinking what variance it should be
+// for now. Most likely doesn't even matter.
+pub struct NoConstructor<P, D>(PhantomData<fn(P, D) -> (P, D)>);
 
-impl<'a, P: 'static, D: 'static> AbPacketConstructor<'a> for NoConstructor<P, D> {
+impl<'a, P, D> AbPacketConstructor<'a> for NoConstructor<P, D> {
 	type AbPacket = P;
 	type Direction = D;
 
@@ -32,6 +34,6 @@ impl<'a, P: 'static, D: 'static> AbPacketConstructor<'a> for NoConstructor<P, D>
 		&mut self,
 		_packet: &'a Self::Direction,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>> {
-		Ok(ConstructorResult::Ignore)
+		panic!("called next_packet on NoConstructor")
 	}
 }

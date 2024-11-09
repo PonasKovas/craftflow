@@ -3,18 +3,15 @@
 use crate::{
 	AbPacketConstructor, AbPacketNew, AbPacketWrite, ConstructorResult, State, WriteResult,
 };
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use craftflow_nbt::DynNBT;
 use craftflow_protocol_core::datatypes::{AnonymousNbt, Array, VarInt};
 use craftflow_protocol_versions::{
 	s2c::{
 		configuration::{
 			registry_data::{
-				v00765::{
-					InnerRegistryStructure, RegistryDataV00764, RegistryStructure,
-					RegistryValueStructure,
-				},
-				v00767::{Entry, RegistryDataV00766},
+				v00764::RegistryDataV00764,
+				v00766::{Entry, RegistryDataV00766},
 			},
 			RegistryData,
 		},
@@ -23,65 +20,103 @@ use craftflow_protocol_versions::{
 	IntoStateEnum, S2C,
 };
 use indexmap::IndexMap;
-use std::{collections::HashMap, sync::OnceLock};
+use shallowclone::ShallowClone;
+use std::{borrow::Cow, collections::HashMap, sync::OnceLock};
 
 // Minecraft SLOP
 // why tf is this even being sent
 // half of it is not even being used, other half could just be handled completely on the server
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct AbConfRegistry {
+pub struct AbConfRegistry<'a> {
 	/// Armor trim material registry
-	pub trim_material: IndexMap<String, DynNBT>,
+	pub trim_material: IndexMap<Cow<'a, str>, DynNBT>,
 	/// Armor trim pattern registry
-	pub trim_pattern: IndexMap<String, DynNBT>,
+	pub trim_pattern: IndexMap<Cow<'a, str>, DynNBT>,
 	/// Biome registry
-	pub biome: IndexMap<String, DynNBT>,
+	pub biome: IndexMap<Cow<'a, str>, DynNBT>,
 	/// Chat type registry
-	pub chat_type: IndexMap<String, DynNBT>,
+	pub chat_type: IndexMap<Cow<'a, str>, DynNBT>,
 	/// Damage type registry
-	pub damage_type: IndexMap<String, DynNBT>,
+	pub damage_type: IndexMap<Cow<'a, str>, DynNBT>,
 	/// Dimension type registry
-	pub dimension_type: IndexMap<String, DynNBT>,
+	pub dimension_type: IndexMap<Cow<'a, str>, DynNBT>,
 }
 
-impl From<RegistryStructure> for AbConfRegistry {
-	fn from(mut data: RegistryStructure) -> Self {
-		let mut trim_material = IndexMap::new();
-		let mut trim_pattern = IndexMap::new();
-		let mut biome = IndexMap::new();
-		let mut chat_type = IndexMap::new();
-		let mut damage_type = IndexMap::new();
-		let mut dimension_type = IndexMap::new();
+impl<'a, 'b> TryFrom<&'b DynNBT> for AbConfRegistry<'a> {
+	type Error = anyhow::Error;
+
+	fn try_from(nbt: &DynNBT) -> Result<Self, Self::Error> {
+		let nbt = nbt.as_compound().context("expected NBT to be compound")?;
+
+		let trim_material: IndexMap<_, _>;
+		let trim_pattern: IndexMap<_, _>;
+		let biome: IndexMap<_, _>;
+		let chat_type: IndexMap<_, _>;
+		let damage_type: IndexMap<_, _>;
+		let dimension_type: IndexMap<_, _>;
 
 		macro_rules! populate {
-			($what:ident) => {
-				data.$what.value.sort_unstable_by(|a, b| a.id.cmp(&b.id));
-				for value in data.$what.value {
-					$what.insert(value.name, value.element);
-				}
-			};
+			($id:literal => $what:ident) => {{
+				let mut values = nbt[$id]
+					.as_compound()
+					.context(concat!($id, " expected to be compound"))?["value"]
+					.as_list()
+					.context(concat!($id, " value expected to be list"))?
+					.iter()
+					.map(|v| {
+						let v = v.as_compound().context("expected value to be compound")?;
+						Ok((
+							v["id"].as_int().context("expected id to be int")?,
+							v["name"]
+								.as_string()
+								.context("expected name to be string")?
+								.to_string(),
+							v["element"].shallow_clone(),
+						))
+					})
+					.collect::<Result<Vec<_>, Self::Error>>()
+					.context(concat!("parsing values of ", $id))?;
+				values.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+				$what = values
+					.into_iter()
+					.map(|(_, name, element)| (name.into(), element))
+					.collect();
+			}};
 		}
 
-		populate!(trim_material);
-		populate!(trim_pattern);
-		populate!(biome);
-		populate!(chat_type);
-		populate!(damage_type);
-		populate!(dimension_type);
+		populate!("minecraft:trim_material" => trim_material);
+		populate!("minecraft:trim_pattern" => trim_pattern);
+		populate!("minecraft:worldgen/biome" => biome);
+		populate!("minecraft:chat_type" => chat_type);
+		populate!("minecraft:damage_type" => damage_type);
+		populate!("minecraft:dimension_type" => dimension_type);
 
-		Self {
+		Ok(Self {
 			trim_material,
 			trim_pattern,
 			biome,
 			chat_type,
 			damage_type,
 			dimension_type,
-		}
+		})
 	}
 }
-impl From<AbConfRegistry> for RegistryStructure {
-	fn from(data: AbConfRegistry) -> Self {
+impl<'a, 'b> From<&'b AbConfRegistry<'a>> for DynNBT {
+	fn from(data: &AbConfRegistry<'a>) -> Self {
+		let mut nbt = HashMap::new();
+
+		{
+			let mut values = Vec::new();
+			for (name, element) in data.trim_material {
+				values.push(DynNBT::from(Entry {
+					id: values.len() as i32,
+					name: name.to_string(),
+					element,
+				}));
+			}
+		}
+
 		let mut trim_material = InnerRegistryStructure {
 			registry_type: "minecraft:trim_material".to_string(),
 			value: Vec::new(),
@@ -137,9 +172,9 @@ impl From<AbConfRegistry> for RegistryStructure {
 	}
 }
 
-impl AbConfRegistry {
+impl<'a> AbConfRegistry<'a> {
 	pub fn default() -> Self {
-		static DEFAULT: OnceLock<AbConfRegistry> = OnceLock::new();
+		static DEFAULT: OnceLock<AbConfRegistry<'static>> = OnceLock::new();
 
 		let data = DEFAULT.get_or_init(|| {
 			let json_data = include_str!(concat!(
@@ -147,9 +182,9 @@ impl AbConfRegistry {
 				"/assets/default_registry.json"
 			));
 
-			let raw: RegistryStructure = serde_json::from_str(json_data).unwrap();
+			let raw: DynNBT = serde_json::from_str(json_data).unwrap();
 
-			raw.into()
+			AbConfRegistry::try_from(&raw).unwrap()
 		});
 
 		data.clone()

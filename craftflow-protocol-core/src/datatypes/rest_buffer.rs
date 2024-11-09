@@ -1,56 +1,48 @@
 use crate::{MCPRead, MCPWrite, Result};
 use shallowclone::ShallowClone;
 use std::{
+	borrow::Cow,
 	io::Write,
 	ops::{Deref, DerefMut},
 };
 
 #[derive(ShallowClone, Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-#[shallowclone(cow)]
-pub enum RestBuffer<'a> {
-	#[shallowclone(owned)]
-	Owned(Vec<u8>),
-	#[shallowclone(borrowed)]
-	Borrowed(&'a [u8]),
+pub struct RestBuffer<'a> {
+	pub data: Cow<'a, [u8]>,
 }
 
 impl<'a> RestBuffer<'a> {
 	pub fn new() -> Self {
-		Self::Owned(Vec::new())
+		Self {
+			data: Cow::Owned(Vec::new()),
+		}
+	}
+}
+impl<'a> From<Cow<'a, [u8]>> for RestBuffer<'a> {
+	fn from(t: Cow<'a, [u8]>) -> Self {
+		Self { data: t }
 	}
 }
 impl<'a> From<Vec<u8>> for RestBuffer<'a> {
 	fn from(t: Vec<u8>) -> Self {
-		Self::Owned(t)
+		Cow::<'a, [u8]>::Owned(t).into()
 	}
 }
 impl<'a> From<&'a [u8]> for RestBuffer<'a> {
 	fn from(t: &'a [u8]) -> Self {
-		Self::Borrowed(t)
+		Cow::Borrowed(t).into()
 	}
 }
 impl<'a> Deref for RestBuffer<'a> {
-	type Target = [u8];
+	type Target = Cow<'a, [u8]>;
 
 	fn deref(&self) -> &Self::Target {
-		match self {
-			RestBuffer::Owned(t) => t,
-			RestBuffer::Borrowed(t) => t,
-		}
+		&self.data
 	}
 }
 impl<'a> DerefMut for RestBuffer<'a> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
-		match self {
-			RestBuffer::Owned(t) => t,
-			RestBuffer::Borrowed(t) => {
-				*self = RestBuffer::Owned(t.to_vec());
-				match self {
-					RestBuffer::Owned(t) => t,
-					_ => unreachable!(),
-				}
-			}
-		}
+		&mut self.data
 	}
 }
 

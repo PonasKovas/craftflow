@@ -2,18 +2,19 @@ macro_rules! gen_direction_enum {
     (
         @DIRECTION=$direction:ident;
         $( #[$attr:meta] )*
-        pub enum $name:ident <$($enum_lifetime:lifetime),*> {
-            $( $variant:ident ( $struct:ident $( <$($var_lifetime:lifetime),*> )? ) ),*
+        pub enum $name:ident<'a> {
+            $( $variant:ident ( $struct:ident $( <$var_lifetime:lifetime> )? ) ),*
             $(,)?
         }
     ) => {
 	    $( #[$attr] )*
-		pub enum $name <$($enum_lifetime),*> {
-		    $($variant($struct $(<$($var_lifetime),*>)? ), )*
+		pub enum $name<'a> {
+		    $($variant($struct $(<$var_lifetime>)? ), )*
 		}
 
-		impl<$($enum_lifetime),*> $name <$($enum_lifetime),*> {
+		impl<'a> $name<'a> {
 		    /// Returns the str name of the abstract packet for debugging purposes
+			// todo this might be unused, remove if it is
 		    pub fn variant_name(&self) -> &'static str {
                 match self {
                     $( $name::$variant(_) => stringify!($variant), )*
@@ -21,9 +22,9 @@ macro_rules! gen_direction_enum {
             }
 		}
 
-		impl<$($enum_lifetime),*> crate::AbPacketWrite<'a> for $name <$($enum_lifetime),*> {
+		impl<'a> crate::AbPacketWrite<'a> for $name<'a> {
             type Direction = craftflow_protocol_versions::$direction<'a>;
-            type Iter = Box<dyn Iterator<Item = Self::Direction> + Send + Sync>;
+            type Iter = Box<dyn Iterator<Item = Self::Direction> + Send + Sync + 'a>;
 
             fn convert(
           		&'a self,
@@ -41,74 +42,53 @@ macro_rules! gen_direction_enum {
             }
         }
 
-        impl crate::AbPacketNew for $name {
-            type Direction = craftflow_protocol_versions::$direction;
-            type Constructor = Box<dyn crate::AbPacketConstructor<Direction = Self::Direction, AbPacket = Self> + Send + Sync>;
+        impl<'a> crate::AbPacketNew<'a> for $name<'a> {
+            type Direction = craftflow_protocol_versions::$direction<'a>;
+            type Constructor = Box<dyn crate::AbPacketConstructor<'a,
+                Direction = Self::Direction,
+                AbPacket = Self
+            > + Send + Sync + 'a>;
 
             fn construct(
-                mut packet: Self::Direction,
-            ) -> anyhow::Result<crate::ConstructorResult<Self, Self::Constructor, Self::Direction>> {
-
-
+                packet: &'a Self::Direction,
+            ) -> anyhow::Result<crate::ConstructorResult<Self, Self::Constructor>> {
                 $(
-                    packet = match $struct::construct(packet)? {
+                    match $struct::construct(packet)? {
+                        crate::ConstructorResult::Ignore => {},
                         crate::ConstructorResult::Done(inner) => return Ok(crate::ConstructorResult::Done(Self::$variant(inner))),
                         crate::ConstructorResult::Continue(inner) => {
                             // A constructor wrapper that converts the result to the enum variant
                             #[repr(transparent)]
-                            struct __ConstructorWrapper(<$struct as crate::AbPacketNew>::Constructor);
-                            impl crate::AbPacketConstructor for __ConstructorWrapper {
-                                type Direction = craftflow_protocol_versions::$direction;
-                                type AbPacket = $name;
+                            struct __ConstructorWrapper<'a>(<$struct $(<$var_lifetime>)? as crate::AbPacketNew<'a>>::Constructor);
+                            impl<'b> crate::AbPacketConstructor<'b> for __ConstructorWrapper<'b> {
+                                type Direction = craftflow_protocol_versions::$direction<'b>;
+                                type AbPacket = $name<'b>;
 
                                 fn next_packet(
-                              		self: Box<Self>,
-                              		packet: Self::Direction,
-                               	) -> anyhow::Result<
-                                    crate::ConstructorResult<
-                                        Self::AbPacket,
-                                        Box<dyn crate::AbPacketConstructor<
-                                            AbPacket = Self::AbPacket,
-                                            Direction = Self::Direction
-                                        > + Send + Sync>,
-                                        (Box<dyn crate::AbPacketConstructor<
-                                            AbPacket = Self::AbPacket,
-                                            Direction = Self::Direction
-                                        > + Send + Sync>, Self::Direction)>
-                                > {
-                                    // its safe because the newtype is repr(transparent)
-                                    // this shenanigan is needed because we can't return Self if it's not Sized
-                                    // which forces us to use Box<Self> in the signature
-                                    let inner = unsafe {
-                                        Box::from_raw(Box::into_raw(self) as *mut <$struct as crate::AbPacketNew>::Constructor)
-                                    };
-                                    match crate::AbPacketConstructor::next_packet(inner, packet)? {
-                                        crate::ConstructorResult::Done(inner) =>
-                                            Ok(crate::ConstructorResult::Done($name::$variant(inner))),
-                                        crate::ConstructorResult::Continue(inner) =>
-                                            Ok(crate::ConstructorResult::Continue(unsafe {
-                                                Box::from_raw(Box::into_raw(inner) as *mut Self)
-                                            })),
-                                        crate::ConstructorResult::Ignore((inner, packet)) =>
-                                            Ok(crate::ConstructorResult::Ignore((unsafe {
-                                                Box::from_raw(Box::into_raw(inner) as *mut Self)
-                                            }, packet))),
-                                    }
+                                    &mut self,
+                              		packet: &'b Self::Direction,
+                               	) -> anyhow::Result<crate::ConstructorResult<Self::AbPacket, ()>> {
+                                    Ok(match self.0.next_packet(packet)? {
+                                        crate::ConstructorResult::Done(pkt) =>
+                                            crate::ConstructorResult::Done($name::$variant(pkt)),
+                                        crate::ConstructorResult::Continue(()) =>
+                                            crate::ConstructorResult::Continue(()),
+                                        crate::ConstructorResult::Ignore => crate::ConstructorResult::Ignore,
+                                    })
                                 }
                             }
 
                             return Ok(crate::ConstructorResult::Continue(Box::new(__ConstructorWrapper(inner))))},
-                        crate::ConstructorResult::Ignore(p) => p,
-                    };
+                    }
                 )*
 
-                Ok(crate::ConstructorResult::Ignore(packet))
+                Ok(crate::ConstructorResult::Ignore)
             }
         }
 
         $(
-            impl From<$struct> for $name {
-                fn from(inner: $struct) -> Self {
+            impl<'a> From<$struct $(<$var_lifetime>)? > for $name<'a> {
+                fn from(inner: $struct $(<$var_lifetime>)? ) -> Self {
                     Self::$variant(inner)
                 }
             }
