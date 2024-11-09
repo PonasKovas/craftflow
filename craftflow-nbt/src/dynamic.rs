@@ -716,6 +716,12 @@ impl<'de> Deserialize<'de> for DynNBT<'de> {
 			{
 				deserializer.deserialize_any(self)
 			}
+			fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
+			where
+				D: serde::Deserializer<'de>,
+			{
+				deserializer.deserialize_any(self)
+			}
 		}
 
 		deserializer.deserialize_any(DynNBTVisitor)
