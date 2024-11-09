@@ -15,8 +15,7 @@
 ///    "key" : 5,
 ///    my_key: 123,
 ///    "annotated": #[byte] 1,
-///    // if you want the expression to be something more complex, use parentheses
-///    "complex_expr": ("method calls".to_uppercase() + "and more"),
+///    "complex_expr": "method calls".to_uppercase() + "and more",
 ///    "list_with_annotation": [#[byte] 1, #[byte] 2, #[byte] 3], // all must be the same type
 ///    "inner": {
 ///        "key": true, // NBT doesn't really have bool but you can you use it here and
@@ -34,85 +33,109 @@ macro_rules! dyn_nbt {
 #[macro_export]
 macro_rules! dyn_nbt_internal {
     // list syntax
-    // @list <vec ident> [remaining tokens]
+    // @list <vec ident> (<type annotation>) [remaining tokens]
     //
     // done list
-    (@list $vec:ident []) => {};
+    (@list $vec:ident () []) => {};
     // done list with trailing comma
-    (@list $vec:ident [,]) => {};
-    // list value with annotation
-    (@list $vec:ident [ #[$ty:tt] $value:tt $(, $($tt:tt)* )? ]) => {
-        $vec.push($crate::dyn_nbt_internal!(@annotated $ty $value));
-        $crate::dyn_nbt_internal!(@list $vec [ $( $($tt)* )? ]);
+    (@list $vec:ident () [,]) => {};
+    // list value annotation
+    (@list $vec:ident () [ #[$ty:tt] $($tt:tt)+ ]) => {
+        $crate::dyn_nbt_internal!(@list $vec ($ty) [ $($tt)+ ]);
     };
-    // list value without annotation
-    (@list $vec:ident [ $value:tt $(, $($tt:tt)* )? ]) => {
-        $vec.push($crate::dyn_nbt_internal!($value));
-        $crate::dyn_nbt_internal!(@list $vec [ $( $($tt)* )? ]);
+    // list list
+    (@list $vec:ident ($($ty:tt)?) [ [$($list:tt)*] $(, $($tt:tt)* )? ]) => {
+        $vec.push($crate::dyn_nbt_internal!($(@annotated $ty)? [$($list)*]));
+        $crate::dyn_nbt_internal!(@list $vec () [ $( $($tt)* )? ]);
     };
+    // list compound (compounds cannot be annotated)
+    (@list $vec:ident () [ {$($compound:tt)*} $(, $($tt:tt)* )? ]) => {
+        $vec.push($crate::dyn_nbt_internal!( {$($compound)*} ));
+        $crate::dyn_nbt_internal!(@list $vec () [ $( $($tt)* )? ]);
+    };
+    // list value
+    (@list $vec:ident ($($ty:tt)?) [ $value:expr $(, $($tt:tt)* )? ]) => {
+        $vec.push($crate::dyn_nbt_internal!($(@annotated $ty)? $value));
+        $crate::dyn_nbt_internal!(@list $vec () [ $( $($tt)* )? ]);
+    };
+
     // compound syntax
-    // @compound <hashmap ident> (<key>) {remaining tokens}
+    // @compound <hashmap ident> (<key>) (<type annotation>) {remaining tokens}
     //
     // done compound
-    (@compound $map:ident () {}) => {};
+    (@compound $map:ident () () {}) => {};
     // done compound with trailing comma
-    (@compound $map:ident () {,}) => {};
+    (@compound $map:ident () () {,}) => {};
     // compound literal key
-    (@compound $map:ident () { $key:literal : $($tt:tt)+ }) => {
-        $crate::dyn_nbt_internal!(@compound $map ({$key.to_string()}) { $($tt)+ });
+    (@compound $map:ident () () { $key:literal : $($tt:tt)+ }) => {
+        $crate::dyn_nbt_internal!(@compound $map ($key.to_string()) () { $($tt)+ });
     };
-    // compound with ident key
-    (@compound $map:ident () { $key:ident : $($tt:tt)+ }) => {
-        $crate::dyn_nbt_internal!(@compound $map ($key) { $($tt)+ });
+    // compound ident key
+    (@compound $map:ident () () { $key:ident : $($tt:tt)+ }) => {
+        $crate::dyn_nbt_internal!(@compound $map ($key) () { $($tt)+ });
     };
-    // compound value with annotation
-    (@compound $map:ident ($key:tt) { #[$ty:tt] $value:tt $(, $($tt:tt)* )? }) => {
-        $map.insert($key, $crate::dyn_nbt_internal!(@annotated $ty $value));
-        $crate::dyn_nbt_internal!(@compound $map () { $( $($tt)* )? });
+    // compound value annotation
+    (@compound $map:ident ($key:expr) () { #[$ty:tt] $($tt:tt)+ }) => {
+        $crate::dyn_nbt_internal!(@compound $map ($key) ($ty) { $($tt)+ });
     };
-    // compound value without annotation
-    (@compound $map:ident ($key:tt) { $value:tt $(, $($tt:tt)* )? }) => {
-        $map.insert($key, $crate::dyn_nbt_internal!($value));
-        $crate::dyn_nbt_internal!(@compound $map () { $( $($tt)* )? });
+    // compound list
+    (@compound $map:ident ($key:expr) ($($ty:tt)?) { [$($list:tt)*] $(, $($tt:tt)* )? }) => {
+        $map.insert($key, $crate::dyn_nbt_internal!($(@annotated $ty)? [$($list)*]));
+        $crate::dyn_nbt_internal!(@compound $map () () { $( $($tt)* )? });
     };
+    // compound compound (compounds cannot be annotated)
+    (@compound $map:ident ($key:expr) () { {$($compound:tt)*} $(, $($tt:tt)* )? }) => {
+        $map.insert($key, $crate::dyn_nbt_internal!( {$($compound)*} ));
+        $crate::dyn_nbt_internal!(@compound $map () () { $( $($tt)* )? });
+    };
+    // compound value
+    (@compound $map:ident ($key:expr) ($($ty:tt)?) { $value:expr $(, $($tt:tt)* )? }) => {
+        $map.insert($key, $crate::dyn_nbt_internal!($(@annotated $ty)? $value));
+        $crate::dyn_nbt_internal!(@compound $map () () { $( $($tt)* )? });
+    };
+
 	// annotated type values
-	(@annotated byte $val:tt) => {
+	(@annotated byte $val:expr) => {
 		$crate::DynNBT::Byte($val)
 	};
-	(@annotated short $val:tt) => {
+	(@annotated short $val:expr) => {
 		$crate::DynNBT::Short($val)
 	};
-	(@annotated int $val:tt) => {
+	(@annotated int $val:expr) => {
 		$crate::DynNBT::Int($val)
 	};
-	(@annotated long $val:tt) => {
+	(@annotated long $val:expr) => {
 		$crate::DynNBT::Long($val)
 	};
-	(@annotated float $val:tt) => {
+	(@annotated float $val:expr) => {
 		$crate::DynNBT::Float($val)
 	};
-	(@annotated double $val:tt) => {
+	(@annotated double $val:expr) => {
 		$crate::DynNBT::Double($val)
 	};
-	(@annotated string $val:tt) => {
+	(@annotated string $val:expr) => {
 		$crate::DynNBT::String($val)
 	};
-	(@annotated byte_array [$($val:tt),* $(,)?]) => {
+	(@annotated byte_array [$($val:expr),* $(,)?]) => {
 	    $crate::DynNBT::ByteArray(vec![$($val),*])
 	};
-	(@annotated int_array [$($val:tt),* $(,)?]) => {
+	(@annotated int_array [$($val:expr),* $(,)?]) => {
         $crate::DynNBT::IntArray(vec![$($val),*])
 	};
-	(@annotated long_array [$($val:tt),* $(,)?]) => {
+	(@annotated long_array [$($val:expr),* $(,)?]) => {
 	    $crate::DynNBT::LongArray(vec![$($val),*])
 	};
+
+	// BASE CASES //
+	// ////////// //
+
 	// list
     ([ $( $tt:tt )* ]) => {{
     // ([$( $(#[$ty:tt])? $tt:tt ),* $(,)?]) => {{
         let list = $crate::DynNBT::List({
             #[allow(unused_mut)]
             let mut vec = ::std::vec::Vec::new();
-            $crate::dyn_nbt_internal!(@list vec [$($tt)*]);
+            $crate::dyn_nbt_internal!(@list vec () [$($tt)*]);
             vec
         });
         list.validate().expect("invalid nbt in dyn_nbt! macro");
@@ -123,14 +146,14 @@ macro_rules! dyn_nbt_internal {
         let map = $crate::DynNBT::Compound({
             #[allow(unused_mut)]
             let mut map = ::std::collections::HashMap::new();
-            $crate::dyn_nbt_internal!(@compound map () {$($tt)*});
+            $crate::dyn_nbt_internal!(@compound map () () {$($tt)*});
             map
         });
         map
     }};
 	// annotated type values
-	(#[$ty:tt] $val:tt) => {
-	    $crate::dyn_nbt_internal!(@annotated $ty $val)
+	(#[$ty:tt] $($tt:tt)+) => {
+	    $crate::dyn_nbt_internal!(@annotated $ty $($tt)+)
 	};
 	// Not annotated type values
 	// Anything that DynNBT implements From<T> for
@@ -197,7 +220,7 @@ mod tests {
 		let key = format!("hii");
 		let simple_compound2 = dyn_nbt!({
 			"first": #[byte] 1,
-			key: #[byte] (1+1),
+			key: #[byte] 1+1,
 		});
 		assert_eq!(
 			simple_compound2,
