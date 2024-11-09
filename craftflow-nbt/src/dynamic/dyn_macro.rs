@@ -15,6 +15,8 @@
 ///    "key" : 5,
 ///    my_key: 123,
 ///    "annotated": #[byte] 1,
+///    // if you want the expression to be something more complex, use parentheses
+///    "complex_expr": ("method calls".to_uppercase() + "and more"),
 ///    "list_with_annotation": [#[byte] 1, #[byte] 2, #[byte] 3], // all must be the same type
 ///    "inner": {
 ///        "key": true, // NBT doesn't really have bool but you can you use it here and
@@ -74,42 +76,42 @@ macro_rules! dyn_nbt_internal {
         $crate::dyn_nbt_internal!(@compound $map () { $( $($tt)* )? });
     };
 	// annotated type values
-	(@annotated byte $val:expr) => {
+	(@annotated byte $val:tt) => {
 		$crate::DynNBT::Byte($val)
 	};
-	(@annotated short $val:expr) => {
+	(@annotated short $val:tt) => {
 		$crate::DynNBT::Short($val)
 	};
-	(@annotated int $val:expr) => {
+	(@annotated int $val:tt) => {
 		$crate::DynNBT::Int($val)
 	};
-	(@annotated long $val:expr) => {
+	(@annotated long $val:tt) => {
 		$crate::DynNBT::Long($val)
 	};
-	(@annotated float $val:expr) => {
+	(@annotated float $val:tt) => {
 		$crate::DynNBT::Float($val)
 	};
-	(@annotated double $val:expr) => {
+	(@annotated double $val:tt) => {
 		$crate::DynNBT::Double($val)
 	};
-	(@annotated string $val:expr) => {
+	(@annotated string $val:tt) => {
 		$crate::DynNBT::String($val)
 	};
-	(@annotated byte_array [$($expr:expr),* $(,)?]) => {
-	    $crate::DynNBT::ByteArray(vec![$($expr),*])
+	(@annotated byte_array [$($val:tt),* $(,)?]) => {
+	    $crate::DynNBT::ByteArray(vec![$($val),*])
 	};
-	(@annotated int_array [$($expr:expr),* $(,)?]) => {
-        $crate::DynNBT::IntArray(vec![$($expr),*])
+	(@annotated int_array [$($val:tt),* $(,)?]) => {
+        $crate::DynNBT::IntArray(vec![$($val),*])
 	};
-	(@annotated long_array [$($expr:expr),* $(,)?]) => {
-	    $crate::DynNBT::LongArray(vec![$($expr),*])
+	(@annotated long_array [$($val:tt),* $(,)?]) => {
+	    $crate::DynNBT::LongArray(vec![$($val),*])
 	};
 	// list
     ([ $( $tt:tt )* ]) => {{
     // ([$( $(#[$ty:tt])? $tt:tt ),* $(,)?]) => {{
         let list = $crate::DynNBT::List({
             #[allow(unused_mut)]
-            let mut vec = Vec::new();
+            let mut vec = ::std::vec::Vec::new();
             $crate::dyn_nbt_internal!(@list vec [$($tt)*]);
             vec
         });
@@ -195,7 +197,7 @@ mod tests {
 		let key = format!("hii");
 		let simple_compound2 = dyn_nbt!({
 			"first": #[byte] 1,
-			key: #[byte] 2,
+			key: #[byte] (1+1),
 		});
 		assert_eq!(
 			simple_compound2,
