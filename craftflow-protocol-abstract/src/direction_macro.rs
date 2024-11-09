@@ -58,7 +58,6 @@ macro_rules! gen_direction_enum {
                         crate::ConstructorResult::Done(inner) => return Ok(crate::ConstructorResult::Done(Self::$variant(inner))),
                         crate::ConstructorResult::Continue(inner) => {
                             // A constructor wrapper that converts the result to the enum variant
-                            #[repr(transparent)]
                             struct __ConstructorWrapper<'a>(<$struct $(<$var_lifetime>)? as crate::AbPacketNew<'a>>::Constructor);
                             impl<'b> crate::AbPacketConstructor<'b> for __ConstructorWrapper<'b> {
                                 type Direction = craftflow_protocol_versions::$direction<'b>;

@@ -3,27 +3,133 @@ mod dyn_macro;
 use crate::arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY};
 use serde::{de::VariantAccess, Deserialize, Serialize};
 use shallowclone::ShallowClone;
-use std::collections::HashMap;
+use std::{
+	borrow::Cow,
+	collections::HashMap,
+	ops::{Deref, DerefMut},
+};
 
 /// A structure that can be used to represent any NBT tag dynamically
 #[derive(ShallowClone, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
-pub enum DynNBT {
+pub enum DynNBT<'a> {
 	Long(i64),
 	Int(i32),
 	Short(i16),
 	Byte(i8),
 	Double(f64),
 	Float(f32),
-	String(String),
-	List(Vec<DynNBT>),
-	Compound(HashMap<String, DynNBT>),
-	LongArray(#[serde(with = "crate::arrays::long_array")] Vec<i64>),
-	IntArray(#[serde(with = "crate::arrays::int_array")] Vec<i32>),
-	ByteArray(#[serde(with = "crate::arrays::byte_array")] Vec<u8>),
+	String(#[serde(borrow)] Cow<'a, str>),
+	List(#[serde(borrow)] DynNBTList<'a>),
+	Compound(#[serde(borrow)] DynNBTCompound<'a>),
+	LongArray(
+		#[serde(with = "crate::arrays::long_array")]
+		#[serde(borrow)]
+		Cow<'a, [i64]>,
+	),
+	IntArray(
+		#[serde(with = "crate::arrays::int_array")]
+		#[serde(borrow)]
+		Cow<'a, [i32]>,
+	),
+	ByteArray(
+		#[serde(with = "crate::arrays::byte_array")]
+		#[serde(borrow)]
+		Cow<'a, [u8]>,
+	),
 }
 
-impl DynNBT {
+#[derive(ShallowClone, Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+#[shallowclone(cow)]
+pub enum DynNBTList<'a> {
+	#[shallowclone(owned)]
+	Owned(#[serde(borrow)] Vec<DynNBT<'a>>),
+	#[serde(skip_deserializing)]
+	#[shallowclone(borrowed)]
+	Borrowed(&'a [DynNBT<'a>]),
+}
+impl<'a> From<Vec<DynNBT<'a>>> for DynNBTList<'a> {
+	fn from(v: Vec<DynNBT<'a>>) -> Self {
+		DynNBTList::Owned(v)
+	}
+}
+impl<'a> From<&'a [DynNBT<'a>]> for DynNBTList<'a> {
+	fn from(v: &'a [DynNBT<'a>]) -> Self {
+		DynNBTList::Borrowed(v)
+	}
+}
+impl<'a> Deref for DynNBTList<'a> {
+	type Target = [DynNBT<'a>];
+
+	fn deref(&self) -> &Self::Target {
+		match self {
+			DynNBTList::Owned(t) => t,
+			DynNBTList::Borrowed(t) => t,
+		}
+	}
+}
+impl<'a> DerefMut for DynNBTList<'a> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		match self {
+			DynNBTList::Owned(t) => t,
+			DynNBTList::Borrowed(t) => {
+				*self = DynNBTList::Owned(t.to_owned());
+				match self {
+					DynNBTList::Owned(t) => t,
+					DynNBTList::Borrowed(_) => unreachable!(),
+				}
+			}
+		}
+	}
+}
+
+#[derive(ShallowClone, Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(untagged)]
+#[shallowclone(cow)]
+pub enum DynNBTCompound<'a> {
+	#[shallowclone(owned)]
+	Owned(#[serde(borrow)] HashMap<Cow<'a, str>, DynNBT<'a>>),
+	#[serde(skip_deserializing)]
+	#[shallowclone(borrowed)]
+	Borrowed(#[serde(borrow)] &'a HashMap<Cow<'a, str>, DynNBT<'a>>),
+}
+impl<'a> From<HashMap<Cow<'a, str>, DynNBT<'a>>> for DynNBTCompound<'a> {
+	fn from(v: HashMap<Cow<'a, str>, DynNBT<'a>>) -> Self {
+		DynNBTCompound::Owned(v)
+	}
+}
+impl<'a> From<&'a HashMap<Cow<'a, str>, DynNBT<'a>>> for DynNBTCompound<'a> {
+	fn from(v: &'a HashMap<Cow<'a, str>, DynNBT<'a>>) -> Self {
+		DynNBTCompound::Borrowed(v)
+	}
+}
+impl<'a> Deref for DynNBTCompound<'a> {
+	type Target = HashMap<Cow<'a, str>, DynNBT<'a>>;
+
+	fn deref(&self) -> &Self::Target {
+		match self {
+			DynNBTCompound::Owned(t) => t,
+			DynNBTCompound::Borrowed(t) => t,
+		}
+	}
+}
+impl<'a> DerefMut for DynNBTCompound<'a> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		match self {
+			DynNBTCompound::Owned(t) => t,
+			DynNBTCompound::Borrowed(t) => {
+				*self = DynNBTCompound::Owned(t.to_owned());
+				match self {
+					DynNBTCompound::Owned(t) => t,
+					DynNBTCompound::Borrowed(_) => unreachable!(),
+				}
+			}
+		}
+	}
+}
+
+impl<'a> DynNBT<'a> {
 	/// Recursively validates the NBT structure, making sure that all lists
 	/// have elements only of the same type.
 	pub fn validate(&self) -> Result<(), String> {
@@ -92,37 +198,37 @@ impl DynNBT {
 			_ => None,
 		}
 	}
-	pub fn as_string(&self) -> Option<&String> {
+	pub fn as_string(&self) -> Option<&Cow<'a, str>> {
 		match self {
 			DynNBT::String(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_list(&self) -> Option<&Vec<DynNBT>> {
+	pub fn as_list(&self) -> Option<&DynNBTList<'a>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_compound(&self) -> Option<&HashMap<String, DynNBT>> {
+	pub fn as_compound(&self) -> Option<&DynNBTCompound<'a>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_long_array(&self) -> Option<&Vec<i64>> {
+	pub fn as_long_array(&self) -> Option<&Cow<'a, [i64]>> {
 		match self {
 			DynNBT::LongArray(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_int_array(&self) -> Option<&Vec<i32>> {
+	pub fn as_int_array(&self) -> Option<&Cow<'a, [i32]>> {
 		match self {
 			DynNBT::IntArray(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_byte_array(&self) -> Option<&Vec<u8>> {
+	pub fn as_byte_array(&self) -> Option<&Cow<'a, [u8]>> {
 		match self {
 			DynNBT::ByteArray(v) => Some(v),
 			_ => None,
@@ -164,37 +270,37 @@ impl DynNBT {
 			_ => None,
 		}
 	}
-	pub fn as_mut_string(&mut self) -> Option<&mut String> {
+	pub fn as_mut_string(&mut self) -> Option<&mut Cow<'a, str>> {
 		match self {
 			DynNBT::String(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_mut_list(&mut self) -> Option<&mut Vec<DynNBT>> {
+	pub fn as_mut_list(&mut self) -> Option<&mut DynNBTList<'a>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_mut_compound(&mut self) -> Option<&mut HashMap<String, DynNBT>> {
+	pub fn as_mut_compound(&mut self) -> Option<&mut DynNBTCompound<'a>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_mut_long_array(&mut self) -> Option<&mut Vec<i64>> {
+	pub fn as_mut_long_array(&mut self) -> Option<&mut Cow<'a, [i64]>> {
 		match self {
 			DynNBT::LongArray(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_mut_int_array(&mut self) -> Option<&mut Vec<i32>> {
+	pub fn as_mut_int_array(&mut self) -> Option<&mut Cow<'a, [i32]>> {
 		match self {
 			DynNBT::IntArray(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn as_mut_byte_array(&mut self) -> Option<&mut Vec<u8>> {
+	pub fn as_mut_byte_array(&mut self) -> Option<&mut Cow<'a, [u8]>> {
 		match self {
 			DynNBT::ByteArray(v) => Some(v),
 			_ => None,
@@ -236,37 +342,37 @@ impl DynNBT {
 			_ => None,
 		}
 	}
-	pub fn into_string(self) -> Option<String> {
+	pub fn into_string(self) -> Option<Cow<'a, str>> {
 		match self {
 			DynNBT::String(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn into_list(self) -> Option<Vec<DynNBT>> {
+	pub fn into_list(self) -> Option<DynNBTList<'a>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn into_compound(self) -> Option<HashMap<String, DynNBT>> {
+	pub fn into_compound(self) -> Option<DynNBTCompound<'a>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn into_long_array(self) -> Option<Vec<i64>> {
+	pub fn into_long_array(self) -> Option<Cow<'a, [i64]>> {
 		match self {
 			DynNBT::LongArray(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn into_int_array(self) -> Option<Vec<i32>> {
+	pub fn into_int_array(self) -> Option<Cow<'a, [i32]>> {
 		match self {
 			DynNBT::IntArray(v) => Some(v),
 			_ => None,
 		}
 	}
-	pub fn into_byte_array(self) -> Option<Vec<u8>> {
+	pub fn into_byte_array(self) -> Option<Cow<'a, [u8]>> {
 		match self {
 			DynNBT::ByteArray(v) => Some(v),
 			_ => None,
@@ -308,37 +414,37 @@ impl DynNBT {
 			_ => panic!("Expected Float, found {:?}", self),
 		}
 	}
-	pub fn expect_string(&self) -> &String {
+	pub fn expect_string(&self) -> &Cow<'a, str> {
 		match self {
 			DynNBT::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
 		}
 	}
-	pub fn expect_list(&self) -> &Vec<DynNBT> {
+	pub fn expect_list(&self) -> &DynNBTList<'a> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
-	pub fn expect_compound(&self) -> &HashMap<String, DynNBT> {
+	pub fn expect_compound(&self) -> &DynNBTCompound<'a> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
 		}
 	}
-	pub fn expect_long_array(&self) -> &Vec<i64> {
+	pub fn expect_long_array(&self) -> &Cow<'a, [i64]> {
 		match self {
 			DynNBT::LongArray(v) => v,
 			_ => panic!("Expected LongArray, found {:?}", self),
 		}
 	}
-	pub fn expect_int_array(&self) -> &Vec<i32> {
+	pub fn expect_int_array(&self) -> &Cow<'a, [i32]> {
 		match self {
 			DynNBT::IntArray(v) => v,
 			_ => panic!("Expected IntArray, found {:?}", self),
 		}
 	}
-	pub fn expect_byte_array(&self) -> &Vec<u8> {
+	pub fn expect_byte_array(&self) -> &Cow<'a, [u8]> {
 		match self {
 			DynNBT::ByteArray(v) => v,
 			_ => panic!("Expected ByteArray, found {:?}", self),
@@ -380,37 +486,37 @@ impl DynNBT {
 			_ => panic!("Expected Float, found {:?}", self),
 		}
 	}
-	pub fn expect_mut_string(&mut self) -> &mut String {
+	pub fn expect_mut_string(&mut self) -> &mut Cow<'a, str> {
 		match self {
 			DynNBT::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
 		}
 	}
-	pub fn expect_mut_list(&mut self) -> &mut Vec<DynNBT> {
+	pub fn expect_mut_list(&mut self) -> &mut DynNBTList<'a> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
-	pub fn expect_mut_compound(&mut self) -> &mut HashMap<String, DynNBT> {
+	pub fn expect_mut_compound(&mut self) -> &mut DynNBTCompound<'a> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
 		}
 	}
-	pub fn expect_mut_long_array(&mut self) -> &mut Vec<i64> {
+	pub fn expect_mut_long_array(&mut self) -> &mut Cow<'a, [i64]> {
 		match self {
 			DynNBT::LongArray(v) => v,
 			_ => panic!("Expected LongArray, found {:?}", self),
 		}
 	}
-	pub fn expect_mut_int_array(&mut self) -> &mut Vec<i32> {
+	pub fn expect_mut_int_array(&mut self) -> &mut Cow<'a, [i32]> {
 		match self {
 			DynNBT::IntArray(v) => v,
 			_ => panic!("Expected IntArray, found {:?}", self),
 		}
 	}
-	pub fn expect_mut_byte_array(&mut self) -> &mut Vec<u8> {
+	pub fn expect_mut_byte_array(&mut self) -> &mut Cow<'a, [u8]> {
 		match self {
 			DynNBT::ByteArray(v) => v,
 			_ => panic!("Expected ByteArray, found {:?}", self),
@@ -452,37 +558,37 @@ impl DynNBT {
 			_ => panic!("Expected Float, found {:?}", self),
 		}
 	}
-	pub fn unwrap_string(self) -> String {
+	pub fn unwrap_string(self) -> Cow<'a, str> {
 		match self {
 			DynNBT::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
 		}
 	}
-	pub fn unwrap_list(self) -> Vec<DynNBT> {
+	pub fn unwrap_list(self) -> DynNBTList<'a> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
-	pub fn unwrap_compound(self) -> HashMap<String, DynNBT> {
+	pub fn unwrap_compound(self) -> DynNBTCompound<'a> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
 		}
 	}
-	pub fn unwrap_long_array(self) -> Vec<i64> {
+	pub fn unwrap_long_array(self) -> Cow<'a, [i64]> {
 		match self {
 			DynNBT::LongArray(v) => v,
 			_ => panic!("Expected LongArray, found {:?}", self),
 		}
 	}
-	pub fn unwrap_int_array(self) -> Vec<i32> {
+	pub fn unwrap_int_array(self) -> Cow<'a, [i32]> {
 		match self {
 			DynNBT::IntArray(v) => v,
 			_ => panic!("Expected IntArray, found {:?}", self),
 		}
 	}
-	pub fn unwrap_byte_array(self) -> Vec<u8> {
+	pub fn unwrap_byte_array(self) -> Cow<'a, [u8]> {
 		match self {
 			DynNBT::ByteArray(v) => v,
 			_ => panic!("Expected ByteArray, found {:?}", self),
@@ -496,13 +602,13 @@ impl DynNBT {
 // integers being deserialized as Long (because they can all be converted to i64) if Long is defined first
 // and if for example Byte is defined first, it will deserialize all integers in the range 0-255 as i8 regardless
 // of their original type.
-impl<'de> Deserialize<'de> for DynNBT {
+impl<'de> Deserialize<'de> for DynNBT<'de> {
 	fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 		use serde::de::Error;
 		struct DynNBTVisitor;
 
 		impl<'de> serde::de::Visitor<'de> for DynNBTVisitor {
-			type Value = DynNBT;
+			type Value = DynNBT<'de>;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
 				formatter.write_str("an NBT value")
@@ -526,10 +632,13 @@ impl<'de> Deserialize<'de> for DynNBT {
 				Ok(DynNBT::Double(v))
 			}
 			fn visit_string<E: Error>(self, v: String) -> Result<Self::Value, E> {
-				Ok(DynNBT::String(v))
+				Ok(DynNBT::String(Cow::Owned(v)))
 			}
 			fn visit_str<E: Error>(self, v: &str) -> Result<Self::Value, E> {
-				Ok(DynNBT::String(v.to_owned()))
+				Ok(DynNBT::String(Cow::Owned(v.to_owned())))
+			}
+			fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E> {
+				Ok(DynNBT::String(Cow::Borrowed(v)))
 			}
 			fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
 			where
@@ -540,7 +649,7 @@ impl<'de> Deserialize<'de> for DynNBT {
 					vec.push(elem);
 				}
 
-				Ok(DynNBT::List(vec))
+				Ok(DynNBT::List(DynNBTList::Owned(vec)))
 			}
 			fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
 			where
@@ -550,7 +659,7 @@ impl<'de> Deserialize<'de> for DynNBT {
 				while let Some((key, value)) = map.next_entry()? {
 					hash_map.insert(key, value);
 				}
-				Ok(DynNBT::Compound(hash_map))
+				Ok(DynNBT::Compound(DynNBTCompound::Owned(hash_map)))
 			}
 			fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
 			where
@@ -593,10 +702,13 @@ impl<'de> Deserialize<'de> for DynNBT {
 				self.visit_i64(v as i64)
 			}
 			fn visit_bytes<E: Error>(self, v: &[u8]) -> Result<Self::Value, E> {
-				Ok(DynNBT::ByteArray(v.to_vec()))
+				Ok(DynNBT::ByteArray(Cow::Owned(v.to_vec())))
+			}
+			fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E> {
+				Ok(DynNBT::ByteArray(Cow::Borrowed(v)))
 			}
 			fn visit_byte_buf<E: Error>(self, v: Vec<u8>) -> Result<Self::Value, E> {
-				Ok(DynNBT::ByteArray(v))
+				Ok(DynNBT::ByteArray(Cow::Owned(v)))
 			}
 			fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error>
 			where
@@ -610,84 +722,110 @@ impl<'de> Deserialize<'de> for DynNBT {
 	}
 }
 
-impl From<bool> for DynNBT {
+impl<'a> From<bool> for DynNBT<'a> {
 	fn from(value: bool) -> Self {
 		Self::Byte(value as i8)
 	}
 }
-impl From<i8> for DynNBT {
+impl<'a> From<i8> for DynNBT<'a> {
 	fn from(value: i8) -> Self {
 		Self::Byte(value)
 	}
 }
-impl From<u8> for DynNBT {
+impl<'a> From<u8> for DynNBT<'a> {
 	fn from(value: u8) -> Self {
 		Self::Byte(value as i8)
 	}
 }
-impl From<i16> for DynNBT {
+impl<'a> From<i16> for DynNBT<'a> {
 	fn from(value: i16) -> Self {
 		Self::Short(value)
 	}
 }
-impl From<u16> for DynNBT {
+impl<'a> From<u16> for DynNBT<'a> {
 	fn from(value: u16) -> Self {
 		Self::Short(value as i16)
 	}
 }
-impl From<i32> for DynNBT {
+impl<'a> From<i32> for DynNBT<'a> {
 	fn from(value: i32) -> Self {
 		Self::Int(value)
 	}
 }
-impl From<u32> for DynNBT {
+impl<'a> From<u32> for DynNBT<'a> {
 	fn from(value: u32) -> Self {
 		Self::Int(value as i32)
 	}
 }
-impl From<i64> for DynNBT {
+impl<'a> From<i64> for DynNBT<'a> {
 	fn from(value: i64) -> Self {
 		Self::Long(value)
 	}
 }
-impl From<u64> for DynNBT {
+impl<'a> From<u64> for DynNBT<'a> {
 	fn from(value: u64) -> Self {
 		Self::Long(value as i64)
 	}
 }
-impl From<f32> for DynNBT {
+impl<'a> From<f32> for DynNBT<'a> {
 	fn from(value: f32) -> Self {
 		Self::Float(value)
 	}
 }
-impl From<f64> for DynNBT {
+impl<'a> From<f64> for DynNBT<'a> {
 	fn from(value: f64) -> Self {
 		Self::Double(value)
 	}
 }
-impl From<String> for DynNBT {
+impl<'a> From<String> for DynNBT<'a> {
 	fn from(value: String) -> Self {
-		Self::String(value)
+		Self::String(Cow::Owned(value))
 	}
 }
-impl From<&str> for DynNBT {
-	fn from(value: &str) -> Self {
-		Self::String(value.to_string())
+impl<'a> From<&'a str> for DynNBT<'a> {
+	fn from(value: &'a str) -> Self {
+		Self::String(Cow::Borrowed(value))
 	}
 }
-impl<T: Into<DynNBT>> From<Vec<T>> for DynNBT {
+impl<'a, T: Into<DynNBT<'a>>> From<Vec<T>> for DynNBT<'a> {
 	fn from(value: Vec<T>) -> Self {
-		Self::List(value.into_iter().map(Into::into).collect())
+		Self::List(DynNBTList::Owned(
+			value.into_iter().map(Into::into).collect(),
+		))
 	}
 }
-impl<T: Into<DynNBT>> From<HashMap<String, T>> for DynNBT {
+impl<'a, T: Into<DynNBT<'a>>> From<HashMap<Cow<'a, str>, T>> for DynNBT<'a> {
+	fn from(value: HashMap<Cow<'a, str>, T>) -> Self {
+		Self::Compound(DynNBTCompound::Owned(
+			value.into_iter().map(|(k, v)| (k, v.into())).collect(),
+		))
+	}
+}
+impl<'a, T: Into<DynNBT<'a>>> From<HashMap<String, T>> for DynNBT<'a> {
 	fn from(value: HashMap<String, T>) -> Self {
-		Self::Compound(value.into_iter().map(|(k, v)| (k, v.into())).collect())
+		Self::Compound(DynNBTCompound::Owned(
+			value
+				.into_iter()
+				.map(|(k, v)| (Cow::Owned(k), v.into()))
+				.collect(),
+		))
+	}
+}
+impl<'a, T: Into<DynNBT<'a>>> From<HashMap<&'a str, T>> for DynNBT<'a> {
+	fn from(value: HashMap<&'a str, T>) -> Self {
+		Self::Compound(DynNBTCompound::Owned(
+			value
+				.into_iter()
+				.map(|(k, v)| (Cow::Borrowed(k), v.into()))
+				.collect(),
+		))
 	}
 }
 
 #[cfg(test)]
 mod tests {
+	use std::collections::HashMap;
+
 	use super::DynNBT;
 	use crate::{from_slice, tests::display_byte_buffer, to_writer};
 
@@ -696,28 +834,30 @@ mod tests {
 		let mut buffer = Vec::new();
 		let value = DynNBT::Compound(
 			vec![
-				("byte".to_string(), DynNBT::Byte(42)),
-				("short".to_string(), DynNBT::Short(42)),
-				("int".to_string(), DynNBT::Int(42)),
-				("long".to_string(), DynNBT::Long(42)),
-				("float".to_string(), DynNBT::Float(42.0)),
-				("double".to_string(), DynNBT::Double(42.0)),
-				("byte_array".to_string(), DynNBT::ByteArray(vec![42])),
-				("string".to_string(), DynNBT::String("42".to_string())),
-				("list".to_string(), DynNBT::List(vec![DynNBT::Short(42)])),
+				("byte".into(), DynNBT::Byte(42)),
+				("short".into(), DynNBT::Short(42)),
+				("int".into(), DynNBT::Int(42)),
+				("long".into(), DynNBT::Long(42)),
+				("float".into(), DynNBT::Float(42.0)),
+				("double".into(), DynNBT::Double(42.0)),
+				("byte_array".into(), DynNBT::ByteArray(vec![42].into())),
+				("string".into(), DynNBT::String("42".into())),
+				("list".into(), DynNBT::List(vec![DynNBT::Short(42)].into())),
 				(
-					"compound".to_string(),
+					"compound".into(),
 					DynNBT::Compound(
-						vec![("byte".to_string(), DynNBT::Byte(42))]
+						vec![("byte".into(), DynNBT::Byte(42))]
 							.into_iter()
-							.collect(),
+							.collect::<HashMap<_, _>>()
+							.into(),
 					),
 				),
-				("int_array".to_string(), DynNBT::IntArray(vec![42])),
-				("long_array".to_string(), DynNBT::LongArray(vec![42])),
+				("int_array".into(), DynNBT::IntArray(vec![42].into())),
+				("long_array".into(), DynNBT::LongArray(vec![42].into())),
 			]
 			.into_iter()
-			.collect(),
+			.collect::<HashMap<_, _>>()
+			.into(),
 		);
 		to_writer(&mut buffer, &value).unwrap();
 		let (input, reconstructed): (&[u8], DynNBT) = from_slice(&buffer).unwrap();

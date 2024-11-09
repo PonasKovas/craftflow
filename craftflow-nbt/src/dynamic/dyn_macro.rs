@@ -10,12 +10,12 @@
 /// let list = dyn_nbt!([1, 2, 3]); // DynNBT::List(vec![DynNBT::Int(1), DynNBT::Int(2), DynNBT::Int(3)])
 /// let spec_list = dyn_nbt!(#[long_array] [1, 2, 3]); // DynNBT::LongArray(vec![1, 2, 3])
 ///
-/// let my_key = "dynamic key".to_string();
+/// let my_key = "dynamic key".into(); // all strings (key or value) must be Cow<'a, str>
 /// let compound = dyn_nbt!({
 ///    "key" : 5,
 ///    my_key: 123,
 ///    "annotated": #[byte] 1,
-///    "complex_expr": "method calls".to_uppercase() + "and more",
+///    "complex_expr": 2i32.pow(8) + 49,
 ///    "list_with_annotation": [#[byte] 1, #[byte] 2, #[byte] 3], // all must be the same type
 ///    "inner": {
 ///        "key": true, // NBT doesn't really have bool but you can you use it here and
@@ -68,7 +68,7 @@ macro_rules! dyn_nbt_internal {
     (@compound $map:ident () () {,}) => {};
     // compound literal key
     (@compound $map:ident () () { $key:literal : $($tt:tt)+ }) => {
-        $crate::dyn_nbt_internal!(@compound $map ($key.to_string()) () { $($tt)+ });
+        $crate::dyn_nbt_internal!(@compound $map (::std::borrow::Cow::Borrowed($key)) () { $($tt)+ });
     };
     // compound ident key
     (@compound $map:ident () () { $key:ident : $($tt:tt)+ }) => {
@@ -113,17 +113,20 @@ macro_rules! dyn_nbt_internal {
 	(@annotated double $val:expr) => {
 		$crate::DynNBT::Double($val)
 	};
+	(@annotated string $val:literal) => {
+		$crate::DynNBT::String(::std::borrow::Cow::Borrowed($val))
+	};
 	(@annotated string $val:expr) => {
 		$crate::DynNBT::String($val)
 	};
 	(@annotated byte_array [$($val:expr),* $(,)?]) => {
-	    $crate::DynNBT::ByteArray(vec![$($val),*])
+	    $crate::DynNBT::ByteArray(::std::borrow::Cow::Owned(vec![$($val),*]))
 	};
 	(@annotated int_array [$($val:expr),* $(,)?]) => {
-        $crate::DynNBT::IntArray(vec![$($val),*])
+        $crate::DynNBT::IntArray(::std::borrow::Cow::Owned(vec![$($val),*]))
 	};
 	(@annotated long_array [$($val:expr),* $(,)?]) => {
-	    $crate::DynNBT::LongArray(vec![$($val),*])
+	    $crate::DynNBT::LongArray(::std::borrow::Cow::Owned(vec![$($val),*]))
 	};
 
 	// BASE CASES //
@@ -136,7 +139,7 @@ macro_rules! dyn_nbt_internal {
             #[allow(unused_mut)]
             let mut vec = ::std::vec::Vec::new();
             $crate::dyn_nbt_internal!(@list vec () [$($tt)*]);
-            vec
+            $crate::dynamic::DynNBTList::Owned(vec)
         });
         list.validate().expect("invalid nbt in dyn_nbt! macro");
         list
@@ -147,7 +150,7 @@ macro_rules! dyn_nbt_internal {
             #[allow(unused_mut)]
             let mut map = ::std::collections::HashMap::new();
             $crate::dyn_nbt_internal!(@compound map () () {$($tt)*});
-            map
+            $crate::dynamic::DynNBTCompound::Owned(map)
         });
         map
     }};
@@ -165,7 +168,7 @@ macro_rules! dyn_nbt_internal {
 #[cfg(test)]
 mod tests {
 	use crate::DynNBT;
-	use std::collections::HashMap;
+	use std::{borrow::Cow, collections::HashMap};
 
 	#[test]
 	fn test_macro() {
@@ -181,7 +184,7 @@ mod tests {
 		let list = dyn_nbt!([1, 3, 5]);
 		assert_eq!(
 			list,
-			DynNBT::List(vec![DynNBT::Int(1), DynNBT::Int(3), DynNBT::Int(5)])
+			DynNBT::List(vec![DynNBT::Int(1), DynNBT::Int(3), DynNBT::Int(5)].into())
 		);
 
 		let annotated_list = dyn_nbt!([
@@ -194,14 +197,14 @@ mod tests {
 		]);
 		assert_eq!(
 			annotated_list,
-			DynNBT::List(vec![DynNBT::Short(1), DynNBT::Short(3), DynNBT::Short(5)])
+			DynNBT::List(vec![DynNBT::Short(1), DynNBT::Short(3), DynNBT::Short(5)].into())
 		);
 
 		let spec_list = dyn_nbt!(
 			#[long_array]
 			[1, 3, 5]
 		);
-		assert_eq!(spec_list, DynNBT::LongArray(vec![1, 3, 5]));
+		assert_eq!(spec_list, DynNBT::LongArray(vec![1, 3, 5].into()));
 
 		let simple_compound = dyn_nbt!({
 			"first": 1,
@@ -211,13 +214,13 @@ mod tests {
 			simple_compound,
 			DynNBT::Compound({
 				let mut map = HashMap::new();
-				map.insert("first".to_string(), DynNBT::Int(1));
-				map.insert("second".to_string(), DynNBT::Int(2));
-				map
+				map.insert("first".into(), DynNBT::Int(1));
+				map.insert("second".into(), DynNBT::Int(2));
+				map.into()
 			})
 		);
 
-		let key = format!("hii");
+		let key: Cow<'static, str> = "hii".into();
 		let simple_compound2 = dyn_nbt!({
 			"first": #[byte] 1,
 			key: #[byte] 1+1,
@@ -226,9 +229,9 @@ mod tests {
 			simple_compound2,
 			DynNBT::Compound({
 				let mut map = HashMap::new();
-				map.insert("first".to_string(), DynNBT::Byte(1));
-				map.insert("hii".to_string(), DynNBT::Byte(2));
-				map
+				map.insert("first".into(), DynNBT::Byte(1));
+				map.insert("hii".into(), DynNBT::Byte(2));
+				map.into()
 			})
 		);
 
@@ -249,36 +252,47 @@ mod tests {
 			complex_compound,
 			DynNBT::Compound(
 				vec![(
-					"first".to_string(),
+					"first".into(),
 					DynNBT::Compound(
 						vec![(
-							"inner0".to_string(),
+							"inner0".into(),
 							DynNBT::Compound(
 								vec![(
-									"inner1".to_string(),
+									"inner1".into(),
 									DynNBT::Compound(
 										vec![(
-											"inner2".to_string(),
-											DynNBT::List(vec![DynNBT::Compound(
-												vec![("inner4".to_string(), DynNBT::List(vec![]))]
+											"inner2".into(),
+											DynNBT::List(
+												vec![DynNBT::Compound(
+													vec![(
+														"inner4".into(),
+														DynNBT::List(vec![].into())
+													)]
 													.into_iter()
-													.collect()
-											)])
+													.collect::<HashMap<_, _>>()
+													.into()
+												)]
+												.into()
+											)
 										)]
 										.into_iter()
-										.collect()
+										.collect::<HashMap<_, _>>()
+										.into()
 									)
 								)]
 								.into_iter()
-								.collect()
+								.collect::<HashMap<_, _>>()
+								.into()
 							)
 						)]
 						.into_iter()
-						.collect()
+						.collect::<HashMap<_, _>>()
+						.into()
 					)
 				)]
 				.into_iter()
-				.collect()
+				.collect::<HashMap<_, _>>()
+				.into()
 			)
 		);
 	}

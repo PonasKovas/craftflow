@@ -4,7 +4,7 @@ use crate::{
 	AbPacketConstructor, AbPacketNew, AbPacketWrite, ConstructorResult, State, WriteResult,
 };
 use anyhow::{bail, Context, Result};
-use craftflow_nbt::DynNBT;
+use craftflow_nbt::{dyn_nbt, DynNBT};
 use craftflow_protocol_core::datatypes::{AnonymousNbt, Array, VarInt};
 use craftflow_protocol_versions::{
 	s2c::{
@@ -108,39 +108,46 @@ impl<'a, 'b> From<&'b AbConfRegistry<'a>> for DynNBT {
 
 		{
 			let mut values = Vec::new();
-			for (name, element) in data.trim_material {
-				values.push(DynNBT::from(Entry {
-					id: values.len() as i32,
-					name: name.to_string(),
-					element,
+			for (i, (name, element)) in data.trim_material.iter().enumerate() {
+				values.push(dyn_nbt!({
+					"name": name.to_string(),
+					"id": i as i32,
+					"element": element.shallow_clone(),
 				}));
 			}
+			nbt.insert(
+				"minecraft:trim_material".to_string(),
+				dyn_nbt!({
+					"type": "minecraft:trim_material".to_string(),
+					"value": values,
+				}),
+			);
 		}
 
-		let mut trim_material = InnerRegistryStructure {
-			registry_type: "minecraft:trim_material".to_string(),
-			value: Vec::new(),
-		};
-		let mut trim_pattern = InnerRegistryStructure {
-			registry_type: "minecraft:trim_pattern".to_string(),
-			value: Vec::new(),
-		};
-		let mut biome = InnerRegistryStructure {
-			registry_type: "minecraft:worldgen/biome".to_string(),
-			value: Vec::new(),
-		};
-		let mut chat_type = InnerRegistryStructure {
-			registry_type: "minecraft:chat_type".to_string(),
-			value: Vec::new(),
-		};
-		let mut damage_type = InnerRegistryStructure {
-			registry_type: "minecraft:damage_type".to_string(),
-			value: Vec::new(),
-		};
-		let mut dimension_type = InnerRegistryStructure {
-			registry_type: "minecraft:dimension_type".to_string(),
-			value: Vec::new(),
-		};
+		// let mut trim_material = InnerRegistryStructure {
+		// 	registry_type: "minecraft:trim_material".to_string(),
+		// 	value: Vec::new(),
+		// };
+		// let mut trim_pattern = InnerRegistryStructure {
+		// 	registry_type: "minecraft:trim_pattern".to_string(),
+		// 	value: Vec::new(),
+		// };
+		// let mut biome = InnerRegistryStructure {
+		// 	registry_type: "minecraft:worldgen/biome".to_string(),
+		// 	value: Vec::new(),
+		// };
+		// let mut chat_type = InnerRegistryStructure {
+		// 	registry_type: "minecraft:chat_type".to_string(),
+		// 	value: Vec::new(),
+		// };
+		// let mut damage_type = InnerRegistryStructure {
+		// 	registry_type: "minecraft:damage_type".to_string(),
+		// 	value: Vec::new(),
+		// };
+		// let mut dimension_type = InnerRegistryStructure {
+		// 	registry_type: "minecraft:dimension_type".to_string(),
+		// 	value: Vec::new(),
+		// };
 
 		macro_rules! populate {
 			($what:ident) => {
@@ -154,21 +161,14 @@ impl<'a, 'b> From<&'b AbConfRegistry<'a>> for DynNBT {
 			};
 		}
 
-		populate!(trim_material);
-		populate!(trim_pattern);
-		populate!(biome);
-		populate!(chat_type);
-		populate!(damage_type);
-		populate!(dimension_type);
+		// populate!(trim_material);
+		// populate!(trim_pattern);
+		// populate!(biome);
+		// populate!(chat_type);
+		// populate!(damage_type);
+		// populate!(dimension_type);
 
-		Self {
-			trim_material,
-			trim_pattern,
-			biome,
-			chat_type,
-			damage_type,
-			dimension_type,
-		}
+		Self::Compound(nbt)
 	}
 }
 

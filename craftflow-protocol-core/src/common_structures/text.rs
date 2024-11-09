@@ -241,6 +241,11 @@ impl<'a> From<Vec<Text<'a>>> for TextList<'a> {
 		Self::Owned(v)
 	}
 }
+impl<'a> From<&'a [Text<'a>]> for TextList<'a> {
+	fn from(v: &'a [Text<'a>]) -> Self {
+		Self::Borrowed(v)
+	}
+}
 
 impl<'a> Add for Text<'a> {
 	type Output = Text<'a>;
