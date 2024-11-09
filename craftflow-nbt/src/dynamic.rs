@@ -1,3 +1,5 @@
+mod dyn_macro;
+
 use crate::arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY};
 use serde::{de::VariantAccess, Deserialize, Serialize};
 use shallowclone::ShallowClone;
@@ -22,6 +24,38 @@ pub enum DynNBT {
 }
 
 impl DynNBT {
+	/// Recursively validates the NBT structure, making sure that all lists
+	/// have elements only of the same type.
+	pub fn validate(&self) -> Result<(), String> {
+		match self {
+			DynNBT::List(list) => {
+				if list.is_empty() {
+					return Ok(());
+				}
+				let first_tag = std::mem::discriminant(list.first().unwrap());
+				for element in list.iter() {
+					if std::mem::discriminant(element) != first_tag {
+						return Err(format!("elements in list are not of the same type"));
+					}
+					element.validate()?;
+				}
+				Ok(())
+			}
+			DynNBT::Compound(compound) => {
+				if compound.is_empty() {
+					return Ok(());
+				}
+				for (name, element) in compound.iter() {
+					match element.validate() {
+						Ok(_) => {}
+						Err(e) => return Err(format!("{name}: {e}")),
+					}
+				}
+				Ok(())
+			}
+			_ => Ok(()),
+		}
+	}
 	pub fn as_long(&self) -> Option<i64> {
 		match self {
 			DynNBT::Long(v) => Some(*v),
@@ -471,7 +505,7 @@ impl<'de> Deserialize<'de> for DynNBT {
 			type Value = DynNBT;
 
 			fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-				formatter.write_str("a valid NBT value")
+				formatter.write_str("an NBT value")
 			}
 			fn visit_i8<E: Error>(self, v: i8) -> Result<Self::Value, E> {
 				Ok(DynNBT::Byte(v))
@@ -573,6 +607,82 @@ impl<'de> Deserialize<'de> for DynNBT {
 		}
 
 		deserializer.deserialize_any(DynNBTVisitor)
+	}
+}
+
+impl From<bool> for DynNBT {
+	fn from(value: bool) -> Self {
+		Self::Byte(value as i8)
+	}
+}
+impl From<i8> for DynNBT {
+	fn from(value: i8) -> Self {
+		Self::Byte(value)
+	}
+}
+impl From<u8> for DynNBT {
+	fn from(value: u8) -> Self {
+		Self::Byte(value as i8)
+	}
+}
+impl From<i16> for DynNBT {
+	fn from(value: i16) -> Self {
+		Self::Short(value)
+	}
+}
+impl From<u16> for DynNBT {
+	fn from(value: u16) -> Self {
+		Self::Short(value as i16)
+	}
+}
+impl From<i32> for DynNBT {
+	fn from(value: i32) -> Self {
+		Self::Int(value)
+	}
+}
+impl From<u32> for DynNBT {
+	fn from(value: u32) -> Self {
+		Self::Int(value as i32)
+	}
+}
+impl From<i64> for DynNBT {
+	fn from(value: i64) -> Self {
+		Self::Long(value)
+	}
+}
+impl From<u64> for DynNBT {
+	fn from(value: u64) -> Self {
+		Self::Long(value as i64)
+	}
+}
+impl From<f32> for DynNBT {
+	fn from(value: f32) -> Self {
+		Self::Float(value)
+	}
+}
+impl From<f64> for DynNBT {
+	fn from(value: f64) -> Self {
+		Self::Double(value)
+	}
+}
+impl From<String> for DynNBT {
+	fn from(value: String) -> Self {
+		Self::String(value)
+	}
+}
+impl From<&str> for DynNBT {
+	fn from(value: &str) -> Self {
+		Self::String(value.to_string())
+	}
+}
+impl<T: Into<DynNBT>> From<Vec<T>> for DynNBT {
+	fn from(value: Vec<T>) -> Self {
+		Self::List(value.into_iter().map(Into::into).collect())
+	}
+}
+impl<T: Into<DynNBT>> From<HashMap<String, T>> for DynNBT {
+	fn from(value: HashMap<String, T>) -> Self {
+		Self::Compound(value.into_iter().map(|(k, v)| (k, v.into())).collect())
 	}
 }
 
