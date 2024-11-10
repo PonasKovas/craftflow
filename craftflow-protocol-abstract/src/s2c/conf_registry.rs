@@ -30,24 +30,24 @@ use std::{borrow::Cow, collections::HashMap, sync::OnceLock};
 #[derive(Debug, Clone, PartialEq)]
 pub struct AbConfRegistry<'a> {
 	/// Armor trim material registry
-	pub trim_material: IndexMap<Cow<'a, str>, DynNBT>,
+	pub trim_material: IndexMap<Cow<'a, str>, DynNBT<'a>>,
 	/// Armor trim pattern registry
-	pub trim_pattern: IndexMap<Cow<'a, str>, DynNBT>,
+	pub trim_pattern: IndexMap<Cow<'a, str>, DynNBT<'a>>,
 	/// Biome registry
-	pub biome: IndexMap<Cow<'a, str>, DynNBT>,
+	pub biome: IndexMap<Cow<'a, str>, DynNBT<'a>>,
 	/// Chat type registry
-	pub chat_type: IndexMap<Cow<'a, str>, DynNBT>,
+	pub chat_type: IndexMap<Cow<'a, str>, DynNBT<'a>>,
 	/// Damage type registry
-	pub damage_type: IndexMap<Cow<'a, str>, DynNBT>,
+	pub damage_type: IndexMap<Cow<'a, str>, DynNBT<'a>>,
 	/// Dimension type registry
-	pub dimension_type: IndexMap<Cow<'a, str>, DynNBT>,
+	pub dimension_type: IndexMap<Cow<'a, str>, DynNBT<'a>>,
 }
 
-impl<'a, 'b> TryFrom<&'b DynNBT> for AbConfRegistry<'a> {
+impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 	type Error = anyhow::Error;
 
-	fn try_from(nbt: &DynNBT) -> Result<Self, Self::Error> {
-		let nbt = nbt.as_compound().context("expected NBT to be compound")?;
+	fn try_from(nbt: DynNBT<'a>) -> Result<Self, Self::Error> {
+		let mut nbt = nbt.into_compound().context("expected NBT to be compound")?;
 
 		let trim_material: IndexMap<_, _>;
 		let trim_pattern: IndexMap<_, _>;
@@ -58,21 +58,29 @@ impl<'a, 'b> TryFrom<&'b DynNBT> for AbConfRegistry<'a> {
 
 		macro_rules! populate {
 			($id:literal => $what:ident) => {{
-				let mut values = nbt[$id]
-					.as_compound()
-					.context(concat!($id, " expected to be compound"))?["value"]
-					.as_list()
+				let mut values = nbt
+					.remove($id)
+					.context(concat!($id, " not found"))?
+					.into_compound()
+					.context(concat!($id, " expected to be compound"))?
+					.remove("value")
+					.context(concat!($id, " value not found"))?
+					.into_list()
 					.context(concat!($id, " value expected to be list"))?
-					.iter()
+					.into_iter()
 					.map(|v| {
-						let v = v.as_compound().context("expected value to be compound")?;
+						let mut v = v.into_compound().context("expected value to be compound")?;
 						Ok((
-							v["id"].as_int().context("expected id to be int")?,
-							v["name"]
-								.as_string()
-								.context("expected name to be string")?
-								.to_string(),
-							v["element"].shallow_clone(),
+							v.remove("id")
+								.context(concat!($id, " value id not found"))?
+								.into_int()
+								.context("expected id to be int")?,
+							v.remove("name")
+								.context(concat!($id, " value name not found"))?
+								.into_string()
+								.context("expected name to be string")?,
+							v.remove("element")
+								.context(concat!($id, " value element not found"))?,
 						))
 					})
 					.collect::<Result<Vec<_>, Self::Error>>()
@@ -80,7 +88,7 @@ impl<'a, 'b> TryFrom<&'b DynNBT> for AbConfRegistry<'a> {
 				values.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 				$what = values
 					.into_iter()
-					.map(|(_, name, element)| (name.into(), element))
+					.map(|(_, name, element)| (name, element))
 					.collect();
 			}};
 		}
@@ -102,73 +110,38 @@ impl<'a, 'b> TryFrom<&'b DynNBT> for AbConfRegistry<'a> {
 		})
 	}
 }
-impl<'a, 'b> From<&'b AbConfRegistry<'a>> for DynNBT {
+impl<'a> From<&'a AbConfRegistry<'a>> for DynNBT<'a> {
 	fn from(data: &AbConfRegistry<'a>) -> Self {
+		macro_rules! populate {
+			($nbt:ident, $data:expr => $code:literal) => {{
+				let mut values = Vec::new();
+				for (i, (name, element)) in $data.iter().enumerate() {
+					values.push(dyn_nbt!({
+						"name": name.shallow_clone(),
+						"id": i as i32,
+						"element": element.shallow_clone(),
+					}));
+				}
+				$nbt.insert(
+					$code.into(),
+					dyn_nbt!({
+						"type": $code,
+						"value": values,
+					}),
+				);
+			}};
+		}
+
 		let mut nbt = HashMap::new();
 
-		{
-			let mut values = Vec::new();
-			for (i, (name, element)) in data.trim_material.iter().enumerate() {
-				values.push(dyn_nbt!({
-					"name": name.to_string(),
-					"id": i as i32,
-					"element": element.shallow_clone(),
-				}));
-			}
-			nbt.insert(
-				"minecraft:trim_material".to_string(),
-				dyn_nbt!({
-					"type": "minecraft:trim_material".to_string(),
-					"value": values,
-				}),
-			);
-		}
+		populate!(nbt, &data.trim_material => "minecraft:trim_material");
+		populate!(nbt, &data.trim_pattern => "minecraft:trim_pattern");
+		populate!(nbt, &data.biome => "minecraft:worldgen/biome");
+		populate!(nbt, &data.chat_type => "minecraft:chat_type");
+		populate!(nbt, &data.damage_type => "minecraft:damage_type");
+		populate!(nbt, &data.dimension_type => "minecraft:dimension_type");
 
-		// let mut trim_material = InnerRegistryStructure {
-		// 	registry_type: "minecraft:trim_material".to_string(),
-		// 	value: Vec::new(),
-		// };
-		// let mut trim_pattern = InnerRegistryStructure {
-		// 	registry_type: "minecraft:trim_pattern".to_string(),
-		// 	value: Vec::new(),
-		// };
-		// let mut biome = InnerRegistryStructure {
-		// 	registry_type: "minecraft:worldgen/biome".to_string(),
-		// 	value: Vec::new(),
-		// };
-		// let mut chat_type = InnerRegistryStructure {
-		// 	registry_type: "minecraft:chat_type".to_string(),
-		// 	value: Vec::new(),
-		// };
-		// let mut damage_type = InnerRegistryStructure {
-		// 	registry_type: "minecraft:damage_type".to_string(),
-		// 	value: Vec::new(),
-		// };
-		// let mut dimension_type = InnerRegistryStructure {
-		// 	registry_type: "minecraft:dimension_type".to_string(),
-		// 	value: Vec::new(),
-		// };
-
-		macro_rules! populate {
-			($what:ident) => {
-				for (i, (name, element)) in data.$what.into_iter().enumerate() {
-					$what.value.push(RegistryValueStructure {
-						name,
-						id: i as i32,
-						element,
-					});
-				}
-			};
-		}
-
-		// populate!(trim_material);
-		// populate!(trim_pattern);
-		// populate!(biome);
-		// populate!(chat_type);
-		// populate!(damage_type);
-		// populate!(dimension_type);
-
-		Self::Compound(nbt)
+		Self::Compound(nbt.into())
 	}
 }
 
@@ -184,7 +157,7 @@ impl<'a> AbConfRegistry<'a> {
 
 			let raw: DynNBT = serde_json::from_str(json_data).unwrap();
 
-			AbConfRegistry::try_from(&raw).unwrap()
+			AbConfRegistry::try_from(raw).unwrap()
 		});
 
 		data.clone()

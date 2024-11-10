@@ -193,6 +193,8 @@ fn gen_packet(
             use crate::types::{v}::*;
             #[allow(unused_imports)]
             use shallowclone::ShallowClone;
+            #[allow(unused_imports)]
+            use craftflow_nbt::DynNBT;
 
             include!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{dir}/{st}/{pkt}/{v}/mod.rs\"));
             ",

@@ -14,7 +14,7 @@
 
 define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone)]
-	pub struct RegistryDataV00764 {
-		pub codec: AnonymousNbt,
+	pub struct RegistryDataV00764<'a> {
+		pub codec: AnonymousNbt<DynNBT<'a>>,
 	}
 }

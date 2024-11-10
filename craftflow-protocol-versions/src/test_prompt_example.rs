@@ -1,3 +1,4 @@
+use craftflow_nbt::DynNBT;
 use craftflow_protocol_core::datatypes::*;
 use craftflow_protocol_core::*;
 use shallowclone::ShallowClone;

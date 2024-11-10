@@ -9,8 +9,8 @@ define_type! {
 		pub is_player: Option<Cow<'a, str>>,
 		pub position: Position,
 		pub information: Information<'a>,
-		pub associated_data: Nbt,
-		pub block_nbt: AnonymousNbt,
+		pub associated_data: Nbt<DynNBT<'a>>,
+		pub block_nbt: AnonymousNbt<DynNBT<'a>>,
 		pub history: Array<'a, VarInt, VarInt>,
 	}
 }

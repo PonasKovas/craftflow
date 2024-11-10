@@ -783,6 +783,11 @@ impl<'a> From<f64> for DynNBT<'a> {
 		Self::Double(value)
 	}
 }
+impl<'a> From<Cow<'a, str>> for DynNBT<'a> {
+	fn from(value: Cow<'a, str>) -> Self {
+		Self::String(value)
+	}
+}
 impl<'a> From<String> for DynNBT<'a> {
 	fn from(value: String) -> Self {
 		Self::String(Cow::Owned(value))

@@ -49,6 +49,6 @@ define_type! {
 	#[derive(ShallowClone, Debug, PartialEq, Clone)]
 	pub struct Entry<'a> {
 		pub key: Cow<'a, str>,
-		pub value: Option<AnonymousNbt>,
+		pub value: Option<AnonymousNbt<DynNBT<'a>>>,
 	}
 }
