@@ -19,7 +19,10 @@ pub mod status_pong;
 pub use conf_add_resource_pack::AbConfAddResourcePack;
 pub use conf_feature_flags::AbConfFeatureFlags;
 pub use conf_finish::AbConfFinish;
+use conf_keepalive::AbConfKeepAlive;
+use conf_ping::AbConfPing;
 pub use conf_plugin::AbConfPlugin;
+use conf_registry::AbConfRegistry;
 pub use conf_remove_resource_pack::AbConfRemoveResourcePack;
 pub use conf_reset_chat::AbConfResetChat;
 pub use conf_tags::AbConfTags;
@@ -37,21 +40,27 @@ use shallowclone::ShallowClone;
 gen_direction_enum! {
 	@DIRECTION=S2C;
 	/// All packets that can be sent from the client to the server
-	#[derive(ShallowClone, Debug, Clone, PartialEq, Hash)]
+	#[derive(ShallowClone, Debug, Clone, PartialEq)]
 	pub enum AbS2C<'a> {
+		Disconnect(AbDisconnect<'a>),
+
 		StatusInfo(AbStatusInfo<'a>),
 		StatusPong(AbStatusPong),
-		Disconnect(AbDisconnect<'a>),
+
 		LoginEncryptionBegin(AbLoginEncryptionBegin<'a>),
 		LoginSuccess(AbLoginSuccess<'a>),
 		LoginCompress(AbLoginCompress),
 		LoginPluginRequest(AbLoginPluginRequest<'a>),
+
 		ConfPlugin(AbConfPlugin<'a>),
 		ConfFinish(AbConfFinish),
 		ConfAddResourcePack(AbConfAddResourcePack<'a>),
 		ConfRemoveResourcePack(AbConfRemoveResourcePack),
 		ConfFeatureFlags(AbConfFeatureFlags),
 		ConfTags(AbConfTags<'a>),
-		ConfResetChat(AbConfResetChat)
+		ConfResetChat(AbConfResetChat),
+		ConfRegistry(AbConfRegistry<'a>),
+		ConfPing(AbConfPing),
+		ConfKeepAlive(AbConfKeepAlive),
 	}
 }
