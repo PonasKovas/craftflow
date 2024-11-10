@@ -8,15 +8,19 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use std::iter::{once, Once};
+use shallowclone::ShallowClone;
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
 /// The initial packet that a client should send to the server.
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbHandshake {
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct AbHandshake<'a> {
 	/// The protocol version that the client is using
 	pub protocol_version: u32,
 	/// The address that the client is connecting to
-	pub address: String,
+	pub address: Cow<'a, str>,
 	/// The port that the client is connecting to
 	pub port: u16,
 	/// The next state that the client wants to switch to
@@ -24,7 +28,7 @@ pub struct AbHandshake {
 }
 
 /// The next state that the client wants to switch to
-#[derive(Debug, PartialEq, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
+#[derive(ShallowClone, Debug, PartialEq, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
 pub enum NextState {
 	Status,
 	Login,
@@ -33,11 +37,11 @@ pub enum NextState {
 	Transfer,
 }
 
-impl AbPacketWrite for AbHandshake {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbHandshake<'a> {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Handshake {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -46,7 +50,7 @@ impl AbPacketWrite for AbHandshake {
 		Ok(WriteResult::Success(once(
 			SetProtocolV00005 {
 				protocol_version: VarInt(self.protocol_version as i32),
-				server_host: self.address,
+				server_host: self.address.shallow_clone(),
 				server_port: self.port,
 				next_state: VarInt(match self.next_state {
 					NextState::Status => 1,
@@ -65,18 +69,18 @@ impl AbPacketWrite for AbHandshake {
 	}
 }
 
-impl AbPacketNew for AbHandshake {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbHandshake<'a> {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, C2S<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
-		match packet {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
+		Ok(match packet {
 			C2S::Handshaking(Handshaking::SetProtocol(SetProtocol::V00005(packet))) => {
-				Ok(ConstructorResult::Done(Self {
+				ConstructorResult::Done(Self {
 					protocol_version: packet.protocol_version.0 as u32,
-					address: packet.server_host,
+					address: packet.server_host.shallow_clone(),
 					port: packet.server_port,
 					next_state: match packet.next_state.0 {
 						1 => NextState::Status,
@@ -86,9 +90,9 @@ impl AbPacketNew for AbHandshake {
 							bail!("Invalid next state {}", packet.next_state.0)
 						}
 					},
-				}))
+				})
 			}
-			_ => Ok(ConstructorResult::Ignore(packet)),
-		}
+			_ => ConstructorResult::Ignore,
+		})
 	}
 }

@@ -5,7 +5,7 @@ use craftflow_protocol_versions::{
 	c2s::{
 		configuration::{
 			resource_pack_receive::{
-				v00764::ResourcePackReceiveV00764, v00767::ResourcePackReceiveV00765,
+				v00764::ResourcePackReceiveV00764, v00765::ResourcePackReceiveV00765,
 			},
 			ResourcePackReceive,
 		},
@@ -13,15 +13,16 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfResourcePackResponse {
 	pub uuid: u128,
 	pub result: ResourcePackResult,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum ResourcePackResult {
 	Success = 0,
 	Declined,
@@ -48,11 +49,11 @@ impl ResourcePackResult {
 	}
 }
 
-impl AbPacketWrite for AbConfResourcePackResponse {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbConfResourcePackResponse {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -74,13 +75,13 @@ impl AbPacketWrite for AbConfResourcePackResponse {
 	}
 }
 
-impl AbPacketNew for AbConfResourcePackResponse {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbConfResourcePackResponse {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, C2S<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			C2S::Configuration(Configuration::ResourcePackReceive(pkt)) => match pkt {
 				ResourcePackReceive::V00764(pkt) => ConstructorResult::Done(Self {
@@ -92,7 +93,7 @@ impl AbPacketNew for AbConfResourcePackResponse {
 					result: ResourcePackResult::from_i32(pkt.result.0)?,
 				}),
 			},
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

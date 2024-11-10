@@ -2,27 +2,28 @@ use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State,
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	c2s::{
-		status::{ping::v00765::PingV00005, Ping},
+		status::{ping::v00005::PingV00005, Ping},
 		Status,
 	},
 	IntoStateEnum, C2S,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
 /// The ping packet that the client sends to the server (in the STATUS state)
 /// Should be responded with a `AbStatusPong` packet.
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbStatusPing {
 	/// Any number, used to identify the response
 	/// The same will be sent back in the `AbStatusPong` packet
 	pub id: u64,
 }
 
-impl AbPacketWrite for AbStatusPing {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbStatusPing {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, _protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, _protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Status {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -37,18 +38,18 @@ impl AbPacketWrite for AbStatusPing {
 	}
 }
 
-impl AbPacketNew for AbStatusPing {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbStatusPing {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, C2S<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
-		match packet {
-			C2S::Status(Status::Ping(Ping::V00005(packet))) => Ok(ConstructorResult::Done(Self {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
+		Ok(match packet {
+			C2S::Status(Status::Ping(Ping::V00005(packet))) => ConstructorResult::Done(Self {
 				id: packet.time as u64,
-			})),
-			_ => Ok(ConstructorResult::Ignore(packet)),
-		}
+			}),
+			_ => ConstructorResult::Ignore,
+		})
 	}
 }

@@ -3,23 +3,24 @@ use anyhow::Result;
 use craftflow_protocol_versions::{
 	c2s::{
 		configuration::{
-			finish_configuration::v00767::FinishConfigurationV00764, FinishConfiguration,
+			finish_configuration::v00764::FinishConfigurationV00764, FinishConfiguration,
 		},
 		Configuration,
 	},
 	IntoStateEnum, C2S,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
 /// Finishes the configuration state and moves to Play
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfFinish {}
 
-impl AbPacketWrite for AbConfFinish {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbConfFinish {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -33,18 +34,18 @@ impl AbPacketWrite for AbConfFinish {
 	}
 }
 
-impl AbPacketNew for AbConfFinish {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbConfFinish {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, C2S<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			C2S::Configuration(Configuration::FinishConfiguration(pkt)) => match pkt {
 				FinishConfiguration::V00764(_pkt) => ConstructorResult::Done(Self {}),
 			},
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

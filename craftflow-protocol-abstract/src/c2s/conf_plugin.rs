@@ -3,33 +3,37 @@ use anyhow::Result;
 use craftflow_protocol_core::datatypes::RestBuffer;
 use craftflow_protocol_versions::{
 	c2s::{
-		configuration::{custom_payload::v00767::CustomPayloadV00764, CustomPayload},
+		configuration::{custom_payload::v00764::CustomPayloadV00764, CustomPayload},
 		Configuration,
 	},
 	IntoStateEnum, C2S,
 };
-use std::iter::{once, Once};
+use shallowclone::ShallowClone;
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
 /// A custom plugin message to the server
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbConfPlugin {
-	pub channel: String,
-	pub data: Vec<u8>,
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct AbConfPlugin<'a> {
+	pub channel: Cow<'a, str>,
+	pub data: Cow<'a, [u8]>,
 }
 
-impl AbPacketWrite for AbConfPlugin {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbConfPlugin<'a> {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
 
 		let pkt = match protocol_version {
 			764.. => CustomPayloadV00764 {
-				channel: self.channel,
-				data: RestBuffer(self.data),
+				channel: self.channel.shallow_clone(),
+				data: RestBuffer::from(self.data.shallow_clone()),
 			}
 			.into_state_enum(),
 			_ => return Ok(WriteResult::Unsupported),
@@ -39,21 +43,21 @@ impl AbPacketWrite for AbConfPlugin {
 	}
 }
 
-impl AbPacketNew for AbConfPlugin {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbConfPlugin<'a> {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, C2S<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			C2S::Configuration(Configuration::CustomPayload(pkt)) => match pkt {
 				CustomPayload::V00764(pkt) => ConstructorResult::Done(Self {
-					channel: pkt.channel,
-					data: pkt.data.0,
+					channel: pkt.channel.shallow_clone(),
+					data: pkt.data.data.shallow_clone(),
 				}),
 			},
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

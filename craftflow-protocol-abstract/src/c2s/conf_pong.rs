@@ -2,23 +2,24 @@ use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State,
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	c2s::{
-		configuration::{pong::v00767::PongV00764, Pong},
+		configuration::{pong::v00764::PongV00764, Pong},
 		Configuration,
 	},
 	IntoStateEnum, C2S,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfPong {
 	pub id: i32,
 }
 
-impl AbPacketWrite for AbConfPong {
-	type Direction = C2S;
+impl<'a> AbPacketWrite<'a> for AbConfPong {
+	type Direction = C2S<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -32,18 +33,18 @@ impl AbPacketWrite for AbConfPong {
 	}
 }
 
-impl AbPacketNew for AbConfPong {
-	type Direction = C2S;
-	type Constructor = NoConstructor<Self, C2S>;
+impl<'a> AbPacketNew<'a> for AbConfPong {
+	type Direction = C2S<'a>;
+	type Constructor = NoConstructor<Self, C2S<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			C2S::Configuration(Configuration::Pong(pkt)) => match pkt {
 				Pong::V00764(pkt) => ConstructorResult::Done(Self { id: pkt.id }),
 			},
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

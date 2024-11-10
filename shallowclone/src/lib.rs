@@ -10,6 +10,7 @@ pub trait ShallowClone<'a> {
 }
 
 use std::{
+	array,
 	borrow::Cow,
 	collections::{BTreeMap, HashMap},
 	hash::Hash,
@@ -62,6 +63,14 @@ macro_rules! impl_by_clone {
 
 // primitives
 impl_by_clone! { u8, i8, u16, i16, u32, i32, u64, i64, u128, i128, f32, f64, bool, char}
+
+impl<'a, const N: usize, T: ShallowClone<'a>> ShallowClone<'a> for [T; N] {
+	type Target = [T::Target; N];
+
+	fn shallow_clone(&'a self) -> Self::Target {
+		array::from_fn(|i| self[i].shallow_clone())
+	}
+}
 
 // common std types
 impl_by_clone! { String }
