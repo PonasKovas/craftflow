@@ -4,64 +4,75 @@ use craftflow_protocol_core::datatypes::{Array, VarInt};
 use craftflow_protocol_versions::{
 	s2c::{
 		configuration::{
-			tags::v00767::{TagsRegistry, TagsV00764},
-			Tags,
+			self,
+			tags::v00764::{TagContainer, TagsV00764},
 		},
 		Configuration,
 	},
-	types::v00767::tags::Tag,
+	types::v00767::{tags::Tag, Tags},
 	IntoStateEnum, S2C,
 };
-use std::iter::{once, Once};
+use shallowclone::ShallowClone;
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbConfTags {
-	pub tags: Vec<TagRegistry>,
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct AbConfTags<'a> {
+	// these vecs could be specialised cows but im not gonna concern myself with that right now
+	// especially considering they wouldn't bring any performance benefits with the current
+	// implementation I think, because the data still needs to be converted to the concrete
+	// packet format, so allocations are inevitable
+	pub tags: Vec<TagRegistry<'a>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct TagRegistry {
-	pub name: String,
-	pub entries: Vec<TagEntry>,
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct TagRegistry<'a> {
+	pub name: Cow<'a, str>,
+	pub entries: Vec<TagEntry<'a>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct TagEntry {
-	pub name: String,
-	pub entries: Vec<i32>,
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct TagEntry<'a> {
+	pub name: Cow<'a, str>,
+	pub entries: Cow<'a, [i32]>,
 }
 
-impl AbPacketWrite for AbConfTags {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbConfTags<'a> {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
 
 		let pkt = match protocol_version {
 			764.. => TagsV00764 {
-				registries: Array::new(
+				tags: Array::from(
 					self.tags
-						.into_iter()
-						.map(|reg| TagsRegistry {
-							name: reg.name,
-							tags: craftflow_protocol_versions::types::v00767::tags::Tags(
-								Array::new(
+						.iter()
+						.map(|reg| TagContainer {
+							tag_type: reg.name.shallow_clone(),
+							tags: Tags {
+								tags: Array::from(
 									reg.entries
-										.into_iter()
+										.iter()
 										.map(|tag| Tag {
-											tag_name: tag.name,
-											entries: Array::new(
-												tag.entries.into_iter().map(VarInt).collect(),
+											tag_name: tag.name.shallow_clone(),
+											entries: Array::from(
+												tag.entries
+													.iter()
+													.map(|x| VarInt(*x))
+													.collect::<Vec<_>>(),
 											),
 										})
-										.collect(),
+										.collect::<Vec<_>>(),
 								),
-							),
+							},
 						})
-						.collect(),
+						.collect::<Vec<_>>(),
 				),
 			}
 			.into_state_enum(),
@@ -72,37 +83,36 @@ impl AbPacketWrite for AbConfTags {
 	}
 }
 
-impl AbPacketNew for AbConfTags {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbConfTags<'a> {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
-			S2C::Configuration(Configuration::Tags(Tags::V00764(pkt))) => {
+			S2C::Configuration(Configuration::Tags(configuration::Tags::V00764(pkt))) => {
 				ConstructorResult::Done(Self {
 					tags: pkt
-						.registries
-						.data
-						.into_iter()
+						.tags
+						.inner
+						.iter()
 						.map(|reg| TagRegistry {
-							name: reg.name,
+							name: reg.tag_type.shallow_clone(),
 							entries: reg
 								.tags
-								.0
-								.data
-								.into_iter()
+								.tags
+								.iter()
 								.map(|tag| TagEntry {
-									name: tag.tag_name,
-									entries: tag.entries.data.into_iter().map(|e| e.0).collect(),
+									name: tag.tag_name.shallow_clone(),
+									entries: tag.entries.iter().map(|e| e.0).collect(),
 								})
 								.collect(),
 						})
 						.collect(),
 				})
 			}
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

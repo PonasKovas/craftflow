@@ -3,25 +3,26 @@ use anyhow::Result;
 use craftflow_protocol_versions::{
 	s2c::{
 		configuration::{
-			remove_resource_pack::v00767::RemoveResourcePackV00765, RemoveResourcePack,
+			remove_resource_pack::v00765::RemoveResourcePackV00765, RemoveResourcePack,
 		},
 		Configuration,
 	},
 	IntoStateEnum, S2C,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum AbConfRemoveResourcePack {
 	RemoveAll,
 	RemoveSpecific { uuid: u128 },
 }
 
-impl AbPacketWrite for AbConfRemoveResourcePack {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbConfRemoveResourcePack {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -30,7 +31,7 @@ impl AbPacketWrite for AbConfRemoveResourcePack {
 			765.. => RemoveResourcePackV00765 {
 				uuid: match self {
 					AbConfRemoveResourcePack::RemoveAll => None,
-					AbConfRemoveResourcePack::RemoveSpecific { uuid } => Some(uuid),
+					AbConfRemoveResourcePack::RemoveSpecific { uuid } => Some(*uuid),
 				},
 			}
 			.into_state_enum(),
@@ -41,13 +42,13 @@ impl AbPacketWrite for AbConfRemoveResourcePack {
 	}
 }
 
-impl AbPacketNew for AbConfRemoveResourcePack {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbConfRemoveResourcePack {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::RemoveResourcePack(RemoveResourcePack::V00765(
 				pkt,
@@ -55,7 +56,7 @@ impl AbPacketNew for AbConfRemoveResourcePack {
 				Some(uuid) => Self::RemoveSpecific { uuid },
 				None => Self::RemoveAll,
 			}),
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

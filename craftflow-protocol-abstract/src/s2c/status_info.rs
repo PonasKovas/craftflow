@@ -13,7 +13,6 @@ use shallowclone::ShallowClone;
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
-	ops::{Deref, DerefMut},
 };
 
 /// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`][crate::c2s::AbStatusRequestInfo] packet
@@ -66,19 +65,7 @@ pub struct Players<'a> {
 	/// A sample of currently connected players. Shown, when the cursor is over the
 	/// player count in the server list.
 	#[serde(default)]
-	pub sample: PlayersInner<'a>,
-}
-
-#[derive(
-	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
-)]
-#[shallowclone(cow)]
-pub enum PlayersInner<'a> {
-	#[shallowclone(owned)]
-	Owned(Vec<PlayerSample<'a>>),
-	#[shallowclone(borrowed)]
-	#[serde(skip_deserializing)]
-	Borrowed(&'a [PlayerSample<'a>]),
+	pub sample: Vec<PlayerSample<'a>>,
 }
 
 /// An entry in the player sample list in [`Players`]
@@ -124,36 +111,6 @@ impl<'a> AbPacketNew<'a> for AbStatusInfo<'a> {
 				ConstructorResult::Done(serde_json::from_str(&packet.response)?),
 			),
 			_ => Ok(ConstructorResult::Ignore),
-		}
-	}
-}
-
-impl<'a> Default for PlayersInner<'a> {
-	fn default() -> Self {
-		Self::Owned(Vec::new())
-	}
-}
-impl<'a> Deref for PlayersInner<'a> {
-	type Target = [PlayerSample<'a>];
-
-	fn deref(&self) -> &Self::Target {
-		match self {
-			PlayersInner::Owned(v) => v,
-			PlayersInner::Borrowed(v) => v,
-		}
-	}
-}
-impl<'a> DerefMut for PlayersInner<'a> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		match self {
-			PlayersInner::Owned(v) => v,
-			PlayersInner::Borrowed(v) => {
-				*self = PlayersInner::Owned(v.to_vec());
-				match self {
-					PlayersInner::Owned(v) => v,
-					PlayersInner::Borrowed(_) => unreachable!(),
-				}
-			}
 		}
 	}
 }

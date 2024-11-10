@@ -5,8 +5,10 @@ use craftflow_protocol_versions::{
 	s2c::{
 		login::{
 			success::{
-				v00573::SuccessV00005, v00758::SuccessV00735, v00759, v00765::SuccessV00759,
-				v00766, v00767::SuccessV00766,
+				v00005::SuccessV00005,
+				v00735::SuccessV00735,
+				v00759::{self, SuccessV00759},
+				v00766::{self, SuccessV00766},
 			},
 			Success,
 		},
@@ -14,30 +16,35 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use std::iter::{once, Once};
+use shallowclone::ShallowClone;
+use std::{
+	borrow::Cow,
+	iter::{once, Once},
+};
 
 /// Indicates successful login and moves the state to Play/Configuration
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct AbLoginSuccess {
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct AbLoginSuccess<'a> {
 	pub uuid: u128,
-	pub username: String,
-	pub properties: Vec<Property>,
+	pub username: Cow<'a, str>,
+	// this could be made into a specialized cow, but i dont think its worth it
+	pub properties: Vec<Property<'a>>,
 	pub strict_error_handling: bool,
 }
 
 /// A property of the player
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct Property {
-	pub name: String,
-	pub value: String,
-	pub signature: Option<String>,
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct Property<'a> {
+	pub name: Cow<'a, str>,
+	pub value: Cow<'a, str>,
+	pub signature: Option<Cow<'a, str>>,
 }
 
-impl AbPacketWrite for AbLoginSuccess {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbLoginSuccess<'a> {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Login {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -51,42 +58,43 @@ impl AbPacketWrite for AbLoginSuccess {
 					(self.uuid >> (4 * 16)) & 0xffff,
 					(self.uuid >> (4 * 12)) & 0xffff,
 					self.uuid & 0xffff_ffff_ffff
-				),
-				username: self.username,
+				)
+				.into(),
+				username: self.username.shallow_clone(),
 			}
 			.into_state_enum(),
 			735..759 => SuccessV00735 {
 				uuid: self.uuid,
-				username: self.username,
+				username: self.username.shallow_clone(),
 			}
 			.into_state_enum(),
 			759..766 => SuccessV00759 {
 				uuid: self.uuid,
-				username: self.username,
-				properties: Array::new(
+				username: self.username.shallow_clone(),
+				properties: Array::from(
 					self.properties
-						.into_iter()
+						.iter()
 						.map(|p| v00759::Property {
-							name: p.name,
-							value: p.value,
-							signature: p.signature,
+							name: p.name.shallow_clone(),
+							value: p.value.shallow_clone(),
+							signature: p.signature.shallow_clone(),
 						})
-						.collect(),
+						.collect::<Vec<_>>(),
 				),
 			}
 			.into_state_enum(),
 			766.. => SuccessV00766 {
 				uuid: self.uuid,
-				username: self.username,
-				properties: Array::new(
+				username: self.username.shallow_clone(),
+				properties: Array::from(
 					self.properties
-						.into_iter()
+						.iter()
 						.map(|p| v00766::Property {
-							name: p.name,
-							value: p.value,
-							signature: p.signature,
+							name: p.name.shallow_clone(),
+							value: p.value.shallow_clone(),
+							signature: p.signature.shallow_clone(),
 						})
-						.collect(),
+						.collect::<Vec<_>>(),
 				),
 				strict_error_handling: self.strict_error_handling,
 			}
@@ -98,59 +106,57 @@ impl AbPacketWrite for AbLoginSuccess {
 	}
 }
 
-impl AbPacketNew for AbLoginSuccess {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbLoginSuccess<'a> {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Login(Login::Success(pkt)) => match pkt {
 				Success::V00005(pkt) => ConstructorResult::Done(Self {
 					uuid: u128::from_str_radix(&pkt.uuid.replace("-", ""), 16)?,
-					username: pkt.username,
+					username: pkt.username.shallow_clone(),
 					properties: Vec::new(),
 					strict_error_handling: true,
 				}),
 				Success::V00735(pkt) => ConstructorResult::Done(Self {
 					uuid: pkt.uuid,
-					username: pkt.username,
+					username: pkt.username.shallow_clone(),
 					properties: Vec::new(),
 					strict_error_handling: true,
 				}),
 				Success::V00759(pkt) => ConstructorResult::Done(Self {
 					uuid: pkt.uuid,
-					username: pkt.username,
+					username: pkt.username.shallow_clone(),
 					properties: pkt
 						.properties
-						.data
-						.into_iter()
+						.iter()
 						.map(|p| Property {
-							name: p.name,
-							value: p.value,
-							signature: p.signature,
+							name: p.name.shallow_clone(),
+							value: p.value.shallow_clone(),
+							signature: p.signature.shallow_clone(),
 						})
 						.collect(),
 					strict_error_handling: true,
 				}),
 				Success::V00766(pkt) => ConstructorResult::Done(Self {
 					uuid: pkt.uuid,
-					username: pkt.username,
+					username: pkt.username.shallow_clone(),
 					properties: pkt
 						.properties
-						.data
-						.into_iter()
+						.iter()
 						.map(|p| Property {
-							name: p.name,
-							value: p.value,
-							signature: p.signature,
+							name: p.name.shallow_clone(),
+							value: p.value.shallow_clone(),
+							signature: p.signature.shallow_clone(),
 						})
 						.collect(),
 					strict_error_handling: pkt.strict_error_handling,
 				}),
 			},
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }

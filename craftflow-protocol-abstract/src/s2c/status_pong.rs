@@ -7,10 +7,11 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
 /// Response to the [`AbStatusPing`][crate::c2s::AbStatusPing] packet.
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbStatusPong {
 	/// Must be the same number as sent by the client in the [`AbStatusPing`][crate::c2s::AbStatusPing] packet.
 	pub id: u64,

@@ -15,7 +15,7 @@ use std::{
 };
 
 /// Sends a plugin request to the client
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfPlugin<'a> {
 	/// Channel name of the plugin
 	pub channel: Cow<'a, str>,
@@ -27,15 +27,15 @@ impl<'a> AbPacketWrite<'a> for AbConfPlugin<'a> {
 	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
 
 		let pkt = match protocol_version {
 			764.. => CustomPayloadV00764 {
-				channel: self.channel,
-				data: RestBuffer::from(self.data),
+				channel: self.channel.shallow_clone(),
+				data: RestBuffer::from(self.data.shallow_clone()),
 			}
 			.into_state_enum(),
 			_ => return Ok(WriteResult::Unsupported),

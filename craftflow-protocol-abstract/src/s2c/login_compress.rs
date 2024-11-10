@@ -3,26 +3,27 @@ use anyhow::Result;
 use craftflow_protocol_core::datatypes::VarInt;
 use craftflow_protocol_versions::{
 	s2c::{
-		login::{compress::v00765::CompressV00047, Compress},
+		login::{compress::v00047::CompressV00047, Compress},
 		Login,
 	},
 	IntoStateEnum, S2C,
 };
+use shallowclone::ShallowClone;
 use std::option::IntoIter;
 
 /// Sets the compression threshold for this connection
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginCompress {
 	/// If a packet size is above this threshold, it will be compressed. Negative values will disable compression
 	/// By default compression is disabled.
 	pub threshold: i32,
 }
 
-impl AbPacketWrite for AbLoginCompress {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbLoginCompress {
+	type Direction = S2C<'a>;
 	type Iter = IntoIter<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Login {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -44,20 +45,20 @@ impl AbPacketWrite for AbLoginCompress {
 	}
 }
 
-impl AbPacketNew for AbLoginCompress {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbLoginCompress {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		match packet {
 			S2C::Login(Login::Compress(Compress::V00047(packet))) => {
 				Ok(ConstructorResult::Done(Self {
 					threshold: packet.threshold.0,
 				}))
 			}
-			_ => Ok(ConstructorResult::Ignore(packet)),
+			_ => Ok(ConstructorResult::Ignore),
 		}
 	}
 }

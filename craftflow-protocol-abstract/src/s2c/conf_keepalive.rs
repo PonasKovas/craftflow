@@ -7,9 +7,10 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfKeepAlive {
 	pub id: i64,
 }
@@ -18,7 +19,7 @@ impl<'a> AbPacketWrite<'a> for AbConfKeepAlive {
 	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}

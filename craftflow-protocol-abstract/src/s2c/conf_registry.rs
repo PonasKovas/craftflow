@@ -27,7 +27,7 @@ use std::{borrow::Cow, collections::HashMap, sync::OnceLock};
 // why tf is this even being sent
 // half of it is not even being used, other half could just be handled completely on the server
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(ShallowClone, Debug, Clone, PartialEq)]
 pub struct AbConfRegistry<'a> {
 	/// Armor trim material registry
 	pub trim_material: IndexMap<Cow<'a, str>, DynNBT<'a>>,
@@ -162,8 +162,6 @@ impl<'a> AbConfRegistry<'a> {
 
 			let raw: DynNBT = serde_json::from_str(json_data).unwrap();
 
-			dbg!(&raw);
-
 			AbConfRegistry::try_from(raw).unwrap()
 		});
 
@@ -171,7 +169,7 @@ impl<'a> AbConfRegistry<'a> {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(ShallowClone, Debug, Clone, PartialEq)]
 pub enum RegistryPacketIter<'a> {
 	V00764(Option<RegistryDataV00764<'a>>),
 	V00766 {
@@ -259,7 +257,7 @@ fn convert_entries<'a>(entries: Array<'a, VarInt, Entry>) -> IndexMap<Cow<'a, st
 	map
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(ShallowClone, Debug, Clone, PartialEq)]
 pub struct RegistryConstructor<'a> {
 	trim_material: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
 	trim_pattern: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,

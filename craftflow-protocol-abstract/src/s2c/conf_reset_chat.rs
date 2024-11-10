@@ -2,21 +2,22 @@ use crate::{AbPacketNew, AbPacketWrite, ConstructorResult, NoConstructor, State,
 use anyhow::Result;
 use craftflow_protocol_versions::{
 	s2c::{
-		configuration::{reset_chat::v00767::ResetChatV00766, ResetChat},
+		configuration::{reset_chat::v00766::ResetChatV00766, ResetChat},
 		Configuration,
 	},
 	IntoStateEnum, S2C,
 };
+use shallowclone::ShallowClone;
 use std::iter::{once, Once};
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfResetChat {}
 
-impl AbPacketWrite for AbConfResetChat {
-	type Direction = S2C;
+impl<'a> AbPacketWrite<'a> for AbConfResetChat {
+	type Direction = S2C<'a>;
 	type Iter = Once<Self::Direction>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
@@ -30,18 +31,18 @@ impl AbPacketWrite for AbConfResetChat {
 	}
 }
 
-impl AbPacketNew for AbConfResetChat {
-	type Direction = S2C;
-	type Constructor = NoConstructor<Self, S2C>;
+impl<'a> AbPacketNew<'a> for AbConfResetChat {
+	type Direction = S2C<'a>;
+	type Constructor = NoConstructor<Self, S2C<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::ResetChat(ResetChat::V00766(_pkt))) => {
 				ConstructorResult::Done(Self {})
 			}
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }
