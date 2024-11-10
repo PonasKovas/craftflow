@@ -4,8 +4,8 @@ use crate::{
 	AbPacketConstructor, AbPacketNew, AbPacketWrite, ConstructorResult, State, WriteResult,
 };
 use anyhow::{bail, Context, Result};
-use craftflow_nbt::{dyn_nbt, DynNBT};
-use craftflow_protocol_core::datatypes::{AnonymousNbt, Array, VarInt};
+use craftflow_nbt::{dyn_nbt, dynamic::DynNBTList, DynNBT};
+use craftflow_protocol_core::datatypes::{array::ArrayInner, AnonymousNbt, Array, VarInt};
 use craftflow_protocol_versions::{
 	s2c::{
 		configuration::{
@@ -47,58 +47,63 @@ impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 	type Error = anyhow::Error;
 
 	fn try_from(nbt: DynNBT<'a>) -> Result<Self, Self::Error> {
-		let mut nbt = nbt.into_compound().context("expected NBT to be compound")?;
-
-		let trim_material: IndexMap<_, _>;
-		let trim_pattern: IndexMap<_, _>;
-		let biome: IndexMap<_, _>;
-		let chat_type: IndexMap<_, _>;
-		let damage_type: IndexMap<_, _>;
-		let dimension_type: IndexMap<_, _>;
+		let nbt = nbt.into_compound().context("expected NBT to be compound")?;
 
 		macro_rules! populate {
-			($id:literal => $what:ident) => {{
-				let mut values = nbt
-					.remove($id)
+			($id:literal) => {{
+				let values = match nbt
+					.get($id)
 					.context(concat!($id, " not found"))?
-					.into_compound()
+					.as_compound()
 					.context(concat!($id, " expected to be compound"))?
-					.remove("value")
+					.get("value")
 					.context(concat!($id, " value not found"))?
-					.into_list()
+					.as_list()
 					.context(concat!($id, " value expected to be list"))?
+				{
+					DynNBTList::Owned(vec) => vec,
+					DynNBTList::Borrowed(b) => *b,
+				};
+
+				let mut values = values
 					.into_iter()
 					.map(|v| {
-						let mut v = v.into_compound().context("expected value to be compound")?;
+						let v = v.as_compound().context("expected value to be compound")?;
 						Ok((
-							v.remove("id")
+							v.get("id")
 								.context(concat!($id, " value id not found"))?
-								.into_int()
+								.as_int()
 								.context("expected id to be int")?,
-							v.remove("name")
+							v.get("name")
 								.context(concat!($id, " value name not found"))?
-								.into_string()
-								.context("expected name to be string")?,
-							v.remove("element")
-								.context(concat!($id, " value element not found"))?,
+								.as_string()
+								.context("expected name to be string")?
+								.clone(), // honestly this is too confusing for me rn, so i just clone here
+							// even though im pretty sure it should be doable only using shallow clones
+							// but it doesnt really matter than much right now, maybe i will fix it later
+							v.get("element")
+								.context(concat!($id, " value element not found"))?
+								.clone(), // same as above. honestly this whole file is a bit of a slop
+							           // and could really use someone with a brighter mind to make it efficient
+							           // and actually make use of ShallClone
 						))
 					})
 					.collect::<Result<Vec<_>, Self::Error>>()
 					.context(concat!("parsing values of ", $id))?;
 				values.sort_unstable_by(|a, b| a.0.cmp(&b.0));
-				$what = values
+				values
 					.into_iter()
 					.map(|(_, name, element)| (name, element))
-					.collect();
+					.collect()
 			}};
 		}
 
-		populate!("minecraft:trim_material" => trim_material);
-		populate!("minecraft:trim_pattern" => trim_pattern);
-		populate!("minecraft:worldgen/biome" => biome);
-		populate!("minecraft:chat_type" => chat_type);
-		populate!("minecraft:damage_type" => damage_type);
-		populate!("minecraft:dimension_type" => dimension_type);
+		let trim_material: IndexMap<_, _> = populate!("minecraft:trim_material");
+		let trim_pattern: IndexMap<_, _> = populate!("minecraft:trim_pattern");
+		let biome: IndexMap<_, _> = populate!("minecraft:worldgen/biome");
+		let chat_type: IndexMap<_, _> = populate!("minecraft:chat_type");
+		let damage_type: IndexMap<_, _> = populate!("minecraft:damage_type");
+		let dimension_type: IndexMap<_, _> = populate!("minecraft:dimension_type");
 
 		Ok(Self {
 			trim_material,
@@ -111,18 +116,20 @@ impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 	}
 }
 impl<'a> From<&'a AbConfRegistry<'a>> for DynNBT<'a> {
-	fn from(data: &AbConfRegistry<'a>) -> Self {
+	fn from(data: &'a AbConfRegistry<'a>) -> Self {
+		let mut nbt = HashMap::new();
+
 		macro_rules! populate {
-			($nbt:ident, $data:expr => $code:literal) => {{
+			($data:expr => $code:literal) => {{
 				let mut values = Vec::new();
-				for (i, (name, element)) in $data.iter().enumerate() {
+				for (i, (name, element)) in $data.shallow_clone().into_iter().enumerate() {
 					values.push(dyn_nbt!({
-						"name": name.shallow_clone(),
+						"name": name,
 						"id": i as i32,
-						"element": element.shallow_clone(),
+						"element": element,
 					}));
 				}
-				$nbt.insert(
+				nbt.insert(
 					$code.into(),
 					dyn_nbt!({
 						"type": $code,
@@ -132,14 +139,12 @@ impl<'a> From<&'a AbConfRegistry<'a>> for DynNBT<'a> {
 			}};
 		}
 
-		let mut nbt = HashMap::new();
-
-		populate!(nbt, &data.trim_material => "minecraft:trim_material");
-		populate!(nbt, &data.trim_pattern => "minecraft:trim_pattern");
-		populate!(nbt, &data.biome => "minecraft:worldgen/biome");
-		populate!(nbt, &data.chat_type => "minecraft:chat_type");
-		populate!(nbt, &data.damage_type => "minecraft:damage_type");
-		populate!(nbt, &data.dimension_type => "minecraft:dimension_type");
+		populate!(data.trim_material => "minecraft:trim_material");
+		populate!(data.trim_pattern => "minecraft:trim_pattern");
+		populate!(data.biome => "minecraft:worldgen/biome");
+		populate!(data.chat_type => "minecraft:chat_type");
+		populate!(data.damage_type => "minecraft:damage_type");
+		populate!(data.dimension_type => "minecraft:dimension_type");
 
 		Self::Compound(nbt.into())
 	}
@@ -165,19 +170,19 @@ impl<'a> AbConfRegistry<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum RegistryPacketIter {
-	V00764(Option<RegistryDataV00764>),
+pub enum RegistryPacketIter<'a> {
+	V00764(Option<RegistryDataV00764<'a>>),
 	V00766 {
-		trim_material: Option<IndexMap<String, DynNBT>>,
-		trim_pattern: Option<IndexMap<String, DynNBT>>,
-		biome: Option<IndexMap<String, DynNBT>>,
-		chat_type: Option<IndexMap<String, DynNBT>>,
-		damage_type: Option<IndexMap<String, DynNBT>>,
-		dimension_type: Option<IndexMap<String, DynNBT>>,
+		trim_material: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+		trim_pattern: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+		biome: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+		chat_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+		damage_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+		dimension_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
 	},
 }
-impl Iterator for RegistryPacketIter {
-	type Item = S2C;
+impl<'a> Iterator for RegistryPacketIter<'a> {
+	type Item = S2C<'a>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		match self {
@@ -202,8 +207,8 @@ impl Iterator for RegistryPacketIter {
 
 						Some(
 							RegistryDataV00766 {
-								id: $id.to_string(),
-								entries: Array::new(entries),
+								id: $id.into(),
+								entries: Array::from(entries),
 							}
 							.into_state_enum(),
 						)
@@ -230,116 +235,108 @@ impl Iterator for RegistryPacketIter {
 	}
 }
 
-fn convert_entries(entries: Array<VarInt, Entry>) -> IndexMap<String, DynNBT> {
-	entries
-		.data
-		.into_iter()
-		.map(|entry| {
-			(
-				entry.key,
-				entry
-					.value
-					.unwrap_or(AnonymousNbt {
-						inner: DynNBT::Compound(HashMap::new()),
-					})
-					.inner,
-			)
-		})
-		.collect()
+fn convert_entries<'a>(entries: Array<'a, VarInt, Entry>) -> IndexMap<Cow<'a, str>, DynNBT<'a>> {
+	let entries = match entries.inner {
+		ArrayInner::Owned(o) => o,
+		ArrayInner::Borrowed(b) => b.shallow_clone(),
+	};
+
+	let mut map = IndexMap::new();
+	for entry in entries {
+		map.insert(
+			entry.key,
+			entry
+				.value
+				.unwrap_or(AnonymousNbt {
+					inner: DynNBT::Compound(HashMap::new().into()),
+				})
+				.inner,
+		);
+	}
+
+	map
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct RegistryConstructor {
-	trim_material: Option<IndexMap<String, DynNBT>>,
-	trim_pattern: Option<IndexMap<String, DynNBT>>,
-	biome: Option<IndexMap<String, DynNBT>>,
-	chat_type: Option<IndexMap<String, DynNBT>>,
-	damage_type: Option<IndexMap<String, DynNBT>>,
-	dimension_type: Option<IndexMap<String, DynNBT>>,
+pub struct RegistryConstructor<'a> {
+	trim_material: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+	trim_pattern: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+	biome: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+	chat_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+	damage_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+	dimension_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
 }
-impl AbPacketConstructor for RegistryConstructor {
-	type AbPacket = AbConfRegistry;
-	type Direction = S2C;
+
+impl<'a> AbPacketConstructor<'a> for Option<RegistryConstructor<'a>> {
+	type AbPacket = AbConfRegistry<'a>;
+	type Direction = S2C<'a>;
 
 	fn next_packet(
-		mut self: Box<Self>,
-		packet: Self::Direction,
-	) -> Result<
-		ConstructorResult<
-			Self::AbPacket,
-			Box<
-				dyn AbPacketConstructor<AbPacket = Self::AbPacket, Direction = Self::Direction>
-					+ Send
-					+ Sync,
-			>,
-			(
-				Box<
-					dyn AbPacketConstructor<AbPacket = Self::AbPacket, Direction = Self::Direction>
-						+ Send
-						+ Sync,
-				>,
-				Self::Direction,
-			),
-		>,
-	> {
+		&mut self,
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self::AbPacket, ()>> {
+		let s = self
+			.as_mut()
+			.expect("ab registry constructor already finished");
+
 		match packet {
 			S2C::Configuration(Configuration::RegistryData(RegistryData::V00766(pkt))) => {
-				*match pkt.id.as_str() {
-					"minecraft:trim_material" => &mut self.trim_material,
-					"minecraft:trim_pattern" => &mut self.trim_pattern,
-					"minecraft:worldgen/biome" => &mut self.biome,
-					"minecraft:chat_type" => &mut self.chat_type,
-					"minecraft:damage_type" => &mut self.damage_type,
-					"minecraft:dimension_type" => &mut self.dimension_type,
+				*match &*pkt.id {
+					"minecraft:trim_material" => &mut s.trim_material,
+					"minecraft:trim_pattern" => &mut s.trim_pattern,
+					"minecraft:worldgen/biome" => &mut s.biome,
+					"minecraft:chat_type" => &mut s.chat_type,
+					"minecraft:damage_type" => &mut s.damage_type,
+					"minecraft:dimension_type" => &mut s.dimension_type,
 					_ => {
 						bail!("Unknown registry id: {:?}", pkt.id)
 					}
-				} = Some(convert_entries(pkt.entries));
+				} = Some(convert_entries(pkt.entries.shallow_clone()));
 
-				if self.biome.is_some()
-					&& self.chat_type.is_some()
-					&& self.damage_type.is_some()
-					&& self.dimension_type.is_some()
-					&& self.trim_material.is_some()
-					&& self.trim_pattern.is_some()
+				if s.biome.is_some()
+					&& s.chat_type.is_some()
+					&& s.damage_type.is_some()
+					&& s.dimension_type.is_some()
+					&& s.trim_material.is_some()
+					&& s.trim_pattern.is_some()
 				{
 					Ok(ConstructorResult::Done(AbConfRegistry {
-						trim_material: self.trim_material.unwrap(),
-						trim_pattern: self.trim_pattern.unwrap(),
-						biome: self.biome.unwrap(),
-						chat_type: self.chat_type.unwrap(),
-						damage_type: self.damage_type.unwrap(),
-						dimension_type: self.dimension_type.unwrap(),
+						trim_material: s.trim_material.take().unwrap(),
+						trim_pattern: s.trim_pattern.take().unwrap(),
+						biome: s.biome.take().unwrap(),
+						chat_type: s.chat_type.take().unwrap(),
+						damage_type: s.damage_type.take().unwrap(),
+						dimension_type: s.dimension_type.take().unwrap(),
 					}))
 				} else {
-					Ok(ConstructorResult::Continue(self))
+					Ok(ConstructorResult::Continue(()))
 				}
 			}
-			_ => Ok(ConstructorResult::Ignore((self, packet))),
+			_ => Ok(ConstructorResult::Ignore),
 		}
 	}
 }
 
-impl AbPacketWrite for AbConfRegistry {
-	type Direction = S2C;
-	type Iter = RegistryPacketIter;
+impl<'a> AbPacketWrite<'a> for AbConfRegistry<'a> {
+	type Direction = S2C<'a>;
+	type Iter = RegistryPacketIter<'a>;
 
-	fn convert(self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
+	fn convert(&'a self, protocol_version: u32, state: State) -> Result<WriteResult<Self::Iter>> {
 		if state != State::Configuration {
 			return Ok(WriteResult::Unsupported);
 		}
 
 		let pkt = match protocol_version {
 			764..766 => RegistryPacketIter::V00764(Some(RegistryDataV00764 {
-				inner: AnonymousNbt { inner: self.into() },
+				codec: AnonymousNbt { inner: self.into() },
 			})),
 			766.. => RegistryPacketIter::V00766 {
-				trim_material: Some(self.trim_material),
-				trim_pattern: Some(self.trim_pattern),
-				biome: Some(self.biome),
-				chat_type: Some(self.chat_type),
-				damage_type: Some(self.damage_type),
-				dimension_type: Some(self.dimension_type),
+				trim_material: Some(self.trim_material.shallow_clone()),
+				trim_pattern: Some(self.trim_pattern.shallow_clone()),
+				biome: Some(self.biome.shallow_clone()),
+				chat_type: Some(self.chat_type.shallow_clone()),
+				damage_type: Some(self.damage_type.shallow_clone()),
+				dimension_type: Some(self.dimension_type.shallow_clone()),
 			},
 			_ => return Ok(WriteResult::Unsupported),
 		};
@@ -348,16 +345,22 @@ impl AbPacketWrite for AbConfRegistry {
 	}
 }
 
-impl AbPacketNew for AbConfRegistry {
-	type Direction = S2C;
-	type Constructor = RegistryConstructor;
+impl<'a> AbPacketNew<'a> for AbConfRegistry<'a> {
+	type Direction = S2C<'a>;
+	type Constructor = Option<RegistryConstructor<'a>>;
 
 	fn construct(
-		packet: Self::Direction,
-	) -> Result<ConstructorResult<Self, Self::Constructor, Self::Direction>> {
+		packet: &'a Self::Direction,
+	) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		Ok(match packet {
 			S2C::Configuration(Configuration::RegistryData(RegistryData::V00764(pkt))) => {
-				ConstructorResult::Done(pkt.inner.inner.into())
+				ConstructorResult::Done(
+					pkt.codec
+						.inner
+						.shallow_clone()
+						.try_into()
+						.context("invalid registry data")?,
+				)
 			}
 			S2C::Configuration(Configuration::RegistryData(RegistryData::V00766(pkt))) => {
 				let mut constructor = RegistryConstructor {
@@ -369,7 +372,7 @@ impl AbPacketNew for AbConfRegistry {
 					dimension_type: None,
 				};
 
-				*match pkt.id.as_str() {
+				*match &*pkt.id {
 					"minecraft:trim_material" => &mut constructor.trim_material,
 					"minecraft:trim_pattern" => &mut constructor.trim_pattern,
 					"minecraft:worldgen/biome" => &mut constructor.biome,
@@ -379,11 +382,11 @@ impl AbPacketNew for AbConfRegistry {
 					_ => {
 						bail!("Unknown registry id: {:?}", pkt.id)
 					}
-				} = Some(convert_entries(pkt.entries));
+				} = Some(convert_entries(pkt.entries.shallow_clone()));
 
-				ConstructorResult::Continue(constructor)
+				ConstructorResult::Continue(Some(constructor))
 			}
-			_ => ConstructorResult::Ignore(packet),
+			_ => ConstructorResult::Ignore,
 		})
 	}
 }
@@ -394,6 +397,7 @@ mod tests {
 
 	#[test]
 	fn default_registry() {
+		// this should panic if the default implementation cannot be parsed
 		let _packet = AbConfRegistry::default();
 	}
 }

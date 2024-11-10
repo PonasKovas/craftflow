@@ -843,6 +843,7 @@ dependencies = [
 name = "shallowclone"
 version = "0.1.0"
 dependencies = [
+ "indexmap",
  "shallowclone-derive",
 ]
 

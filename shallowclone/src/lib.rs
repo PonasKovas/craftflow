@@ -9,7 +9,12 @@ pub trait ShallowClone<'a> {
 	fn shallow_clone(&'a self) -> Self::Target;
 }
 
-use std::{borrow::Cow, collections::HashMap, hash::Hash, marker::PhantomData};
+use std::{
+	borrow::Cow,
+	collections::{BTreeMap, HashMap},
+	hash::Hash,
+	marker::PhantomData,
+};
 
 impl<'a, 'b, T: ToOwned + ?Sized> ShallowClone<'a> for Cow<'b, T>
 where
@@ -87,6 +92,31 @@ where
 	K::Target: Eq + Hash,
 {
 	type Target = HashMap<K::Target, V::Target>;
+
+	fn shallow_clone(&'a self) -> Self::Target {
+		self.iter()
+			.map(|(k, v)| (k.shallow_clone(), v.shallow_clone()))
+			.collect()
+	}
+}
+impl<'a, K: ShallowClone<'a>, V: ShallowClone<'a>> ShallowClone<'a> for BTreeMap<K, V>
+where
+	K::Target: Eq + Ord,
+{
+	type Target = BTreeMap<K::Target, V::Target>;
+
+	fn shallow_clone(&'a self) -> Self::Target {
+		self.iter()
+			.map(|(k, v)| (k.shallow_clone(), v.shallow_clone()))
+			.collect()
+	}
+}
+#[cfg(feature = "indexmap")]
+impl<'a, K: ShallowClone<'a>, V: ShallowClone<'a>> ShallowClone<'a> for indexmap::IndexMap<K, V>
+where
+	K::Target: Hash + Eq,
+{
+	type Target = indexmap::IndexMap<K::Target, V::Target>;
 
 	fn shallow_clone(&'a self) -> Self::Target {
 		self.iter()

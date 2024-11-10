@@ -14,7 +14,7 @@ use std::{
 	iter::{once, Once},
 };
 
-#[derive(Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfAddResourcePack<'a> {
 	pub uuid: u128,
 	pub url: Cow<'a, str>,

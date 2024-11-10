@@ -1,7 +1,7 @@
 //! Common datatypes found all throughout the network protocol.
 //!
 
-mod array;
+pub mod array;
 mod bool;
 mod buffer;
 mod float;
