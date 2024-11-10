@@ -174,7 +174,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns the value of any integer type (byte, short, int, long)
 	///
-	/// This is the same as `as_int_nonstrict`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_int_nonstrict()`], but it consumes the NBT.
 	pub fn into_int_nonstrict(self) -> Option<i64> {
 		self.as_int_nonstrict()
 	}
@@ -187,7 +187,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns the value of any integer type (byte, short, int, long), panicking if it's not an integer
 	///
-	/// This is the same as `expect_int_nonstrict`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_int_nonstrict()`], but it consumes the NBT.
 	pub fn unwrap_int_nonstrict(self) -> i64 {
 		self.expect_int_nonstrict()
 	}
@@ -361,7 +361,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a long, if this NBT is a long.
 	///
-	/// This is the same as `as_long()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_long()`], but it consumes the NBT.
 	pub fn into_long(self) -> Option<i64> {
 		match self {
 			DynNBT::Long(v) => Some(v),
@@ -370,7 +370,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns an int, if this NBT is an int.
 	///
-	/// This is the same as `as_int()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_int()`], but it consumes the NBT.
 	pub fn into_int(self) -> Option<i32> {
 		match self {
 			DynNBT::Int(v) => Some(v),
@@ -379,7 +379,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a short, if this NBT is a short.
 	///
-	/// This is the same as `as_short()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_short()`], but it consumes the NBT.
 	pub fn into_short(self) -> Option<i16> {
 		match self {
 			DynNBT::Short(v) => Some(v),
@@ -388,7 +388,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a byte, if this NBT is a byte.
 	///
-	/// This is the same as `as_byte()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_byte()`], but it consumes the NBT.
 	pub fn into_byte(self) -> Option<i8> {
 		match self {
 			DynNBT::Byte(v) => Some(v),
@@ -397,7 +397,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a double, if this NBT is a double.
 	///
-	/// This is the same as `as_double()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_double()`], but it consumes the NBT.
 	pub fn into_double(self) -> Option<f64> {
 		match self {
 			DynNBT::Double(v) => Some(v),
@@ -406,7 +406,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a float, if this NBT is a float.
 	///
-	/// This is the same as `as_float()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::as_float()`], but it consumes the NBT.
 	pub fn into_float(self) -> Option<f32> {
 		match self {
 			DynNBT::Float(v) => Some(v),
@@ -625,7 +625,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a long, if this NBT is a long, panics otherwise.
 	///
-	/// This is the same as `expect_long()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_long()`], but it consumes the NBT.
 	pub fn unwrap_long(self) -> i64 {
 		match self {
 			DynNBT::Long(v) => v,
@@ -634,7 +634,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns an int, if this NBT is an int, panics otherwise.
 	///
-	/// This is the same as `expect_int()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_int()`], but it consumes the NBT.
 	pub fn unwrap_int(self) -> i32 {
 		match self {
 			DynNBT::Int(v) => v,
@@ -643,7 +643,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a short, if this NBT is a short, panics otherwise.
 	///
-	/// This is the same as `expect_short()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_short()`], but it consumes the NBT.
 	pub fn unwrap_short(self) -> i16 {
 		match self {
 			DynNBT::Short(v) => v,
@@ -652,7 +652,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a byte, if this NBT is a byte, panics otherwise.
 	///
-	/// This is the same as `expect_byte()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_byte()`], but it consumes the NBT.
 	pub fn unwrap_byte(self) -> i8 {
 		match self {
 			DynNBT::Byte(v) => v,
@@ -661,7 +661,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a double, if this NBT is a double, panics otherwise.
 	///
-	/// This is the same as `expect_double()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_double()`], but it consumes the NBT.
 	pub fn unwrap_double(self) -> f64 {
 		match self {
 			DynNBT::Double(v) => v,
@@ -670,7 +670,7 @@ impl<'a> DynNBT<'a> {
 	}
 	/// Returns a float, if this NBT is a float, panics otherwise.
 	///
-	/// This is the same as `expect_float()`, but it consumes the NBT.
+	/// This is the same as [`DynNBT::expect_float()`], but it consumes the NBT.
 	pub fn unwrap_float(self) -> f32 {
 		match self {
 			DynNBT::Float(v) => v,

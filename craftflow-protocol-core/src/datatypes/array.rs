@@ -15,17 +15,17 @@ pub struct Array<'a, #[shallowclone(skip)] LEN, #[shallowclone(skip)] T> {
 	_phantom: PhantomData<LEN>,
 }
 
-/// The reason why we're not just using Cow here:
-/// Cow doesn't work well with shallow clone, since it's invariant over T,
-/// which introduces problems when T has a lifetime param. If we used Cow we would be forced
-/// to have two lifetime parameters basically everywhere for no reason, because
-/// when we shallow clone it we shorten the lifetime of the cow, but can't shorten the lifetime
-/// of the inner T, and so we end up with two different lifetimes. The following cow implementation
-/// is simpler, not relying on ToOwned trait and is covariant over T, therefore not having this problem.
-///
-/// This implementation adds the limitation of forcing us to use owned data types like Vec<T>
-/// and similar, where we don't necessarily need them, where something like &'static [T] would suffice,
-/// but instead we need to use &'static Vec<T>, but it hardly matters.
+// The reason why we're not just using Cow here:
+// Cow doesn't work well with shallow clone, since it's invariant over T,
+// which introduces problems when T has a lifetime param. If we used Cow we would be forced
+// to have two lifetime parameters basically everywhere for no reason, because
+// when we shallow clone it we shorten the lifetime of the cow, but can't shorten the lifetime
+// of the inner T, and so we end up with two different lifetimes. The following cow implementation
+// is simpler, not relying on ToOwned trait and is covariant over T, therefore not having this problem.
+//
+// This implementation adds the limitation of forcing us to use owned data types like Vec<T>
+// and similar, where we don't necessarily need them, where something like &'static [T] would suffice,
+// but instead we need to use &'static Vec<T>, but it hardly matters.
 #[derive(ShallowClone, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[shallowclone(cow)]
 pub enum ArrayInner<'a, #[shallowclone(skip)] T> {
