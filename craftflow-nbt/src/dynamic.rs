@@ -162,432 +162,557 @@ impl<'a> DynNBT<'a> {
 			_ => Ok(()),
 		}
 	}
+	/// Returns the value of any integer type (byte, short, int, long)
+	pub fn as_int_nonstrict(&self) -> Option<i64> {
+		match self {
+			DynNBT::Byte(v) => Some(*v as i64),
+			DynNBT::Short(v) => Some(*v as i64),
+			DynNBT::Int(v) => Some(*v as i64),
+			DynNBT::Long(v) => Some(*v),
+			_ => None,
+		}
+	}
+	/// Returns the value of any integer type (byte, short, int, long)
+	///
+	/// This is the same as `as_int_nonstrict`, but it consumes the NBT.
+	pub fn into_int_nonstrict(self) -> Option<i64> {
+		self.as_int_nonstrict()
+	}
+	/// Returns the value of any integer type (byte, short, int, long), panicking if it's not an integer
+	pub fn expect_int_nonstrict(&self) -> i64 {
+		match self.as_int_nonstrict() {
+			Some(v) => v,
+			None => panic!("Expected integer, found {:?}", self),
+		}
+	}
+	/// Returns the value of any integer type (byte, short, int, long), panicking if it's not an integer
+	///
+	/// This is the same as `expect_int_nonstrict`, but it consumes the NBT.
+	pub fn unwrap_int_nonstrict(self) -> i64 {
+		self.expect_int_nonstrict()
+	}
+	/// Returns a Long, if this NBT is a long.
 	pub fn as_long(&self) -> Option<i64> {
 		match self {
 			DynNBT::Long(v) => Some(*v),
 			_ => None,
 		}
 	}
+	/// Returns an Int, if this NBT is an int.
 	pub fn as_int(&self) -> Option<i32> {
 		match self {
 			DynNBT::Int(v) => Some(*v),
 			_ => None,
 		}
 	}
+	/// Returns a Short, if this NBT is a short.
 	pub fn as_short(&self) -> Option<i16> {
 		match self {
 			DynNBT::Short(v) => Some(*v),
 			_ => None,
 		}
 	}
+	/// Returns a Byte, if this NBT is a byte.
 	pub fn as_byte(&self) -> Option<i8> {
 		match self {
 			DynNBT::Byte(v) => Some(*v),
 			_ => None,
 		}
 	}
+	/// Returns a Double, if this NBT is a double.
 	pub fn as_double(&self) -> Option<f64> {
 		match self {
 			DynNBT::Double(v) => Some(*v),
 			_ => None,
 		}
 	}
+	/// Returns a Float, if this NBT is a float.
 	pub fn as_float(&self) -> Option<f32> {
 		match self {
 			DynNBT::Float(v) => Some(*v),
 			_ => None,
 		}
 	}
+	/// Returns a String, if this NBT is a string.
 	pub fn as_string(&self) -> Option<&Cow<'a, str>> {
 		match self {
 			DynNBT::String(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a List, if this NBT is a list.
 	pub fn as_list(&self) -> Option<&DynNBTList<'a>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a Compound, if this NBT is a compound.
 	pub fn as_compound(&self) -> Option<&DynNBTCompound<'a>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a LongArray, if this NBT is a long array.
 	pub fn as_long_array(&self) -> Option<&Cow<'a, [i64]>> {
 		match self {
 			DynNBT::LongArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a IntArray, if this NBT is an int array.
 	pub fn as_int_array(&self) -> Option<&Cow<'a, [i32]>> {
 		match self {
 			DynNBT::IntArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a ByteArray, if this NBT is a byte array.
 	pub fn as_byte_array(&self) -> Option<&Cow<'a, [u8]>> {
 		match self {
 			DynNBT::ByteArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a long.
 	pub fn as_mut_long(&mut self) -> Option<&mut i64> {
 		match self {
 			DynNBT::Long(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is an int.
 	pub fn as_mut_int(&mut self) -> Option<&mut i32> {
 		match self {
 			DynNBT::Int(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a short.
 	pub fn as_mut_short(&mut self) -> Option<&mut i16> {
 		match self {
 			DynNBT::Short(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a byte.
 	pub fn as_mut_byte(&mut self) -> Option<&mut i8> {
 		match self {
 			DynNBT::Byte(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a double.
 	pub fn as_mut_double(&mut self) -> Option<&mut f64> {
 		match self {
 			DynNBT::Double(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a float.
 	pub fn as_mut_float(&mut self) -> Option<&mut f32> {
 		match self {
 			DynNBT::Float(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a string.
 	pub fn as_mut_string(&mut self) -> Option<&mut Cow<'a, str>> {
 		match self {
 			DynNBT::String(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a list.
 	pub fn as_mut_list(&mut self) -> Option<&mut DynNBTList<'a>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a compound.
 	pub fn as_mut_compound(&mut self) -> Option<&mut DynNBTCompound<'a>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a long array.
 	pub fn as_mut_long_array(&mut self) -> Option<&mut Cow<'a, [i64]>> {
 		match self {
 			DynNBT::LongArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is an int array.
 	pub fn as_mut_int_array(&mut self) -> Option<&mut Cow<'a, [i32]>> {
 		match self {
 			DynNBT::IntArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a mutable reference to the inner value, if this NBT is a byte array.
 	pub fn as_mut_byte_array(&mut self) -> Option<&mut Cow<'a, [u8]>> {
 		match self {
 			DynNBT::ByteArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a long, if this NBT is a long.
+	///
+	/// This is the same as `as_long()`, but it consumes the NBT.
 	pub fn into_long(self) -> Option<i64> {
 		match self {
 			DynNBT::Long(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns an int, if this NBT is an int.
+	///
+	/// This is the same as `as_int()`, but it consumes the NBT.
 	pub fn into_int(self) -> Option<i32> {
 		match self {
 			DynNBT::Int(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a short, if this NBT is a short.
+	///
+	/// This is the same as `as_short()`, but it consumes the NBT.
 	pub fn into_short(self) -> Option<i16> {
 		match self {
 			DynNBT::Short(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a byte, if this NBT is a byte.
+	///
+	/// This is the same as `as_byte()`, but it consumes the NBT.
 	pub fn into_byte(self) -> Option<i8> {
 		match self {
 			DynNBT::Byte(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a double, if this NBT is a double.
+	///
+	/// This is the same as `as_double()`, but it consumes the NBT.
 	pub fn into_double(self) -> Option<f64> {
 		match self {
 			DynNBT::Double(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a float, if this NBT is a float.
+	///
+	/// This is the same as `as_float()`, but it consumes the NBT.
 	pub fn into_float(self) -> Option<f32> {
 		match self {
 			DynNBT::Float(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a string by value, if this NBT is a string.
 	pub fn into_string(self) -> Option<Cow<'a, str>> {
 		match self {
 			DynNBT::String(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a list by value, if this NBT is a list.
 	pub fn into_list(self) -> Option<DynNBTList<'a>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a compound by value, if this NBT is a compound.
 	pub fn into_compound(self) -> Option<DynNBTCompound<'a>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a long array by value, if this NBT is a long array.
 	pub fn into_long_array(self) -> Option<Cow<'a, [i64]>> {
 		match self {
 			DynNBT::LongArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns an int array by value, if this NBT is an int array.
 	pub fn into_int_array(self) -> Option<Cow<'a, [i32]>> {
 		match self {
 			DynNBT::IntArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a byte array by value, if this NBT is a byte array.
 	pub fn into_byte_array(self) -> Option<Cow<'a, [u8]>> {
 		match self {
 			DynNBT::ByteArray(v) => Some(v),
 			_ => None,
 		}
 	}
+	/// Returns a long, if this NBT is a long, panics otherwise.
 	pub fn expect_long(&self) -> i64 {
 		match self {
 			DynNBT::Long(v) => *v,
 			_ => panic!("Expected Long, found {:?}", self),
 		}
 	}
+	/// Returns an int, if this NBT is an int, panics otherwise.
 	pub fn expect_int(&self) -> i32 {
 		match self {
 			DynNBT::Int(v) => *v,
 			_ => panic!("Expected Int, found {:?}", self),
 		}
 	}
+	/// Returns a short, if this NBT is a short, panics otherwise.
 	pub fn expect_short(&self) -> i16 {
 		match self {
 			DynNBT::Short(v) => *v,
 			_ => panic!("Expected Short, found {:?}", self),
 		}
 	}
+	/// Returns a byte, if this NBT is a byte, panics otherwise.
 	pub fn expect_byte(&self) -> i8 {
 		match self {
 			DynNBT::Byte(v) => *v,
 			_ => panic!("Expected Byte, found {:?}", self),
 		}
 	}
+	/// Returns a double, if this NBT is a double, panics otherwise.
 	pub fn expect_double(&self) -> f64 {
 		match self {
 			DynNBT::Double(v) => *v,
 			_ => panic!("Expected Double, found {:?}", self),
 		}
 	}
+	/// Returns a float, if this NBT is a float, panics otherwise.
 	pub fn expect_float(&self) -> f32 {
 		match self {
 			DynNBT::Float(v) => *v,
 			_ => panic!("Expected Float, found {:?}", self),
 		}
 	}
+	/// Returns a string reference, if this NBT is a string, panics otherwise.
 	pub fn expect_string(&self) -> &Cow<'a, str> {
 		match self {
 			DynNBT::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
 		}
 	}
+	/// Returns a byte array reference, if this NBT is a byte array, panics otherwise.
 	pub fn expect_list(&self) -> &DynNBTList<'a> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
+	/// Returns a compound reference, if this NBT is a compound, panics otherwise.
 	pub fn expect_compound(&self) -> &DynNBTCompound<'a> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
 		}
 	}
+	/// Returns a long array reference, if this NBT is a long array, panics otherwise.
 	pub fn expect_long_array(&self) -> &Cow<'a, [i64]> {
 		match self {
 			DynNBT::LongArray(v) => v,
 			_ => panic!("Expected LongArray, found {:?}", self),
 		}
 	}
+	/// Returns an int array reference, if this NBT is an int array, panics otherwise.
 	pub fn expect_int_array(&self) -> &Cow<'a, [i32]> {
 		match self {
 			DynNBT::IntArray(v) => v,
 			_ => panic!("Expected IntArray, found {:?}", self),
 		}
 	}
+	/// Returns a byte array reference, if this NBT is a byte array, panics otherwise.
 	pub fn expect_byte_array(&self) -> &Cow<'a, [u8]> {
 		match self {
 			DynNBT::ByteArray(v) => v,
 			_ => panic!("Expected ByteArray, found {:?}", self),
 		}
 	}
+	/// Returns a long by mutable reference, if this NBT is a long, panics otherwise.
 	pub fn expect_mut_long(&mut self) -> &mut i64 {
 		match self {
 			DynNBT::Long(v) => v,
 			_ => panic!("Expected Long, found {:?}", self),
 		}
 	}
+	/// Returns an int by mutable reference, if this NBT is an int, panics otherwise.
 	pub fn expect_mut_int(&mut self) -> &mut i32 {
 		match self {
 			DynNBT::Int(v) => v,
 			_ => panic!("Expected Int, found {:?}", self),
 		}
 	}
+	/// Returns a short by mutable reference, if this NBT is a short, panics otherwise.
 	pub fn expect_mut_short(&mut self) -> &mut i16 {
 		match self {
 			DynNBT::Short(v) => v,
 			_ => panic!("Expected Short, found {:?}", self),
 		}
 	}
+	/// Returns a byte by mutable reference, if this NBT is a byte, panics otherwise.
 	pub fn expect_mut_byte(&mut self) -> &mut i8 {
 		match self {
 			DynNBT::Byte(v) => v,
 			_ => panic!("Expected Byte, found {:?}", self),
 		}
 	}
+	/// Returns a double by mutable reference, if this NBT is a double, panics otherwise.
 	pub fn expect_mut_double(&mut self) -> &mut f64 {
 		match self {
 			DynNBT::Double(v) => v,
 			_ => panic!("Expected Double, found {:?}", self),
 		}
 	}
+	/// Returns a float by mutable reference, if this NBT is a float, panics otherwise.
 	pub fn expect_mut_float(&mut self) -> &mut f32 {
 		match self {
 			DynNBT::Float(v) => v,
 			_ => panic!("Expected Float, found {:?}", self),
 		}
 	}
+	/// Returns a string by mutable reference, if this NBT is a string, panics otherwise.
 	pub fn expect_mut_string(&mut self) -> &mut Cow<'a, str> {
 		match self {
 			DynNBT::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
 		}
 	}
+	/// Returns a byte array by mutable reference, if this NBT is a list, panics otherwise.
 	pub fn expect_mut_list(&mut self) -> &mut DynNBTList<'a> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
+	/// Returns a compound by mutable reference, if this NBT is a compound, panics otherwise.
 	pub fn expect_mut_compound(&mut self) -> &mut DynNBTCompound<'a> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
 		}
 	}
+	/// Returns a long array by mutable reference, if this NBT is a long array, panics otherwise.
 	pub fn expect_mut_long_array(&mut self) -> &mut Cow<'a, [i64]> {
 		match self {
 			DynNBT::LongArray(v) => v,
 			_ => panic!("Expected LongArray, found {:?}", self),
 		}
 	}
+	/// Returns an int array by mutable reference, if this NBT is an int array, panics otherwise.
 	pub fn expect_mut_int_array(&mut self) -> &mut Cow<'a, [i32]> {
 		match self {
 			DynNBT::IntArray(v) => v,
 			_ => panic!("Expected IntArray, found {:?}", self),
 		}
 	}
+	/// Returns a byte array by mutable reference, if this NBT is a byte array, panics otherwise.
 	pub fn expect_mut_byte_array(&mut self) -> &mut Cow<'a, [u8]> {
 		match self {
 			DynNBT::ByteArray(v) => v,
 			_ => panic!("Expected ByteArray, found {:?}", self),
 		}
 	}
+	/// Returns a long, if this NBT is a long, panics otherwise.
+	///
+	/// This is the same as `expect_long()`, but it consumes the NBT.
 	pub fn unwrap_long(self) -> i64 {
 		match self {
 			DynNBT::Long(v) => v,
 			_ => panic!("Expected Long, found {:?}", self),
 		}
 	}
+	/// Returns an int, if this NBT is an int, panics otherwise.
+	///
+	/// This is the same as `expect_int()`, but it consumes the NBT.
 	pub fn unwrap_int(self) -> i32 {
 		match self {
 			DynNBT::Int(v) => v,
 			_ => panic!("Expected Int, found {:?}", self),
 		}
 	}
+	/// Returns a short, if this NBT is a short, panics otherwise.
+	///
+	/// This is the same as `expect_short()`, but it consumes the NBT.
 	pub fn unwrap_short(self) -> i16 {
 		match self {
 			DynNBT::Short(v) => v,
 			_ => panic!("Expected Short, found {:?}", self),
 		}
 	}
+	/// Returns a byte, if this NBT is a byte, panics otherwise.
+	///
+	/// This is the same as `expect_byte()`, but it consumes the NBT.
 	pub fn unwrap_byte(self) -> i8 {
 		match self {
 			DynNBT::Byte(v) => v,
 			_ => panic!("Expected Byte, found {:?}", self),
 		}
 	}
+	/// Returns a double, if this NBT is a double, panics otherwise.
+	///
+	/// This is the same as `expect_double()`, but it consumes the NBT.
 	pub fn unwrap_double(self) -> f64 {
 		match self {
 			DynNBT::Double(v) => v,
 			_ => panic!("Expected Double, found {:?}", self),
 		}
 	}
+	/// Returns a float, if this NBT is a float, panics otherwise.
+	///
+	/// This is the same as `expect_float()`, but it consumes the NBT.
 	pub fn unwrap_float(self) -> f32 {
 		match self {
 			DynNBT::Float(v) => v,
 			_ => panic!("Expected Float, found {:?}", self),
 		}
 	}
+	/// Returns a string by value, if this NBT is a string, panics otherwise.
 	pub fn unwrap_string(self) -> Cow<'a, str> {
 		match self {
 			DynNBT::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
 		}
 	}
+	/// Returns a list by value, if this NBT is a list, panics otherwise.
 	pub fn unwrap_list(self) -> DynNBTList<'a> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
+	/// Returns a compound by value, if this NBT is a compound, panics otherwise.
 	pub fn unwrap_compound(self) -> DynNBTCompound<'a> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
 		}
 	}
+	/// Returns a long array by value, if this NBT is a long array, panics otherwise.
 	pub fn unwrap_long_array(self) -> Cow<'a, [i64]> {
 		match self {
 			DynNBT::LongArray(v) => v,
 			_ => panic!("Expected LongArray, found {:?}", self),
 		}
 	}
+	/// Returns an int array by value, if this NBT is an int array, panics otherwise.
 	pub fn unwrap_int_array(self) -> Cow<'a, [i32]> {
 		match self {
 			DynNBT::IntArray(v) => v,
 			_ => panic!("Expected IntArray, found {:?}", self),
 		}
 	}
+	/// Returns a byte array by value, if this NBT is a byte array, panics otherwise.
 	pub fn unwrap_byte_array(self) -> Cow<'a, [u8]> {
 		match self {
 			DynNBT::ByteArray(v) => v,

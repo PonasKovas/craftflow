@@ -72,8 +72,8 @@ impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 						Ok((
 							v.get("id")
 								.context(concat!($id, " value id not found"))?
-								.as_int()
-								.context("expected id to be int")?,
+								.as_int_nonstrict()
+								.context("expected id to be an integer")?,
 							v.get("name")
 								.context(concat!($id, " value name not found"))?
 								.as_string()
@@ -161,6 +161,8 @@ impl<'a> AbConfRegistry<'a> {
 			));
 
 			let raw: DynNBT = serde_json::from_str(json_data).unwrap();
+
+			dbg!(&raw);
 
 			AbConfRegistry::try_from(raw).unwrap()
 		});
