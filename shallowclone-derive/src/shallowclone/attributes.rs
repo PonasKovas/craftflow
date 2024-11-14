@@ -1,14 +1,14 @@
 use syn::{Attribute, Ident};
 
 #[derive(Clone, Debug)]
-pub struct Attributes {
+pub struct ShallowCloneAttributes {
 	pub skip: bool,
 	pub cow: bool,
 	pub owned: bool,
 	pub borrowed: bool,
 }
 
-impl Attributes {
+impl ShallowCloneAttributes {
 	pub fn parse_item(attrs: &[Attribute]) -> Self {
 		let attrs = Self::parse_all(attrs);
 		assert_eq!(

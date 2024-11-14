@@ -14,9 +14,32 @@ pub trait MakeOwned {
 	fn make_owned(self) -> Self::Owned;
 }
 
-impl<'a, A: ToOwned<Owned = A> + 'static, T: ToOwned + ?Sized> MakeOwned for Cow<'a, T>
+impl<'a> MakeOwned for Cow<'a, str> {
+	type Owned = Cow<'static, str>;
+
+	fn make_owned(self) -> <Self as MakeOwned>::Owned {
+		Cow::Owned(match self {
+			Cow::Borrowed(bor) => bor.to_string(),
+			Cow::Owned(owned) => owned,
+		})
+	}
+}
+impl<'a, T: MakeOwned + Clone> MakeOwned for Cow<'a, [T]>
 where
-	<T as ToOwned>::Owned: MakeOwned<Owned = A>,
+	<T as MakeOwned>::Owned: Clone,
+{
+	type Owned = Cow<'static, [<T as MakeOwned>::Owned]>;
+
+	fn make_owned(self) -> <Self as MakeOwned>::Owned {
+		Cow::Owned(match self {
+			Cow::Borrowed(bor) => bor.into_iter().map(|e| e.clone().make_owned()).collect(),
+			Cow::Owned(owned) => owned.into_iter().map(|e| e.make_owned()).collect(),
+		})
+	}
+}
+impl<'a, A: Clone + 'static, T: Clone + ?Sized> MakeOwned for Cow<'a, T>
+where
+	T: MakeOwned<Owned = A>,
 	&'a T: MakeOwned<Owned = A>,
 {
 	type Owned = Cow<'static, A>;

@@ -34,7 +34,7 @@ enum Enum<'a, T> {
 }
 
 #[derive(ShallowClone)]
-pub struct Array<'a, #[shallowclone(skip)] T: Clone> {
+struct Array<'a, #[shallowclone(skip)] T: Clone> {
 	pub data: Cow<'a, [T]>,
 }
 
