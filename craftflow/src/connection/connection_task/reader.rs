@@ -22,12 +22,12 @@ pub(super) async fn reader_task(
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
 ) -> anyhow::Result<()> {
 	let mut constructors: Vec<
-		Box<dyn AbPacketConstructor<Direction = C2S, AbPacket = AbC2S> + Send + Sync>,
+		Box<dyn AbPacketConstructor<'static, Direction = C2S, AbPacket = AbC2S> + Send + Sync>,
 	> = Vec::new();
 
 	let mut decryptor = None;
 
-	'read_packet: loop {
+	loop {
 		if decryptor.is_none() {
 			// check if encryption secret received
 			if let Some(secret) = encryption_secret.get() {
@@ -35,8 +35,63 @@ pub(super) async fn reader_task(
 			}
 		}
 
-		let mut packet = reader
-			.read_packet(&reader_state, version, &compression, &mut decryptor)
+		reader
+			.read_packet(&reader_state, version, &compression, &mut decryptor, |mut packet| {
+    			// Handle some special packets which change the state of the connection
+    			match packet {
+    				C2S::Login(c2s::Login::LoginAcknowledged(_)) => {
+    					*reader_state.write().unwrap() = State::Configuration;
+    				}
+    				C2S::Configuration(c2s::Configuration::FinishConfiguration(_)) => {
+    					*reader_state.write().unwrap() = State::Play;
+    				}
+    				_ => {}
+    			}
+
+    			// trigger concrete packet event
+    			// if trigger_c2s_concrete(false, &craftflow, conn_id, &mut packet).is_break() {
+    			// 	return Ok(());
+    			// }
+
+    			// try to construct abstract packet
+    			let mut abstr = 'abstr: {
+    				// check all already started constructors
+    				for i in 0..constructors.len() {
+    					match constructors.get_mut(i).unwrap().next_packet(&packet)? {
+    						ConstructorResult::Done(p) => {
+                                constructors.remove(i);
+                                break 'abstr p
+                            },
+    						ConstructorResult::Continue(()) => {
+    							return Ok(());
+    						}
+    						ConstructorResult::Ignore => {}
+    					}
+    				}
+
+    				// Otherwise try constructing a new one
+    				match AbC2S::construct(&packet)? {
+    					ConstructorResult::Done(p) => break 'abstr p,
+    					ConstructorResult::Continue(c) => {
+    						constructors.push(c.clone());
+    						return Ok(());
+    					}
+    					ConstructorResult::Ignore => {
+    						error!(
+                                "Failed to construct abstract packet from concrete packet: {:?} (This is most likely a bug within craftflow)",
+                                packet
+                            );
+    						return Ok(());
+    					}
+    				}
+    			};
+
+    			// trigger_c2s_abstract(false, &craftflow, conn_id, &mut abstr);
+    			// trigger_c2s_abstract(true, &craftflow, conn_id, &mut abstr);
+                // trigger_c2s_concrete(true, &craftflow, conn_id, &mut packet);
+
+                Ok(())
+			})
 			.await
 			.with_context(|| {
 				format!(
@@ -44,57 +99,5 @@ pub(super) async fn reader_task(
 					reader_state.read().unwrap()
 				)
 			})?;
-
-		// Handle some special packets which change the state of the connection
-		match packet {
-			C2S::Login(c2s::Login::LoginAcknowledged(_)) => {
-				*reader_state.write().unwrap() = State::Configuration;
-			}
-			C2S::Configuration(c2s::Configuration::FinishConfiguration(_)) => {
-				*reader_state.write().unwrap() = State::Play;
-			}
-			_ => {}
-		}
-
-		// trigger concrete packet event
-		if trigger_c2s_concrete(&craftflow, conn_id, &mut packet).is_break() {
-			continue;
-		}
-
-		// try to construct abstract packet
-		let mut abstr = 'abstr: {
-			// check all already started constructors
-			for i in (0..constructors.len()).rev() {
-				// we gotta remove it because we need it by value, if it doesnt work we insert it back
-				let constr = constructors.remove(i);
-
-				match AbPacketConstructor::next_packet(constr, packet)? {
-					ConstructorResult::Done(p) => break 'abstr p,
-					ConstructorResult::Continue(constr) => {
-						constructors.insert(i, constr);
-						continue 'read_packet;
-					}
-					ConstructorResult::Ignore((constr, p)) => {
-						constructors.insert(i, constr);
-						packet = p;
-					}
-				}
-			}
-
-			// Otherwise try constructing a new one
-			match AbC2S::construct(packet)? {
-				ConstructorResult::Done(p) => break 'abstr p,
-				ConstructorResult::Continue(c) => {
-					constructors.push(c);
-					continue 'read_packet;
-				}
-				ConstructorResult::Ignore(p) => {
-					error!("Failed to construct abstract packet from concrete packet: {:?} (This is most likely a bug within craftflow)", p);
-					continue 'read_packet;
-				}
-			}
-		};
-
-		trigger_c2s_abstract(&craftflow, conn_id, &mut abstr);
 	}
 }

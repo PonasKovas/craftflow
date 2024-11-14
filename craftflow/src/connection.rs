@@ -21,8 +21,8 @@ pub(crate) use add::new_conn_interface;
 pub struct ConnectionInterface {
 	id: u64,
 	ip: IpAddr,
-	concrete_packet_sender: UnboundedSender<S2C>,
-	abstract_packet_sender: UnboundedSender<AbS2C>,
+	concrete_packet_sender: UnboundedSender<S2C<'static>>,
+	abstract_packet_sender: UnboundedSender<AbS2C<'static>>,
 
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
 	compression: Arc<OnceLock<usize>>,
@@ -36,11 +36,11 @@ pub struct ConnectionInterface {
 
 impl ConnectionInterface {
 	/// Send an abstract packet to this client.
-	pub fn send(&self, packet: impl Into<AbS2C>) {
+	pub fn send(&self, packet: impl Into<AbS2C<'static>>) {
 		let _ = self.abstract_packet_sender.send(packet.into());
 	}
 	/// Send a concrete packet to this client.
-	pub fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C>) {
+	pub fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C<'static>>) {
 		// dont care if the client is disconnected
 		let _ = self.concrete_packet_sender.send(packet.into_state_enum());
 	}

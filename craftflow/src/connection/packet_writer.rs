@@ -35,7 +35,7 @@ impl PacketWriter {
 		protocol_version: u32,
 		compression: Option<usize>,
 		encryptor: &mut Option<Encryptor>,
-		packet: &S2C,
+		packet: &S2C<'_>,
 	) -> anyhow::Result<()> {
 		match packet {
 			S2C::Status(p) if state == State::Status => {

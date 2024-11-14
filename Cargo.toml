@@ -6,7 +6,9 @@ members = [
     "craftflow-protocol-core",
     "craftflow-protocol-versions",
     "example",
-    "modules/*", "shallowclone", "shallowclone-derive",
+    "modules/*",
+    "shallowclone",
+    "shallowclone-derive",
 ]
 resolver = "2"
 

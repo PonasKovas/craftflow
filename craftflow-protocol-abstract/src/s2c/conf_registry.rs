@@ -258,22 +258,22 @@ fn convert_entries<'a>(entries: Array<'a, VarInt, Entry>) -> IndexMap<Cow<'a, st
 }
 
 #[derive(ShallowClone, Debug, Clone, PartialEq)]
-pub struct RegistryConstructor<'a> {
-	trim_material: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
-	trim_pattern: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
-	biome: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
-	chat_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
-	damage_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
-	dimension_type: Option<IndexMap<Cow<'a, str>, DynNBT<'a>>>,
+pub struct RegistryConstructor {
+	trim_material: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
+	trim_pattern: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
+	biome: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
+	chat_type: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
+	damage_type: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
+	dimension_type: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
 }
 
-impl<'a> AbPacketConstructor<'a> for Option<RegistryConstructor<'a>> {
-	type AbPacket = AbConfRegistry<'a>;
-	type Direction = S2C<'a>;
+impl AbPacketConstructor for Option<RegistryConstructor> {
+	type AbPacket = AbConfRegistry<'static>;
+	type Direction = S2C<'static>;
 
 	fn next_packet(
 		&mut self,
-		packet: &'a Self::Direction,
+		packet: &Self::Direction,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>> {
 		let s = self
 			.as_mut()
@@ -290,8 +290,9 @@ impl<'a> AbPacketConstructor<'a> for Option<RegistryConstructor<'a>> {
 					"minecraft:dimension_type" => &mut s.dimension_type,
 					_ => {
 						bail!("Unknown registry id: {:?}", pkt.id)
-					}
-				} = Some(convert_entries(pkt.entries.shallow_clone()));
+					} // have to clone here because the constructor may live longer
+					  // than the individual packets
+				} = Some(convert_entries(pkt.entries.clone()));
 
 				if s.biome.is_some()
 					&& s.chat_type.is_some()
@@ -347,7 +348,7 @@ impl<'a> AbPacketWrite<'a> for AbConfRegistry<'a> {
 
 impl<'a> AbPacketNew<'a> for AbConfRegistry<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = Option<RegistryConstructor<'a>>;
+	type Constructor = Option<RegistryConstructor>;
 
 	fn construct(
 		packet: &'a Self::Direction,
@@ -382,7 +383,7 @@ impl<'a> AbPacketNew<'a> for AbConfRegistry<'a> {
 					_ => {
 						bail!("Unknown registry id: {:?}", pkt.id)
 					}
-				} = Some(convert_entries(pkt.entries.shallow_clone()));
+				} = Some(convert_entries(pkt.entries.clone()));
 
 				ConstructorResult::Continue(Some(constructor))
 			}

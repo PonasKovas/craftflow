@@ -4,6 +4,11 @@
 #![doc(
 	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
 )]
+// used when generating events with a macro for abstract packets
+// (direction_macro.rs)
+#![feature(macro_metavar_expr_concat)]
+// also in direction_macro.rs for various stuff
+#![feature(macro_metavar_expr)]
 
 pub use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
 

@@ -236,6 +236,11 @@ pub struct HoverActionShowEntity<'a> {
 	pub name: Option<Cow<'a, str>>,
 }
 
+impl<'a> TextList<'a> {
+	pub fn new() -> Self {
+		Self::Owned(Vec::new())
+	}
+}
 impl<'a> From<Vec<Text<'a>>> for TextList<'a> {
 	fn from(v: Vec<Text<'a>>) -> Self {
 		Self::Owned(v)
@@ -342,9 +347,9 @@ macro_rules! text {
         $crate::common_structures::text::Text::Object(::std::boxed::Box::new(
         	$crate::common_structures::text::TextObject {
 	            content: $crate::common_structures::text::TextContent::Text {
-					text: $text.to_string()
+					text: $text.into()
 				},
-	            extra: ::std::vec::Vec::new(),
+	            extra: $crate::common_structures::text::TextList::new(),
 	            $($key: text!(@format $key $(= $value)?),)*
 	            ..<$crate::common_structures::text::TextObject as ::std::default::Default>::default()
          	}
@@ -356,6 +361,6 @@ macro_rules! text {
         Some(true)
     };
     (@format $key:ident = $value:expr) => {
-        Some($value.to_owned())
+        Some($value.into())
     };
 }

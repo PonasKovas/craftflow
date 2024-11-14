@@ -15,8 +15,8 @@ mod gen_conversion;
 mod gen_destructure_macro;
 #[path = "build/gen_enum.rs"]
 mod gen_enum;
-#[path = "build/gen_impl_trait_macro.rs"]
-mod gen_impl_trait_macro;
+#[path = "build/gen_event_macro.rs"]
+mod gen_event_macro;
 #[path = "build/gen_mcp_packet.rs"]
 mod gen_mcp_packet;
 #[path = "build/gen_mcp_versioned.rs"]
@@ -34,7 +34,7 @@ use std::{
 
 use gen_destructure_macro::gen_destructure_macro;
 use gen_enum::Variant;
-use gen_impl_trait_macro::gen_impl_trait_macro;
+use gen_event_macro::gen_event_macro;
 use gen_mcp_packet::gen_mcp_packet_impls;
 use gen_mcp_versioned::gen_mcp_versioned;
 use gen_types_code::gen_types_code;
@@ -56,7 +56,7 @@ fn main() {
 		root_code += &gen_conversion::for_direction((direction, dir_generics));
 	}
 
-	root_code += &gen_impl_trait_macro(&packets);
+	root_code += &gen_event_macro(&packets);
 	root_code += &gen_destructure_macro(&packets);
 
 	root_code += &gen_types_code();

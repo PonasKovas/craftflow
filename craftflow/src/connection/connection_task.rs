@@ -34,8 +34,8 @@ pub(super) async fn connection_task(
 	conn_id: u64,
 	mut reader: PacketReader,
 	mut writer: PacketWriter,
-	concrete_packet_sender: UnboundedReceiver<S2C>,
-	abstract_packet_sender: UnboundedReceiver<AbS2C>,
+	concrete_packet_sender: UnboundedReceiver<S2C<'static>>,
+	abstract_packet_sender: UnboundedReceiver<AbS2C<'static>>,
 	reader_state: Arc<RwLock<State>>,
 	writer_state: Arc<RwLock<State>>,
 	protocol_version: Arc<OnceLock<u32>>,
@@ -71,7 +71,7 @@ pub(super) async fn connection_task(
 		Err(_) => bail!("timed out"),
 	};
 
-	let handshake_ab = AbHandshake::construct(handshake.clone())?.assume_done();
+	let handshake_ab = AbHandshake::construct(&handshake)?.assume_done();
 
 	// set the client protocol version
 	let client_version = handshake_ab.protocol_version;
@@ -118,8 +118,11 @@ pub(super) async fn connection_task(
 	}
 
 	// trigger the handshake event
-	if trigger_c2s_concrete(&craftflow, conn_id, &mut handshake).is_continue() {
-		trigger_c2s_abstract(&craftflow, conn_id, &mut handshake_ab.into());
+	if trigger_c2s_concrete(false, &craftflow, conn_id, &mut handshake).is_continue()
+		&& trigger_c2s_abstract(false, &craftflow, conn_id, &mut handshake_ab.into()).is_continue()
+	{
+		trigger_c2s_concrete(true, &craftflow, conn_id, &mut handshake);
+		trigger_c2s_abstract(true, &craftflow, conn_id, &mut handshake_ab.into());
 	}
 
 	// now we can finally split into two tasks

@@ -1,6 +1,5 @@
-use craftflow_protocol_core::common_structures::Text;
-
 use crate::reactor::Event;
+use craftflow_protocol_core::common_structures::Text;
 
 /// This event is triggered when a new connection is established.
 pub struct NewConnection;
@@ -29,5 +28,5 @@ impl Event for UnsupportedClientVersion {
 	type Args<'a> = (u64, u32);
 	/// The error message to send to the client
 	/// If no handler returns, a default message will be used
-	type Return = Text;
+	type Return = Text<'static>;
 }

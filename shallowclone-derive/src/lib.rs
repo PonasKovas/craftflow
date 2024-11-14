@@ -19,7 +19,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 	let target_type = get_target_type(&input);
 
 	// cant use impl_generics from this because its completely opaque and we need to add
-	// our 'shallowclone lifetime
+	// our 'shallowclone lifetime :(
 	let (_, type_generics, where_clause) = input.generics.split_for_impl();
 
 	// we cant use input.generics.params directly because we need to remove the #[shallowclone]

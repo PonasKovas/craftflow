@@ -3,7 +3,10 @@ use anyhow::Result;
 use std::marker::PhantomData;
 
 /// A trait for abstract packet constructor types (for abstract packets that may involve multiple packets)
-pub trait AbPacketConstructor<'a> {
+// we dont allow lifetimes here,
+// because we read packets sequentially and only one is available at a time without cloning them.
+// and if you have a constructor that needs multiple packets you need to clone and have them 'static
+pub trait AbPacketConstructor {
 	/// The abstract packet type that this type constructs
 	type AbPacket;
 	/// The direction of the packet
@@ -16,7 +19,7 @@ pub trait AbPacketConstructor<'a> {
 	/// Feeding more packets after it was done should result in a panic.
 	fn next_packet(
 		&mut self,
-		packet: &'a Self::Direction,
+		packet: &Self::Direction,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>>;
 }
 
@@ -26,13 +29,13 @@ pub trait AbPacketConstructor<'a> {
 // for now. Most likely doesn't even matter.
 pub struct NoConstructor<P, D>(PhantomData<fn(P, D) -> (P, D)>);
 
-impl<'a, P, D> AbPacketConstructor<'a> for NoConstructor<P, D> {
+impl<P, D> AbPacketConstructor for NoConstructor<P, D> {
 	type AbPacket = P;
 	type Direction = D;
 
 	fn next_packet(
 		&mut self,
-		_packet: &'a Self::Direction,
+		_packet: &Self::Direction,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>> {
 		panic!("called next_packet on NoConstructor")
 	}

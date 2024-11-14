@@ -84,7 +84,7 @@ impl<CTX: 'static> Reactor<CTX> {
 					+ 'static,
 			>;
 
-		// // Erase the type of the closure so we can store it
+		// Erase the type of the closure so we can store it
 		let type_erased = Box::new(closure) as Box<dyn Any + Send + Sync + 'static>;
 
 		let handlers = self.events.entry(TypeId::of::<E>()).or_insert(Vec::new());
@@ -106,7 +106,8 @@ impl<CTX: 'static> Reactor<CTX> {
 				let closure: &Box<
 					dyn for<'b> Fn(&'b CTX, E::Args<'b>) -> ControlFlow<E::Return, E::Args<'b>>
 						+ Send
-						+ Sync,
+						+ Sync
+						+ 'static,
 				> = handler.downcast_ref().unwrap();
 
 				args = closure(ctx, args)?;

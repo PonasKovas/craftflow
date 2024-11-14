@@ -34,13 +34,34 @@ impl PacketReader {
 		}
 	}
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet(
-		&mut self,
+	pub(crate) async fn read_packet<'a, F: for<'b> FnOnce(C2S<'b>) -> anyhow::Result<()>>(
+		&'a mut self,
 		state: &RwLock<State>,
 		protocol_version: u32,
 		compression: &OnceLock<usize>,
 		decryptor: &mut Option<Decryptor>,
-	) -> craftflow_protocol_core::Result<C2S> {
+		handler: F,
+	) -> anyhow::Result<()> {
+		let (packet_len, packet) = self
+			.read_packet_inner(state, protocol_version, compression, decryptor)
+			.await?;
+
+		let result = handler(packet);
+
+		// remove the packet bytes from the buffer
+		self.buffer.drain(..packet_len);
+
+		result
+	}
+	// reads a packet and returns the length of the packet (to be removed from the buffer)
+	// and the packet itself
+	async fn read_packet_inner<'a>(
+		&'a mut self,
+		state: &RwLock<State>,
+		protocol_version: u32,
+		compression: &OnceLock<usize>,
+		decryptor: &mut Option<Decryptor>,
+	) -> craftflow_protocol_core::Result<(usize, C2S<'a>)> {
 		// wait for the length of the next packet
 		let packet_len = self.read_varint_at_pos(0, decryptor).await?;
 
@@ -138,10 +159,7 @@ impl PacketReader {
 			)));
 		}
 
-		// remove the bytes from the buffer
-		self.buffer.drain(..total_packet_len);
-
-		Ok(packet)
+		Ok((total_packet_len, packet))
 	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	/// without removing the bytes from the buffer

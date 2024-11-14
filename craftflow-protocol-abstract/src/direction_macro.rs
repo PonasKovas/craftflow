@@ -44,10 +44,14 @@ macro_rules! gen_direction_enum {
 
         impl<'a> crate::AbPacketNew<'a> for $name<'a> {
             type Direction = craftflow_protocol_versions::$direction<'a>;
-            type Constructor = Box<dyn crate::AbPacketConstructor<'a,
+            // The constructor is 'static, because if we are using a constructor
+            // that means there are more than one packet involved, and we need to clone
+            // them and keep them alive for the lifetime of the constructor, since concrete
+            // packets are read sequentially and only one is available at a time
+            type Constructor = Box<dyn crate::AbPacketConstructor<'static,
                 Direction = Self::Direction,
                 AbPacket = Self
-            > + Send + Sync + 'a>;
+            > + Send + Sync>;
 
             fn construct(
                 packet: &'a Self::Direction,
@@ -58,16 +62,16 @@ macro_rules! gen_direction_enum {
                         crate::ConstructorResult::Done(inner) => return Ok(crate::ConstructorResult::Done(Self::$variant(inner))),
                         crate::ConstructorResult::Continue(inner) => {
                             // A constructor wrapper that converts the result to the enum variant
-                            struct __ConstructorWrapper<'a>(<$struct $(<$var_lifetime>)? as crate::AbPacketNew<'a>>::Constructor);
-                            impl<'b> crate::AbPacketConstructor<'b> for __ConstructorWrapper<'b> {
-                                type Direction = craftflow_protocol_versions::$direction<'b>;
-                                type AbPacket = $name<'b>;
+                            struct __ConstructorWrapper(<$struct $(${ignore($var_lifetime)}<'static>)? as crate::AbPacketNew<'static>>::Constructor);
+                            impl crate::AbPacketConstructor<'static> for __ConstructorWrapper {
+                                type Direction = craftflow_protocol_versions::$direction<'static>;
+                                type AbPacket = $name<'static>;
 
                                 fn next_packet(
                                     &mut self,
-                              		packet: &'b Self::Direction,
+                              		packet: &Self::Direction,
                                	) -> anyhow::Result<crate::ConstructorResult<Self::AbPacket, ()>> {
-                                    Ok(match self.0.next_packet(packet)? {
+                                    Ok(match self.0.next_packet(&packet.clone())? {
                                         crate::ConstructorResult::Done(pkt) =>
                                             crate::ConstructorResult::Done($name::$variant(pkt)),
                                         crate::ConstructorResult::Continue(()) =>
@@ -77,7 +81,9 @@ macro_rules! gen_direction_enum {
                                 }
                             }
 
-                            return Ok(crate::ConstructorResult::Continue(Box::new(__ConstructorWrapper(inner))))},
+                            return Ok(crate::ConstructorResult::Continue(
+                                Box::new(__ConstructorWrapper(inner.clone()))
+                            ))},
                     }
                 )*
 
@@ -96,9 +102,9 @@ macro_rules! gen_direction_enum {
         // everything below is for internal usage within craftflow
 
         // the generated macro is used for the packet events
-        gen_direction_enum!{__gen_macros $direction, enum $name { $( $variant($struct) ),* } }
+        gen_direction_enum!{__gen_macros $direction, enum $name<'a> { $( $variant($struct  $( <$var_lifetime> )? ) ),* } }
 	};
-	(__gen_macros S2C, enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
+	(__gen_macros S2C, enum $name:ident<'a> { $( $variant:ident ( $struct:ident  $( <$var_lifetime:lifetime> )? ) ),* } ) => {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __destructure_s2c__ {
@@ -113,26 +119,34 @@ macro_rules! gen_direction_enum {
 
         #[doc(hidden)]
         #[macro_export]
-        macro_rules! __gen_impls_for_packets_s2c {
-            (impl $trait_name:ident for X $code:tt) => {
+        macro_rules! __gen_events_for_packets_s2c {
+            ($event_trait:ident, $pointer_trait:ident) => {
                 $(
-                    const _: () = {
-                        type X = $crate::s2c::$struct;
-                        impl $trait_name for X $code
-                    };
-                )*
-            };
-            (impl $trait_name:ident for Post<X> $code:tt) => {
-                $(
-                    const _: () = {
-                        type X = $crate::s2c::$struct;
-                        impl $trait_name for Post<X> $code
-                    };
+                    #[doc = concat!(
+                        "Event for the [abstract S2C ",
+                        stringify!($struct),
+                        "][",
+                        stringify!($crate),
+                        "::s2c::",
+                        stringify!($struct),
+                        "] packet"
+                    )]
+    				pub struct ${concat(S2C, $struct, Event)};
+
+    				impl $event_trait for ${concat(S2C, $struct, Event)} {
+    				    /// The connection ID and the packet
+    				    type Args<'a> = (u64, &'a mut $crate::s2c::$struct $( <$var_lifetime> )?);
+                        type Return = ();
+    				}
+
+                    impl<'a> $pointer_trait<'a> for $crate::s2c::$struct $( <$var_lifetime> )? {
+                        type Event = ${concat(S2C, $struct, Event)};
+                    }
                 )*
             };
         }
 	};
-	(__gen_macros C2S, enum $name:ident { $( $variant:ident ( $struct:ident ) ),* } ) => {
+	(__gen_macros C2S, enum $name:ident<'a> { $( $variant:ident ( $struct:ident  $( <$var_lifetime:lifetime> )? ) ),* } ) => {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __destructure_c2s__ {
@@ -147,13 +161,29 @@ macro_rules! gen_direction_enum {
 
         #[doc(hidden)]
         #[macro_export]
-        macro_rules! __gen_impls_for_packets_c2s {
-            (impl $trait_name:ident for X $code:tt) => {
+        macro_rules! __gen_events_for_packets_c2s {
+            ($event_trait:ident, $pointer_trait:ident) => {
                 $(
-                    const _: () = {
-                        type X = $crate::c2s::$struct;
-                        impl $trait_name for X $code
-                    };
+                    #[doc = concat!(
+                        "Event for the [abstract C2S ",
+                        stringify!($struct),
+                        "][",
+                        stringify!($crate),
+                        "::c2s::",
+                        stringify!($struct),
+                        "] packet"
+                    )]
+    				pub struct ${concat(C2S, $struct, Event)};
+
+    				impl $event_trait for ${concat(C2S, $struct, Event)} {
+    				    /// The connection ID and the packet
+    				    type Args<'a> = (u64, &'a mut $crate::c2s::$struct $( <$var_lifetime> )?);
+                        type Return = ();
+    				}
+
+                    impl<'a> $pointer_trait<'a> for $crate::c2s::$struct $( <$var_lifetime> )? {
+                        type Event = ${concat(C2S, $struct, Event)};
+                    }
                 )*
             };
         }

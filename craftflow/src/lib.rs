@@ -1,10 +1,11 @@
-#![feature(mapped_lock_guards)]
 #![doc(
 	html_favicon_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
 )]
 #![doc(
 	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
 )]
+// used for Craftflow::get to get access to a connection through a lock
+#![feature(mapped_lock_guards)]
 
 pub mod connection;
 pub mod modules;
