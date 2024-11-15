@@ -5,12 +5,12 @@ use craftflow_protocol_versions::{
 	s2c::{self, Configuration, Login},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
 /// Disconnects the client and displays the given message.
 /// Available in login, configuration and play states
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbDisconnect<'a> {
 	pub message: Text<'a>,
 }
@@ -42,7 +42,7 @@ impl<'a> AbPacketWrite<'a> for AbDisconnect<'a> {
 
 impl<'a> AbPacketNew<'a> for AbDisconnect<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbDisconnect<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

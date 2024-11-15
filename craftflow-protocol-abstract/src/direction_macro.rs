@@ -44,14 +44,9 @@ macro_rules! gen_direction_enum {
 
         impl<'a> crate::AbPacketNew<'a> for $name<'a> {
             type Direction = craftflow_protocol_versions::$direction<'a>;
-            // The constructor is 'static, because if we are using a constructor
-            // that means there are more than one packet involved, and we need to clone
-            // them and keep them alive for the lifetime of the constructor, since concrete
-            // packets are read sequentially and only one is available at a time
             type Constructor = Box<dyn crate::AbPacketConstructor<
-                Direction = Self::Direction,
-                AbPacket = Self
-            > + Send + Sync>;
+                AbPacket = $name<'static>
+            > + Send + Sync + 'static>;
 
             fn construct(
                 packet: &'a Self::Direction,
@@ -64,14 +59,13 @@ macro_rules! gen_direction_enum {
                             // A constructor wrapper that converts the result to the enum variant
                             struct __ConstructorWrapper(<$struct $(${ignore($var_lifetime)}<'static>)? as crate::AbPacketNew<'static>>::Constructor);
                             impl crate::AbPacketConstructor for __ConstructorWrapper {
-                                type Direction = craftflow_protocol_versions::$direction<'static>;
                                 type AbPacket = $name<'static>;
 
                                 fn next_packet(
                                     &mut self,
-                              		packet: &Self::Direction,
+                              		packet: &crate::packet_constructor::ConcretePacket<'_>,
                                	) -> anyhow::Result<crate::ConstructorResult<Self::AbPacket, ()>> {
-                                    Ok(match self.0.next_packet(&packet.make_owned())? {
+                                    Ok(match self.0.next_packet(packet)? {
                                         crate::ConstructorResult::Done(pkt) =>
                                             crate::ConstructorResult::Done($name::$variant(pkt)),
                                         crate::ConstructorResult::Continue(()) =>
@@ -82,7 +76,7 @@ macro_rules! gen_direction_enum {
                             }
 
                             return Ok(crate::ConstructorResult::Continue(
-                                Box::new(__ConstructorWrapper(inner.clone()))
+                                Box::new(__ConstructorWrapper(inner))
                             ))},
                     }
                 )*

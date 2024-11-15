@@ -13,7 +13,7 @@
 pub use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
 
 pub mod c2s;
-mod packet_constructor;
+pub(crate) mod packet_constructor;
 mod packet_new;
 mod packet_write;
 pub mod s2c;

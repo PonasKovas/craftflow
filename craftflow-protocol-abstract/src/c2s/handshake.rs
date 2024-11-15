@@ -71,7 +71,7 @@ impl<'a> AbPacketWrite<'a> for AbHandshake<'a> {
 
 impl<'a> AbPacketNew<'a> for AbHandshake<'a> {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbHandshake<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

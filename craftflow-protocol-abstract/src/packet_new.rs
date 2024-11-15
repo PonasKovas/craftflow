@@ -9,7 +9,7 @@ pub trait AbPacketNew<'a> {
 	type Direction;
 	/// If this abstract packet may involve multiple concrete packets, this is the type that will handle
 	/// the subsequent packets. Otherwise, it should be [`NoConstructor`][crate::NoConstructor].
-	type Constructor;
+	type Constructor: 'static;
 
 	/// Attempts to construct a new abstract packet from the given concrete packet
 	/// If this abstract packed does not involve the given concrete packet, Ignore is returned.
