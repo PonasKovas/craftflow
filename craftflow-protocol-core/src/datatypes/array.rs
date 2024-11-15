@@ -1,5 +1,5 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
-use shallowclone::ShallowClone;
+use shallowclone::{CoCowSlice, MakeOwned, ShallowClone};
 use std::{
 	fmt::Debug,
 	io::Write,
@@ -11,46 +11,34 @@ use std::{
 /// possibly borrowing data with lifetime `'a`.
 #[derive(ShallowClone, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Array<'a, #[shallowclone(skip)] LEN, #[shallowclone(skip)] T> {
-	pub inner: ArrayInner<'a, Vec<T>>,
+	pub inner: CoCowSlice<'a, T>,
 	_phantom: PhantomData<LEN>,
 }
 
-// The reason why we're not just using Cow here:
-// Cow doesn't work well with shallow clone, since it's invariant over T,
-// which introduces problems when T has a lifetime param. If we used Cow we would be forced
-// to have two lifetime parameters basically everywhere for no reason, because
-// when we shallow clone it we shorten the lifetime of the cow, but can't shorten the lifetime
-// of the inner T, and so we end up with two different lifetimes. The following cow implementation
-// is simpler, not relying on ToOwned trait and is covariant over T, therefore not having this problem.
-//
-// This implementation adds the limitation of forcing us to use owned data types like Vec<T>
-// and similar, where we don't necessarily need them, where something like &'static [T] would suffice,
-// but instead we need to use &'static Vec<T>, but it hardly matters.
-#[derive(ShallowClone, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[shallowclone(cow)]
-pub enum ArrayInner<'a, #[shallowclone(skip)] T> {
-	#[shallowclone(owned)]
-	Owned(T),
-	#[shallowclone(borrowed)]
-	Borrowed(&'a T),
+// LEN doesnt really need to be Clone, but the derive Clone macro above requires it to be
+// and in reality it always will be, so it doesnt matter
+impl<'a, LEN: Clone + 'static, T: MakeOwned> MakeOwned for Array<'a, LEN, T> {
+	type Owned = Array<'static, LEN, T::Owned>;
+
+	fn make_owned(self) -> Self::Owned {
+		Self::Owned {
+			inner: self.inner.make_owned(),
+			_phantom: PhantomData,
+		}
+	}
 }
 
 impl<'a, LEN, T: Default> Array<'a, LEN, T> {
 	pub fn new() -> Self {
 		Self {
-			inner: ArrayInner::new(),
+			inner: Default::default(),
 			_phantom: PhantomData,
 		}
 	}
 }
-impl<'a, T: Default> ArrayInner<'a, T> {
-	pub fn new() -> Self {
-		Self::Owned(T::default())
-	}
-}
 
 impl<'a, LEN, T> Deref for Array<'a, LEN, T> {
-	type Target = ArrayInner<'a, Vec<T>>;
+	type Target = CoCowSlice<'a, T>;
 
 	fn deref(&self) -> &Self::Target {
 		&self.inner
@@ -62,35 +50,10 @@ impl<'a, LEN, T> DerefMut for Array<'a, LEN, T> {
 	}
 }
 
-impl<'a, T> Deref for ArrayInner<'a, T> {
-	type Target = T;
-
-	fn deref(&self) -> &Self::Target {
-		match self {
-			ArrayInner::Owned(t) => t,
-			ArrayInner::Borrowed(t) => t,
-		}
-	}
-}
-impl<'a, T: Clone> DerefMut for ArrayInner<'a, T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		match self {
-			ArrayInner::Owned(t) => t,
-			ArrayInner::Borrowed(t) => {
-				*self = ArrayInner::Owned(t.clone());
-				match self {
-					ArrayInner::Owned(t) => t,
-					_ => unreachable!(),
-				}
-			}
-		}
-	}
-}
-
 impl<'a, LEN, T> From<Vec<T>> for Array<'a, LEN, T> {
 	fn from(value: Vec<T>) -> Self {
 		Self {
-			inner: ArrayInner::Owned(value),
+			inner: value.into(),
 			_phantom: PhantomData,
 		}
 	}
@@ -98,7 +61,7 @@ impl<'a, LEN, T> From<Vec<T>> for Array<'a, LEN, T> {
 impl<'a, LEN, T> From<&'a Vec<T>> for Array<'a, LEN, T> {
 	fn from(value: &'a Vec<T>) -> Self {
 		Self {
-			inner: ArrayInner::Borrowed(value),
+			inner: CoCowSlice::Borrowed(value),
 			_phantom: PhantomData,
 		}
 	}

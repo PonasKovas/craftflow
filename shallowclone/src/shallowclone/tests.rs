@@ -44,11 +44,7 @@ struct Complex<'a> {
 }
 
 #[derive(ShallowClone, Clone)]
-#[shallowclone(cow)]
 enum ComplexCow<'a> {
-	#[allow(dead_code)]
-	#[shallowclone(owned)]
 	Owned(Vec<Complex<'a>>),
-	#[shallowclone(borrowed)]
 	Borrowed(&'a [Complex<'a>]),
 }

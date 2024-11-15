@@ -8,14 +8,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Client settings, can be send both during configuration or play states.
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbClientSettings<'a> {
 	pub locale: Cow<'a, str>,
 	pub view_distance: u8,
@@ -27,19 +27,19 @@ pub struct AbClientSettings<'a> {
 	pub enable_server_listing: bool,
 }
 
-#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum ChatMode {
 	Enabled = 0,
 	CommandsOnly,
 	Hidden,
 }
-#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum MainHand {
 	Left = 0,
 	Right,
 }
 
-#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct SkinParts {
 	pub cape: bool,
 	pub jacket: bool,

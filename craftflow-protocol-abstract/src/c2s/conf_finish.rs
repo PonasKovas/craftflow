@@ -9,11 +9,11 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
 /// Finishes the configuration state and moves to Play
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfFinish {}
 
 impl<'a> AbPacketWrite<'a> for AbConfFinish {

@@ -14,21 +14,21 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	array,
 	borrow::Cow,
 	iter::{once, Once},
 };
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginEncryption<'a> {
 	pub shared_secret: [u8; 16],
 	pub verify_token: Option<Cow<'a, [u8]>>,
 	pub signature: Option<Signature<'a>>,
 }
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct Signature<'a> {
 	pub salt: i64,
 	pub signature: Cow<'a, [u8]>,

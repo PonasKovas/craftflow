@@ -8,14 +8,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Response to a login plugin request
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginPluginResponse<'a> {
 	pub id: i32,
 	/// None if the server does not support the plugin

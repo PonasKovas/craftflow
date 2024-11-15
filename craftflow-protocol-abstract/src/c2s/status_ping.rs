@@ -7,12 +7,12 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
 /// The ping packet that the client sends to the server (in the STATUS state)
 /// Should be responded with a `AbStatusPong` packet.
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbStatusPing {
 	/// Any number, used to identify the response
 	/// The same will be sent back in the `AbStatusPong` packet

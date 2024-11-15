@@ -7,11 +7,11 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
 /// Requests server information (MOTD, player count, favicon, etc.) in the STATUS state
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbStatusRequestInfo;
 
 impl<'a> AbPacketWrite<'a> for AbStatusRequestInfo {

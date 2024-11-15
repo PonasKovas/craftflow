@@ -1,6 +1,8 @@
 use crate::{MCPRead, MCPWrite};
 use std::io::Write;
 
+// TODO: i dont think these are even used anywhere in the project, might want to consider removing
+
 impl<T1: MCPWrite, T2: MCPWrite> MCPWrite for (T1, T2) {
 	fn write(&self, output: &mut impl Write) -> crate::Result<usize> {
 		self.0.write(output)?;

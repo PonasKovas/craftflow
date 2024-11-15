@@ -1,12 +1,12 @@
 use crate::{MCPRead, MCPWrite, Result};
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	io::Write,
 	ops::{Deref, DerefMut},
 };
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct RestBuffer<'a> {
 	pub data: Cow<'a, [u8]>,
 }

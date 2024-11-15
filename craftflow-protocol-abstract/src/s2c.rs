@@ -36,7 +36,7 @@ pub use status_pong::AbStatusPong;
 
 include!("direction_macro.rs");
 
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 gen_direction_enum! {
 	@DIRECTION=S2C;
 	/// All packets that can be sent from the client to the server

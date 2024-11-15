@@ -134,12 +134,11 @@ macro_rules! dyn_nbt_internal {
 
 	// list
     ([ $( $tt:tt )* ]) => {{
-    // ([$( $(#[$ty:tt])? $tt:tt ),* $(,)?]) => {{
         let list = $crate::DynNBT::List({
             #[allow(unused_mut)]
             let mut vec = ::std::vec::Vec::new();
             $crate::dyn_nbt_internal!(@list vec () [$($tt)*]);
-            $crate::dynamic::DynNBTList::Owned(vec)
+            vec.into()
         });
         list.validate().expect("invalid nbt in dyn_nbt! macro");
         list
@@ -150,7 +149,7 @@ macro_rules! dyn_nbt_internal {
             #[allow(unused_mut)]
             let mut map = ::std::collections::HashMap::new();
             $crate::dyn_nbt_internal!(@compound map () () {$($tt)*});
-            $crate::dynamic::DynNBTCompound::Owned(map)
+            map.into()
         });
         map
     }};

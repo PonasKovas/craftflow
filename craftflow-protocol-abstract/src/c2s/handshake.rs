@@ -8,14 +8,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// The initial packet that a client should send to the server.
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbHandshake<'a> {
 	/// The protocol version that the client is using
 	pub protocol_version: u32,
@@ -28,7 +28,7 @@ pub struct AbHandshake<'a> {
 }
 
 /// The next state that the client wants to switch to
-#[derive(ShallowClone, Debug, PartialEq, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Copy, Hash, PartialOrd, Eq, Ord)]
 pub enum NextState {
 	Status,
 	Login,

@@ -28,7 +28,7 @@ pub use status_request_info::AbStatusRequestInfo;
 
 include!("direction_macro.rs");
 
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 gen_direction_enum! {
 	@DIRECTION=C2S;
 	/// All packets that can be sent from the client to the server

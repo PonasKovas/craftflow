@@ -2,12 +2,8 @@ mod dyn_macro;
 
 use crate::arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY};
 use serde::{de::VariantAccess, Deserialize, Serialize};
-use shallowclone::ShallowClone;
-use std::{
-	borrow::Cow,
-	collections::HashMap,
-	ops::{Deref, DerefMut},
-};
+use shallowclone::{CoCow, CoCowSlice, ShallowClone};
+use std::{borrow::Cow, collections::HashMap};
 
 /// A structure that can be used to represent any NBT tag dynamically
 #[derive(ShallowClone, Serialize, Debug, PartialEq, Clone)]
@@ -20,8 +16,8 @@ pub enum DynNBT<'a> {
 	Double(f64),
 	Float(f32),
 	String(#[serde(borrow)] Cow<'a, str>),
-	List(#[serde(borrow)] DynNBTList<'a>),
-	Compound(#[serde(borrow)] DynNBTCompound<'a>),
+	List(#[serde(borrow)] CoCowSlice<'a, DynNBT<'a>>),
+	Compound(#[serde(borrow)] CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>>),
 	LongArray(
 		#[serde(with = "crate::arrays::long_array")]
 		#[serde(borrow)]
@@ -37,96 +33,6 @@ pub enum DynNBT<'a> {
 		#[serde(borrow)]
 		Cow<'a, [u8]>,
 	),
-}
-
-#[derive(ShallowClone, Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
-#[shallowclone(cow)]
-pub enum DynNBTList<'a> {
-	#[shallowclone(owned)]
-	Owned(#[serde(borrow)] Vec<DynNBT<'a>>),
-	#[serde(skip_deserializing)]
-	#[shallowclone(borrowed)]
-	Borrowed(&'a [DynNBT<'a>]),
-}
-impl<'a> From<Vec<DynNBT<'a>>> for DynNBTList<'a> {
-	fn from(v: Vec<DynNBT<'a>>) -> Self {
-		DynNBTList::Owned(v)
-	}
-}
-impl<'a> From<&'a [DynNBT<'a>]> for DynNBTList<'a> {
-	fn from(v: &'a [DynNBT<'a>]) -> Self {
-		DynNBTList::Borrowed(v)
-	}
-}
-impl<'a> Deref for DynNBTList<'a> {
-	type Target = [DynNBT<'a>];
-
-	fn deref(&self) -> &Self::Target {
-		match self {
-			DynNBTList::Owned(t) => t,
-			DynNBTList::Borrowed(t) => t,
-		}
-	}
-}
-impl<'a> DerefMut for DynNBTList<'a> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		match self {
-			DynNBTList::Owned(t) => t,
-			DynNBTList::Borrowed(t) => {
-				*self = DynNBTList::Owned(t.to_owned());
-				match self {
-					DynNBTList::Owned(t) => t,
-					DynNBTList::Borrowed(_) => unreachable!(),
-				}
-			}
-		}
-	}
-}
-
-#[derive(ShallowClone, Serialize, Deserialize, Debug, PartialEq, Clone)]
-#[serde(untagged)]
-#[shallowclone(cow)]
-pub enum DynNBTCompound<'a> {
-	#[shallowclone(owned)]
-	Owned(#[serde(borrow)] HashMap<Cow<'a, str>, DynNBT<'a>>),
-	#[serde(skip_deserializing)]
-	#[shallowclone(borrowed)]
-	Borrowed(#[serde(borrow)] &'a HashMap<Cow<'a, str>, DynNBT<'a>>),
-}
-impl<'a> From<HashMap<Cow<'a, str>, DynNBT<'a>>> for DynNBTCompound<'a> {
-	fn from(v: HashMap<Cow<'a, str>, DynNBT<'a>>) -> Self {
-		DynNBTCompound::Owned(v)
-	}
-}
-impl<'a> From<&'a HashMap<Cow<'a, str>, DynNBT<'a>>> for DynNBTCompound<'a> {
-	fn from(v: &'a HashMap<Cow<'a, str>, DynNBT<'a>>) -> Self {
-		DynNBTCompound::Borrowed(v)
-	}
-}
-impl<'a> Deref for DynNBTCompound<'a> {
-	type Target = HashMap<Cow<'a, str>, DynNBT<'a>>;
-
-	fn deref(&self) -> &Self::Target {
-		match self {
-			DynNBTCompound::Owned(t) => t,
-			DynNBTCompound::Borrowed(t) => t,
-		}
-	}
-}
-impl<'a> DerefMut for DynNBTCompound<'a> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		match self {
-			DynNBTCompound::Owned(t) => t,
-			DynNBTCompound::Borrowed(t) => {
-				*self = DynNBTCompound::Owned(t.to_owned());
-				match self {
-					DynNBTCompound::Owned(t) => t,
-					DynNBTCompound::Borrowed(_) => unreachable!(),
-				}
-			}
-		}
-	}
 }
 
 impl<'a> DynNBT<'a> {
@@ -241,14 +147,14 @@ impl<'a> DynNBT<'a> {
 		}
 	}
 	/// Returns a List, if this NBT is a list.
-	pub fn as_list(&self) -> Option<&DynNBTList<'a>> {
+	pub fn as_list(&self) -> Option<&CoCowSlice<'a, DynNBT<'a>>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
 	/// Returns a Compound, if this NBT is a compound.
-	pub fn as_compound(&self) -> Option<&DynNBTCompound<'a>> {
+	pub fn as_compound(&self) -> Option<&CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
@@ -325,14 +231,14 @@ impl<'a> DynNBT<'a> {
 		}
 	}
 	/// Returns a mutable reference to the inner value, if this NBT is a list.
-	pub fn as_mut_list(&mut self) -> Option<&mut DynNBTList<'a>> {
+	pub fn as_mut_list(&mut self) -> Option<&mut CoCowSlice<'a, DynNBT<'a>>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
 	/// Returns a mutable reference to the inner value, if this NBT is a compound.
-	pub fn as_mut_compound(&mut self) -> Option<&mut DynNBTCompound<'a>> {
+	pub fn as_mut_compound(&mut self) -> Option<&mut CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
@@ -421,14 +327,14 @@ impl<'a> DynNBT<'a> {
 		}
 	}
 	/// Returns a list by value, if this NBT is a list.
-	pub fn into_list(self) -> Option<DynNBTList<'a>> {
+	pub fn into_list(self) -> Option<CoCowSlice<'a, DynNBT<'a>>> {
 		match self {
 			DynNBT::List(v) => Some(v),
 			_ => None,
 		}
 	}
 	/// Returns a compound by value, if this NBT is a compound.
-	pub fn into_compound(self) -> Option<DynNBTCompound<'a>> {
+	pub fn into_compound(self) -> Option<CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>>> {
 		match self {
 			DynNBT::Compound(v) => Some(v),
 			_ => None,
@@ -505,14 +411,14 @@ impl<'a> DynNBT<'a> {
 		}
 	}
 	/// Returns a byte array reference, if this NBT is a byte array, panics otherwise.
-	pub fn expect_list(&self) -> &DynNBTList<'a> {
+	pub fn expect_list(&self) -> &CoCowSlice<'a, DynNBT<'a>> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
 	/// Returns a compound reference, if this NBT is a compound, panics otherwise.
-	pub fn expect_compound(&self) -> &DynNBTCompound<'a> {
+	pub fn expect_compound(&self) -> &CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
@@ -589,14 +495,14 @@ impl<'a> DynNBT<'a> {
 		}
 	}
 	/// Returns a byte array by mutable reference, if this NBT is a list, panics otherwise.
-	pub fn expect_mut_list(&mut self) -> &mut DynNBTList<'a> {
+	pub fn expect_mut_list(&mut self) -> &mut CoCowSlice<'a, DynNBT<'a>> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
 	/// Returns a compound by mutable reference, if this NBT is a compound, panics otherwise.
-	pub fn expect_mut_compound(&mut self) -> &mut DynNBTCompound<'a> {
+	pub fn expect_mut_compound(&mut self) -> &mut CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
@@ -685,14 +591,14 @@ impl<'a> DynNBT<'a> {
 		}
 	}
 	/// Returns a list by value, if this NBT is a list, panics otherwise.
-	pub fn unwrap_list(self) -> DynNBTList<'a> {
+	pub fn unwrap_list(self) -> CoCowSlice<'a, DynNBT<'a>> {
 		match self {
 			DynNBT::List(v) => v,
 			_ => panic!("Expected List, found {:?}", self),
 		}
 	}
 	/// Returns a compound by value, if this NBT is a compound, panics otherwise.
-	pub fn unwrap_compound(self) -> DynNBTCompound<'a> {
+	pub fn unwrap_compound(self) -> CoCow<'a, HashMap<Cow<'a, str>, DynNBT<'a>>> {
 		match self {
 			DynNBT::Compound(v) => v,
 			_ => panic!("Expected Compound, found {:?}", self),
@@ -774,7 +680,7 @@ impl<'de> Deserialize<'de> for DynNBT<'de> {
 					vec.push(elem);
 				}
 
-				Ok(DynNBT::List(DynNBTList::Owned(vec)))
+				Ok(DynNBT::List(CoCowSlice::Owned(vec)))
 			}
 			fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
 			where
@@ -784,7 +690,7 @@ impl<'de> Deserialize<'de> for DynNBT<'de> {
 				while let Some((key, value)) = map.next_entry()? {
 					hash_map.insert(key, value);
 				}
-				Ok(DynNBT::Compound(DynNBTCompound::Owned(hash_map)))
+				Ok(DynNBT::Compound(CoCow::Owned(hash_map)))
 			}
 			fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error>
 			where
@@ -925,21 +831,21 @@ impl<'a> From<&'a str> for DynNBT<'a> {
 }
 impl<'a, T: Into<DynNBT<'a>>> From<Vec<T>> for DynNBT<'a> {
 	fn from(value: Vec<T>) -> Self {
-		Self::List(DynNBTList::Owned(
+		Self::List(CoCowSlice::Owned(
 			value.into_iter().map(Into::into).collect(),
 		))
 	}
 }
 impl<'a, T: Into<DynNBT<'a>>> From<HashMap<Cow<'a, str>, T>> for DynNBT<'a> {
 	fn from(value: HashMap<Cow<'a, str>, T>) -> Self {
-		Self::Compound(DynNBTCompound::Owned(
+		Self::Compound(CoCow::Owned(
 			value.into_iter().map(|(k, v)| (k, v.into())).collect(),
 		))
 	}
 }
 impl<'a, T: Into<DynNBT<'a>>> From<HashMap<String, T>> for DynNBT<'a> {
 	fn from(value: HashMap<String, T>) -> Self {
-		Self::Compound(DynNBTCompound::Owned(
+		Self::Compound(CoCow::Owned(
 			value
 				.into_iter()
 				.map(|(k, v)| (Cow::Owned(k), v.into()))
@@ -949,7 +855,7 @@ impl<'a, T: Into<DynNBT<'a>>> From<HashMap<String, T>> for DynNBT<'a> {
 }
 impl<'a, T: Into<DynNBT<'a>>> From<HashMap<&'a str, T>> for DynNBT<'a> {
 	fn from(value: HashMap<&'a str, T>) -> Self {
-		Self::Compound(DynNBTCompound::Owned(
+		Self::Compound(CoCow::Owned(
 			value
 				.into_iter()
 				.map(|(k, v)| (Cow::Borrowed(k), v.into()))

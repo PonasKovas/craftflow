@@ -1,14 +1,14 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
 use serde::{Deserialize, Serialize};
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::io::Write;
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
 pub struct Nbt<T> {
 	pub inner: T,
 }
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
 pub struct AnonymousNbt<T> {
 	pub inner: T,
 }

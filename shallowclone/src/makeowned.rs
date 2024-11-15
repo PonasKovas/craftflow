@@ -7,9 +7,10 @@ use std::{
 
 mod tests;
 
-/// Takes a value and transforms it to be 'static, cloning parts if necessary
-pub trait MakeOwned {
-	type Owned: 'static;
+/// Takes a value and transforms it to be `'static`, cloning parts if necessary
+pub trait MakeOwned: Clone {
+	/// This must be subtype of `Self`, but 'static.
+	type Owned: Clone + 'static;
 
 	fn make_owned(self) -> Self::Owned;
 }
@@ -37,26 +38,17 @@ where
 		})
 	}
 }
-impl<'a, A: Clone + 'static, T: Clone + ?Sized> MakeOwned for Cow<'a, T>
+impl<'a, A: MakeOwned + 'static, T: Clone + ?Sized> MakeOwned for Cow<'a, T>
 where
 	T: MakeOwned<Owned = A>,
-	&'a T: MakeOwned<Owned = A>,
 {
 	type Owned = Cow<'static, A>;
 
 	fn make_owned(self) -> <Self as MakeOwned>::Owned {
 		match self {
-			Cow::Borrowed(bor) => Cow::Owned(bor.make_owned()),
+			Cow::Borrowed(bor) => Cow::Owned(bor.clone().make_owned()),
 			Cow::Owned(owned) => Cow::Owned(owned.make_owned()),
 		}
-	}
-}
-
-impl<'a, T: ToOwned + ?Sized + 'static> MakeOwned for &'a T {
-	type Owned = <T as ToOwned>::Owned;
-
-	fn make_owned(self) -> <Self as MakeOwned>::Owned {
-		self.to_owned()
 	}
 }
 

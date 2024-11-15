@@ -13,16 +13,16 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, C2S,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfResourcePackResponse {
 	pub uuid: u128,
 	pub result: ResourcePackResult,
 }
 
-#[derive(ShallowClone, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum ResourcePackResult {
 	Success = 0,
 	Declined,

@@ -7,7 +7,7 @@ repository = "https://github.com/PonasKovas/craftflow/tree/master/craftflow-nbt"
 license = "MPL-2.0"
 
 [dependencies]
-shallowclone = { path = "../shallowclone" }
+shallowclone = { path = "../shallowclone", features = ["serde"] }
 thiserror = { workspace = true }
 serde = { workspace = true }
 cesu8 = { workspace = true }

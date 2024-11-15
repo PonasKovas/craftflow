@@ -1,5 +1,5 @@
 use crate::{Error, MCPRead, MCPWrite, Result};
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::fmt::Debug;
 use std::io::Write;
 use std::{
@@ -12,6 +12,19 @@ use std::{
 pub struct Buffer<'a, #[shallowclone(skip)] LEN> {
 	pub inner: Cow<'a, [u8]>,
 	_phantom: PhantomData<LEN>,
+}
+
+// LEN doesnt really need to be Clone, but the derive Clone macro above requires it to be
+// and in reality it always will be, so it doesnt matter
+impl<'a, LEN: Clone + 'static> MakeOwned for Buffer<'a, LEN> {
+	type Owned = Buffer<'static, LEN>;
+
+	fn make_owned(self) -> Self::Owned {
+		Self::Owned {
+			inner: self.inner.make_owned(),
+			_phantom: PhantomData,
+		}
+	}
 }
 
 impl<'a, LEN> Buffer<'a, LEN> {

@@ -8,7 +8,7 @@ use std::{
 
 mod tests;
 
-/// The same as [`Clone`], but doesnt clone `Cow`s, instead it just borrows them.
+/// The same as [`Clone`], but doesnt clone [`Cow`][std::borrow::Cow] values, instead it just borrows them.
 pub trait ShallowClone<'a> {
 	type Target;
 

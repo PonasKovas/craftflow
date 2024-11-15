@@ -1,37 +1,35 @@
 use serde::{Deserialize, Serialize};
-use shallowclone::ShallowClone;
+use shallowclone::{CoCowSlice, MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
-	ops::{Add, AddAssign, Deref, DerefMut},
+	ops::{Add, AddAssign},
 };
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 #[serde(untagged)]
 pub enum Text<'a> {
 	String(Cow<'a, str>),
-	Array(TextList<'a>),
+	Array(CoCowSlice<'a, Text<'a>>),
 	Object(Box<TextObject<'a>>),
-}
-
-#[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
-)]
-#[serde(untagged)]
-#[shallowclone(cow)]
-pub enum TextList<'a> {
-	#[shallowclone(owned)]
-	Owned(Vec<Text<'a>>),
-	#[serde(skip_deserializing)]
-	#[shallowclone(borrowed)]
-	Borrowed(&'a [Text<'a>]),
 }
 
 #[derive(
 	Serialize,
 	Deserialize,
 	ShallowClone,
+	MakeOwned,
 	Debug,
 	Clone,
 	Default,
@@ -46,7 +44,7 @@ pub struct TextObject<'a> {
 	#[serde(flatten)]
 	pub content: TextContent<'a>,
 	#[serde(default)]
-	pub extra: TextList<'a>,
+	pub extra: CoCowSlice<'a, Text<'a>>,
 	/// The text color, which may be a color name or a #-prefixed hexadecimal RGB specification
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -81,7 +79,17 @@ pub struct TextObject<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 #[serde(untagged)]
 pub enum TextContent<'a> {
@@ -96,7 +104,7 @@ pub enum TextContent<'a> {
 		/// Replacements for placeholders in the translation text.
 		#[serde(default)]
 		#[serde(skip_serializing_if = "Option::is_none")]
-		with: Option<TextList<'a>>,
+		with: Option<CoCowSlice<'a, Text<'a>>>,
 	},
 	Keybind {
 		/// The name of a keybinding. The client's current setting for the specified keybinding becomes the component's content.
@@ -131,7 +139,17 @@ pub enum TextContent<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 #[serde(untagged)]
 pub enum TextNbtDataSource<'a> {
@@ -150,7 +168,17 @@ pub enum TextNbtDataSource<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 pub struct Score<'a> {
 	/// A player username, player or entity UUID, entity selector (that selects one entity), or * to match the sending player.
@@ -160,7 +188,17 @@ pub struct Score<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 pub struct ClickEvent<'a> {
 	pub action: ClickEventAction,
@@ -168,7 +206,17 @@ pub struct ClickEvent<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum ClickEventAction {
@@ -180,14 +228,34 @@ pub enum ClickEventAction {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 pub struct HoverEvent<'a> {
 	pub action: HoverEventAction<'a>,
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum HoverEventAction<'a> {
@@ -206,7 +274,17 @@ pub enum HoverEventAction<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 pub struct HoverActionShowItem<'a> {
 	/// The textual identifier of the item's type. If unrecognized, defaults to minecraft:air.
@@ -222,7 +300,17 @@ pub struct HoverActionShowItem<'a> {
 }
 
 #[derive(
-	Serialize, Deserialize, ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord,
+	Serialize,
+	Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
 )]
 pub struct HoverActionShowEntity<'a> {
 	/// The textual identifier of the entity's type. If unrecognized, defaults to minecraft:pig.
@@ -234,22 +322,6 @@ pub struct HoverActionShowEntity<'a> {
 	#[serde(default)]
 	#[serde(skip_serializing_if = "Option::is_none")]
 	pub name: Option<Cow<'a, str>>,
-}
-
-impl<'a> TextList<'a> {
-	pub fn new() -> Self {
-		Self::Owned(Vec::new())
-	}
-}
-impl<'a> From<Vec<Text<'a>>> for TextList<'a> {
-	fn from(v: Vec<Text<'a>>) -> Self {
-		Self::Owned(v)
-	}
-}
-impl<'a> From<&'a [Text<'a>]> for TextList<'a> {
-	fn from(v: &'a [Text<'a>]) -> Self {
-		Self::Borrowed(v)
-	}
 }
 
 impl<'a> Add for Text<'a> {
@@ -305,33 +377,6 @@ impl<'a> Default for TextContent<'a> {
 	}
 }
 
-impl<'a> Default for TextList<'a> {
-	fn default() -> Self {
-		TextList::Owned(Vec::new())
-	}
-}
-impl<'a> Deref for TextList<'a> {
-	type Target = [Text<'a>];
-
-	fn deref(&self) -> &Self::Target {
-		match self {
-			TextList::Borrowed(v) => v,
-			TextList::Owned(v) => &v,
-		}
-	}
-}
-impl<'a> DerefMut for TextList<'a> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		match self {
-			TextList::Owned(vec) => vec,
-			TextList::Borrowed(_) => {
-				*self = TextList::Owned(self.to_vec());
-				self
-			}
-		}
-	}
-}
-
 /// Macro for generating a `Text` object.
 ///
 /// Usage:
@@ -349,7 +394,7 @@ macro_rules! text {
 	            content: $crate::common_structures::text::TextContent::Text {
 					text: $text.into()
 				},
-	            extra: $crate::common_structures::text::TextList::new(),
+	            extra: ::std::default::Default::default(),
 	            $($key: text!(@format $key $(= $value)?),)*
 	            ..<$crate::common_structures::text::TextObject as ::std::default::Default>::default()
          	}
