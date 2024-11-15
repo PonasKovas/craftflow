@@ -13,7 +13,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct DisconnectV00765<'a> {
 		pub reason: AnonymousNbt<Text<'a>>,
 	}

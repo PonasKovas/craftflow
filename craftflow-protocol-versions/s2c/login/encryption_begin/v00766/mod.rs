@@ -35,7 +35,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct EncryptionBeginV00766<'a> {
 		pub server_id: Cow<'a, str>,
 		pub public_key: Buffer<'a, VarInt>,

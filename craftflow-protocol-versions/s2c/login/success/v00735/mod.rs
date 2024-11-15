@@ -17,7 +17,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct SuccessV00735<'a> {
 		pub uuid: u128,
 		pub username: Cow<'a, str>,

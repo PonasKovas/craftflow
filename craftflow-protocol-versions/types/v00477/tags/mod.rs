@@ -29,14 +29,14 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
 	pub struct Tags<'a> {
 		pub tags: Array<'a, VarInt, Tag<'a>>,
 	}
 }
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
 	pub struct Tag<'a> {
 		pub tag_name: Cow<'a, str>,
 		pub entries: Array<'a, VarInt, VarInt>,

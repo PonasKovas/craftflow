@@ -17,7 +17,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct LoginStartV00764<'a> {
 		pub username: Cow<'a, str>,
 		pub player_uuid: u128,

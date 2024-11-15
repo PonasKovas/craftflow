@@ -27,7 +27,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct EncryptionBeginV00005<'a> {
 		pub shared_secret: Buffer<'a, i16>,
 		pub verify_token: Buffer<'a, i16>,

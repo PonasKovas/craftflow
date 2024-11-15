@@ -27,7 +27,7 @@ pub fn gen_enum(name: &str, variants: &[Variant]) -> String {
 
 	format!(
 		r#"
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub enum {name} {enum_generics} {{
         {variants_code}
     }}

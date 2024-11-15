@@ -65,14 +65,14 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct EncryptionBeginV00759<'a> {
 		pub shared_secret: Buffer<'a, VarInt>,
 		pub crypto: Crypto<'a>,
 	}
 }
 
-#[derive(ShallowClone, Debug, PartialEq, Clone)]
+#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 pub enum Crypto<'a> {
 	VerifyToken {
 		verify_token: Buffer<'a, VarInt>,

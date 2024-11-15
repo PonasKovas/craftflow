@@ -1,5 +1,5 @@
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash)]
 	pub struct SetProtocolV00005<'a> {
 		pub protocol_version: VarInt,
 		pub server_host: Cow<'a, str>,

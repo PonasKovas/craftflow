@@ -20,7 +20,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct LoginPluginResponseV00393<'a> {
 		pub message_id: VarInt,
 		pub data: Option<RestBuffer<'a>>,

@@ -40,7 +40,7 @@ pub fn gen_types_code() -> String {
                     #[allow(unused_imports)]
                     use craftflow_protocol_core::common_structures::*;
                     #[allow(unused_imports)]
-                    use shallowclone::ShallowClone;
+                    use shallowclone::{{ShallowClone, MakeOwned}};
 
 				    include!({mod_path:?});
 				}}

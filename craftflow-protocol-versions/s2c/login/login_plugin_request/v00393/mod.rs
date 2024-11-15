@@ -21,7 +21,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct LoginPluginRequestV00393<'a> {
 		pub message_id: VarInt,
 		pub channel: Cow<'a, str>,

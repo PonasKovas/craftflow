@@ -32,7 +32,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct AddResourcePackV00765<'a> {
 		pub uuid: u128,
 		pub url: Cow<'a, str>,

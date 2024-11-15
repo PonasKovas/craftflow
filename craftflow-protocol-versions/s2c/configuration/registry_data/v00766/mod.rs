@@ -38,7 +38,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct RegistryDataV00766<'a> {
 		pub id: Cow<'a, str>,
 		pub entries: Array<'a, VarInt, Entry<'a>>,
@@ -46,7 +46,7 @@ define_type! {
 }
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct Entry<'a> {
 		pub key: Cow<'a, str>,
 		pub value: Option<AnonymousNbt<DynNBT<'a>>>,

@@ -50,7 +50,7 @@
 // ]
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct SuccessV00766<'a> {
 		pub uuid: u128,
 		pub username: Cow<'a, str>,
@@ -60,7 +60,7 @@ define_type! {
 }
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct Property<'a> {
 		pub name: Cow<'a, str>,
 		pub value: Cow<'a, str>,

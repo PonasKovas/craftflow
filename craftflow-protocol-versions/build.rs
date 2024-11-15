@@ -47,7 +47,7 @@ fn main() {
 
 	let out = Path::new(&env::var("OUT_DIR").unwrap()).to_path_buf();
 
-	let mut root_code = format!("use shallowclone::ShallowClone;\n");
+	let mut root_code = format!("use shallowclone::{{ShallowClone, MakeOwned}};\n");
 	for (direction, (dir_generics, states)) in &packets {
 		let direction_enum_variants = gen_direction(&out, (direction, dir_generics), states);
 
@@ -70,7 +70,7 @@ fn gen_direction(
 	states: &States,
 ) -> Vec<Variant> {
 	let mut enum_variants = Vec::new();
-	let mut code = format!("use shallowclone::ShallowClone;\n");
+	let mut code = format!("use shallowclone::{{ShallowClone, MakeOwned}};\n");
 
 	for (state, (st_generics, packets)) in states {
 		let state_enum_variants = gen_state(&out, direction, (state, st_generics), packets);
@@ -102,7 +102,7 @@ fn gen_state(
 	packets: &Packets,
 ) -> Vec<Variant> {
 	let mut enum_variants = Vec::new();
-	let mut code = format!("use shallowclone::ShallowClone;\n");
+	let mut code = format!("use shallowclone::{{ShallowClone, MakeOwned}};\n");
 
 	for (packet, (pkt_generics, versions)) in packets {
 		let version_enum_variants =
@@ -144,7 +144,8 @@ fn gen_packet(
 	versions: &Versions,
 ) -> Vec<Variant> {
 	let mut enum_variants = Vec::new();
-	let mut packet_code = format!("#[allow(unused_imports)] use shallowclone::ShallowClone;\n");
+	let mut packet_code =
+		format!("#[allow(unused_imports)] use shallowclone::{{ShallowClone, MakeOwned}};\n");
 
 	let mut packet_enum_generics = Generics::new();
 	for (version, packet_info) in versions {
@@ -192,7 +193,7 @@ fn gen_packet(
             #[allow(unused_imports)]
             use crate::types::{v}::*;
             #[allow(unused_imports)]
-            use shallowclone::ShallowClone;
+            use shallowclone::{{ShallowClone, MakeOwned}};
             #[allow(unused_imports)]
             use craftflow_nbt::DynNBT;
 
