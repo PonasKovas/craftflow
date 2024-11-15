@@ -20,6 +20,7 @@ use craftflow_protocol_abstract::{
 use craftflow_protocol_core::text;
 use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION, S2C};
 use reader::reader_task;
+use shallowclone::MakeOwned;
 use std::{
 	ops::ControlFlow,
 	sync::{Arc, OnceLock, RwLock},
@@ -63,7 +64,13 @@ pub(super) async fn connection_task(
 
 	let mut handshake = match timeout(
 		Duration::from_secs(5),
-		reader.read_packet(&reader_state, MIN_VERSION, &compression, &mut None),
+		reader.read_packet(
+			&reader_state,
+			MIN_VERSION,
+			&compression,
+			&mut None,
+			|packet| Ok(packet.make_owned()),
+		),
 	)
 	.await
 	{

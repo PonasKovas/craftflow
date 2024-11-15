@@ -63,7 +63,7 @@ macro_rules! gen_direction_enum {
 
                                 fn next_packet(
                                     &mut self,
-                              		packet: &crate::packet_constructor::ConcretePacket<'_>,
+                              		packet: crate::packet_constructor::ConcretePacket<'_>,
                                	) -> anyhow::Result<crate::ConstructorResult<Self::AbPacket, ()>> {
                                     Ok(match self.0.next_packet(packet)? {
                                         crate::ConstructorResult::Done(pkt) =>

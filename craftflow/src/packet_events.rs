@@ -45,13 +45,13 @@ craftflow_protocol_abstract::__gen_events_for_packets_s2c! { Event, PacketToEven
 craftflow_protocol_abstract::__gen_events_for_packets_c2s! { Event, PacketToEventPointer }
 
 // Helper functions that trigger a packet event
-fn helper<'a, P>(
+fn helper<'a, 'b: 'a, P>(
 	craftflow: &'a CraftFlow,
 	conn_id: u64,
 	packet: &'a mut P,
-) -> ControlFlow<<<P as PacketToEventPointer<'a>>::Event as Event>::Return>
+) -> ControlFlow<<<P as PacketToEventPointer<'b>>::Event as Event>::Return>
 where
-	P: PacketToEventPointer<'a>,
+	P: PacketToEventPointer<'b>,
 {
 	trace!(
 		"{} event",
@@ -83,11 +83,11 @@ where
 
 // More macro slop below
 
-pub(super) fn trigger_c2s_concrete<'a>(
+pub(super) fn trigger_c2s_concrete<'a, 'b: 'a>(
 	post: bool,
 	craftflow: &'a CraftFlow,
 	conn_id: u64,
-	packet: &'a mut C2S<'a>,
+	packet: &'a mut C2S<'b>,
 ) -> ControlFlow<()> {
 	craftflow_protocol_versions::__destructure_packet_enum__!(direction=C2S, packet -> inner {
 		if !post { helper(craftflow, conn_id, inner) } else { helper_post(craftflow, conn_id, inner) }

@@ -15,7 +15,7 @@ pub trait AbPacketConstructor: 'static {
 	/// Feeding more packets after it was done should result in a panic.
 	fn next_packet(
 		&mut self,
-		packet: &ConcretePacket<'_>,
+		packet: ConcretePacket<'_>,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>>;
 }
 
@@ -32,8 +32,8 @@ pub trait AbPacketConstructor: 'static {
 /// - so the only solution here is to not have the Direction associated type at all
 ///   and accept both variants in the constructor, and then match on them.
 pub enum ConcretePacket<'a> {
-	C2S(craftflow_protocol_versions::C2S<'a>),
-	S2C(craftflow_protocol_versions::S2C<'a>),
+	C2S(&'a craftflow_protocol_versions::C2S<'a>),
+	S2C(&'a craftflow_protocol_versions::S2C<'a>),
 }
 
 /// A constructor to be used when the packet is never gonna use a constructor.
@@ -48,7 +48,7 @@ impl<P: 'static> AbPacketConstructor for NoConstructor<P> {
 
 	fn next_packet(
 		&mut self,
-		_packet: &ConcretePacket<'_>,
+		_packet: ConcretePacket<'_>,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>> {
 		panic!("called next_packet on NoConstructor")
 	}
