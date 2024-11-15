@@ -9,7 +9,9 @@ mod tests;
 
 /// Takes a value and transforms it to be `'static`, cloning parts if necessary
 pub trait MakeOwned: Clone {
-	/// This must be subtype of `Self`, but 'static.
+	/// This must be a `'static` SUBTYPE of `Self`.
+	///
+	/// For more information see <https://doc.rust-lang.org/reference/subtyping.html>
 	type Owned: Clone + 'static;
 
 	fn make_owned(self) -> Self::Owned;

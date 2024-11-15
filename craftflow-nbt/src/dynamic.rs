@@ -2,11 +2,11 @@ mod dyn_macro;
 
 use crate::arrays::{MAGIC_BYTE_ARRAY, MAGIC_INT_ARRAY, MAGIC_LONG_ARRAY};
 use serde::{de::VariantAccess, Deserialize, Serialize};
-use shallowclone::{CoCow, CoCowSlice, ShallowClone};
+use shallowclone::{CoCow, CoCowSlice, MakeOwned, ShallowClone};
 use std::{borrow::Cow, collections::HashMap};
 
 /// A structure that can be used to represent any NBT tag dynamically
-#[derive(ShallowClone, Serialize, Debug, PartialEq, Clone)]
+#[derive(ShallowClone, MakeOwned, Serialize, Debug, PartialEq, Clone)]
 #[serde(untagged)]
 pub enum DynNBT<'a> {
 	Long(i64),

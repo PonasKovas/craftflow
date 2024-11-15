@@ -1,5 +1,5 @@
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct EntityInformation<'a> {
 		pub entity_id: i32,
 		pub entity_type: VarInt,
@@ -16,7 +16,7 @@ define_type! {
 }
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
 	pub struct Position {
 		pub x: i32,
 		pub z: i32,
@@ -25,7 +25,7 @@ define_type! {
 }
 
 define_type! {
-	#[derive(ShallowClone, Debug, PartialEq, Clone)]
+	#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 	pub struct Information<'a> {
 		pub inventory: Array<'a, u8, VarInt>,
 		pub priority: f32,
@@ -34,7 +34,7 @@ define_type! {
 	}
 }
 
-#[derive(ShallowClone, Debug, PartialEq, Clone)]
+#[derive(ShallowClone, MakeOwned, Debug, PartialEq, Clone)]
 pub enum WorldStatus<'a> {
 	V1(Cow<'a, str>),
 	V2 { velocity: f64, jumped: bool },
