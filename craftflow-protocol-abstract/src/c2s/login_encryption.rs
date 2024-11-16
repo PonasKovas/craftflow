@@ -16,14 +16,13 @@ use craftflow_protocol_versions::{
 };
 use shallowclone::{MakeOwned, ShallowClone};
 use std::{
-	array,
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 #[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginEncryption<'a> {
-	pub shared_secret: [u8; 16],
+	pub shared_secret: Cow<'a, [u8]>,
 	pub verify_token: Option<Cow<'a, [u8]>>,
 	pub signature: Option<Signature<'a>>,
 }
@@ -85,14 +84,6 @@ impl<'a> AbPacketWrite<'a> for AbLoginEncryption<'a> {
 	}
 }
 
-fn secret_to_arr(secret: &Cow<[u8]>) -> Result<[u8; 16]> {
-	if secret.len() != 16 {
-		bail!("shared secret not 16 bytes");
-	}
-
-	Ok(array::from_fn(|i| secret[i]))
-}
-
 impl<'a> AbPacketNew<'a> for AbLoginEncryption<'a> {
 	type Direction = C2S<'a>;
 	type Constructor = NoConstructor<AbLoginEncryption<'static>>;
@@ -103,12 +94,12 @@ impl<'a> AbPacketNew<'a> for AbLoginEncryption<'a> {
 		Ok(match packet {
 			C2S::Login(Login::EncryptionBegin(pkt)) => match pkt {
 				EncryptionBegin::V00005(pkt) => ConstructorResult::Done(Self {
-					shared_secret: secret_to_arr(&pkt.shared_secret.inner)?,
+					shared_secret: pkt.shared_secret.inner.shallow_clone(),
 					verify_token: Some(pkt.verify_token.inner.shallow_clone()),
 					signature: None,
 				}),
 				EncryptionBegin::V00047(pkt) => ConstructorResult::Done(Self {
-					shared_secret: secret_to_arr(&pkt.shared_secret.inner)?,
+					shared_secret: pkt.shared_secret.inner.shallow_clone(),
 					verify_token: Some(pkt.verify_token.inner.shallow_clone()),
 					signature: None,
 				}),
@@ -135,7 +126,7 @@ impl<'a> AbPacketNew<'a> for AbLoginEncryption<'a> {
 						}
 					}
 					ConstructorResult::Done(Self {
-						shared_secret: secret_to_arr(&pkt.shared_secret.inner)?,
+						shared_secret: pkt.shared_secret.inner.shallow_clone(),
 						verify_token,
 						signature,
 					})

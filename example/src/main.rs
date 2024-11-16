@@ -2,7 +2,7 @@ use craftflow::{packet_events::C2SAbLoginStartEvent, CraftFlow};
 use craftflow_protocol_core::text;
 use login::Login;
 use simple_ping::SimplePing;
-use tracing::info;
+use tracing::{info, level_filters};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

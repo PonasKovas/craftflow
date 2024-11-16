@@ -70,7 +70,7 @@ pub(super) async fn connection_task(
 			MIN_VERSION,
 			&compression,
 			&mut None,
-			|packet| Ok(packet.make_owned()),
+			|packet| packet.map(|p| p.make_owned()),
 		),
 	)
 	.await

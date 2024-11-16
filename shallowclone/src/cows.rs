@@ -29,6 +29,7 @@ use crate::{MakeOwned, ShallowClone};
 /// allocated type like [`Vec`][std::vec::Vec].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum CoCow<'a, T> {
 	Owned(T),
 	#[cfg_attr(feature = "serde", serde(skip_deserializing))]
@@ -46,6 +47,7 @@ pub enum CoCow<'a, T> {
 /// For a more general version, see [`CoCow`].
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(untagged))]
 pub enum CoCowSlice<'a, T> {
 	Owned(Vec<T>),
 	#[cfg_attr(feature = "serde", serde(skip_deserializing))]

@@ -44,6 +44,7 @@ pub struct TextObject<'a> {
 	#[serde(flatten)]
 	pub content: TextContent<'a>,
 	#[serde(default)]
+	#[serde(skip_serializing_if = "is_empty")]
 	pub extra: CoCowSlice<'a, Text<'a>>,
 	/// The text color, which may be a color name or a #-prefixed hexadecimal RGB specification
 	#[serde(default)]
@@ -375,6 +376,10 @@ impl<'a> Default for TextContent<'a> {
 	fn default() -> Self {
 		TextContent::Text { text: "".into() }
 	}
+}
+
+fn is_empty<'a, T>(v: &CoCowSlice<'a, T>) -> bool {
+	v.is_empty()
 }
 
 /// Macro for generating a `Text` object.

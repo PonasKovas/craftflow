@@ -43,6 +43,7 @@ pub(super) async fn reader_task(
 				&compression,
 				&mut decryptor,
 				|packet| {
+				    let packet = packet.context("concrete")?;
 					// Handle some special packets which change the state of the connection
 					match packet {
 						C2S::Login(c2s::Login::LoginAcknowledged(_)) => {
@@ -67,7 +68,7 @@ pub(super) async fn reader_task(
 							match constructors
 								.get_mut(i)
 								.unwrap()
-								.next_packet(ConcretePacket::C2S(&packet))?
+								.next_packet(ConcretePacket::C2S(&packet)).context("abstract")?
 							{
 								ConstructorResult::Done(p) => {
 									constructors.remove(i);
@@ -81,7 +82,7 @@ pub(super) async fn reader_task(
 						}
 
 						// Otherwise try constructing a new one
-						match AbC2S::construct(&packet)? {
+						match AbC2S::construct(&packet).context("abstract")? {
 							ConstructorResult::Done(p) => break 'abstr p,
 							ConstructorResult::Continue(c) => {
 								constructors.push(c);
@@ -113,7 +114,7 @@ pub(super) async fn reader_task(
 			.await
 			.with_context(|| {
 				format!(
-					"reading concrete packet (state {:?})",
+					"reading packet (state {:?})",
 					reader_state.read().unwrap()
 				)
 			})?;

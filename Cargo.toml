@@ -29,3 +29,6 @@ thiserror = "1.0"
 cesu8 = "1.1.0"
 indexmap = "2.6"
 proc-macro-error = "1.0"
+
+[profile.dev]
+opt-level = 1

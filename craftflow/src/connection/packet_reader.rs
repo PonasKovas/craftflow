@@ -34,7 +34,11 @@ impl PacketReader {
 		}
 	}
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet<'a, T, F: for<'b> FnOnce(C2S<'b>) -> anyhow::Result<T>>(
+	pub(crate) async fn read_packet<
+		'a,
+		T,
+		F: for<'b> FnOnce(anyhow::Result<C2S<'b>>) -> anyhow::Result<T>,
+	>(
 		&'a mut self,
 		state: &RwLock<State>,
 		protocol_version: u32,
@@ -42,9 +46,13 @@ impl PacketReader {
 		decryptor: &mut Option<Decryptor>,
 		handler: F,
 	) -> anyhow::Result<T> {
-		let (packet_len, packet) = self
+		let (packet_len, packet) = match self
 			.read_packet_inner(state, protocol_version, compression, decryptor)
-			.await?;
+			.await
+		{
+			Ok((packet_len, packet)) => (packet_len, Ok(packet)),
+			Err(e) => (0, Err(e.into())),
+		};
 
 		let result = handler(packet);
 
