@@ -269,6 +269,35 @@ impl<'a, T: Clone> From<Cow<'a, [T]>> for CoCowSlice<'a, T> {
 	}
 }
 
+impl<'a, T> IntoIterator for &'a CoCow<'a, T>
+where
+	&'a T: IntoIterator,
+{
+	type Item = <&'a T as IntoIterator>::Item;
+	type IntoIter = <&'a T as IntoIterator>::IntoIter;
+
+	fn into_iter(self) -> Self::IntoIter {
+		match self {
+			CoCow::Owned(owned) => owned.into_iter(),
+			CoCow::Borrowed(borrowed) => borrowed.into_iter(),
+		}
+	}
+}
+impl<'a, T> IntoIterator for &'a CoCowSlice<'a, T>
+where
+	&'a [T]: IntoIterator,
+{
+	type Item = <&'a [T] as IntoIterator>::Item;
+	type IntoIter = <&'a [T] as IntoIterator>::IntoIter;
+
+	fn into_iter(self) -> Self::IntoIter {
+		match self {
+			CoCowSlice::Owned(owned) => (&owned[..]).into_iter(),
+			CoCowSlice::Borrowed(borrowed) => borrowed.into_iter(),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::{CoCow, CoCowSlice};

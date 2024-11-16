@@ -8,12 +8,12 @@ use craftflow_protocol_abstract::{
 	},
 	MAX_VERSION, MIN_VERSION,
 };
-use std::{borrow::Cow, ops::ControlFlow};
+use std::ops::ControlFlow;
 
-pub fn status<'a>(
-	cf: &'a CraftFlow,
-	(conn_id, request): (u64, &'a mut AbStatusRequestInfo),
-) -> ControlFlow<(), (u64, &'a mut AbStatusRequestInfo)> {
+pub fn status(
+	cf: &CraftFlow,
+	&mut (conn_id, ref mut _request): &mut (u64, AbStatusRequestInfo),
+) -> ControlFlow<()> {
 	let client_protocol_version = cf.get(conn_id).protocol_version();
 	let protocol_version =
 		if MIN_VERSION <= client_protocol_version && client_protocol_version <= MAX_VERSION {
@@ -29,7 +29,7 @@ pub fn status<'a>(
 
 	cf.get(conn_id).send(AbStatusInfo {
 		version: Version {
-			name: format!("§f§lCraftFlow"),
+			name: format!("§f§lCraftFlow").into(),
 			protocol: protocol_version,
 		},
 		players: Some(Players {
@@ -38,9 +38,9 @@ pub fn status<'a>(
 			sample: vec![], // todo real player sample
 		}),
 		description: Some(description),
-		favicon: favicon.map(|f| Cow::Owned(f)),
+		favicon,
 		enforces_secure_chat: true,
 	});
 
-	ControlFlow::Continue((conn_id, request))
+	ControlFlow::Continue(())
 }
