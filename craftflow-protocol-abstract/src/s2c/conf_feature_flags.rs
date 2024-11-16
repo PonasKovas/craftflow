@@ -8,10 +8,10 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfFeatureFlags {
 	pub vanilla: bool,
 	pub bundle: bool,
@@ -53,7 +53,7 @@ impl<'a> AbPacketWrite<'a> for AbConfFeatureFlags {
 
 impl<'a> AbPacketNew<'a> for AbConfFeatureFlags {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbConfFeatureFlags>;
 
 	fn construct(
 		packet: &'a Self::Direction,

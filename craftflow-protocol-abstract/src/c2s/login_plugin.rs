@@ -46,7 +46,7 @@ impl<'a> AbPacketWrite<'a> for AbLoginPluginResponse<'a> {
 
 impl<'a> AbPacketNew<'a> for AbLoginPluginResponse<'a> {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbLoginPluginResponse<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

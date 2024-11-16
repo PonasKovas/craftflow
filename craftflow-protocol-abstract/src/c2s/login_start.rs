@@ -90,7 +90,7 @@ impl<'a> AbPacketWrite<'a> for AbLoginStart<'a> {
 
 impl<'a> AbPacketNew<'a> for AbLoginStart<'a> {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbLoginStart<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

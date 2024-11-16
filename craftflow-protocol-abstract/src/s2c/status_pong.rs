@@ -7,11 +7,11 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
 /// Response to the [`AbStatusPing`][crate::c2s::AbStatusPing] packet.
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbStatusPong {
 	/// Must be the same number as sent by the client in the [`AbStatusPing`][crate::c2s::AbStatusPing] packet.
 	pub id: u64,
@@ -38,7 +38,7 @@ impl<'a> AbPacketWrite<'a> for AbStatusPong {
 
 impl<'a> AbPacketNew<'a> for AbStatusPong {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbStatusPong>;
 
 	fn construct(packet: &Self::Direction) -> Result<ConstructorResult<Self, Self::Constructor>> {
 		match packet {

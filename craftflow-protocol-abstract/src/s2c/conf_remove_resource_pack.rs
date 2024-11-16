@@ -9,10 +9,10 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub enum AbConfRemoveResourcePack {
 	RemoveAll,
 	RemoveSpecific { uuid: u128 },
@@ -44,7 +44,7 @@ impl<'a> AbPacketWrite<'a> for AbConfRemoveResourcePack {
 
 impl<'a> AbPacketNew<'a> for AbConfRemoveResourcePack {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbConfRemoveResourcePack>;
 
 	fn construct(
 		packet: &'a Self::Direction,

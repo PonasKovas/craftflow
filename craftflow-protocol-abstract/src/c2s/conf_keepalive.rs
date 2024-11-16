@@ -38,7 +38,7 @@ impl<'a> AbPacketWrite<'a> for AbConfKeepAlive {
 
 impl<'a> AbPacketNew<'a> for AbConfKeepAlive {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbConfKeepAlive>;
 
 	fn construct(
 		packet: &'a Self::Direction,

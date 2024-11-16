@@ -8,11 +8,11 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::option::IntoIter;
 
 /// Sets the compression threshold for this connection
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginCompress {
 	/// If a packet size is above this threshold, it will be compressed. Negative values will disable compression
 	/// By default compression is disabled.
@@ -47,7 +47,7 @@ impl<'a> AbPacketWrite<'a> for AbLoginCompress {
 
 impl<'a> AbPacketNew<'a> for AbLoginCompress {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbLoginCompress>;
 
 	fn construct(
 		packet: &'a Self::Direction,

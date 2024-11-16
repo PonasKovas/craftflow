@@ -32,7 +32,7 @@ impl<'a> AbPacketWrite<'a> for AbStatusRequestInfo {
 
 impl<'a> AbPacketNew<'a> for AbStatusRequestInfo {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbStatusRequestInfo>;
 
 	fn construct(
 		packet: &'a Self::Direction,

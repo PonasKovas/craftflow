@@ -1,11 +1,12 @@
 // This file is raw SLOP. have fun
 
 use crate::{
-	AbPacketConstructor, AbPacketNew, AbPacketWrite, ConstructorResult, State, WriteResult,
+	AbPacketConstructor, AbPacketNew, AbPacketWrite, ConcretePacket, ConstructorResult, State,
+	WriteResult,
 };
 use anyhow::{bail, Context, Result};
-use craftflow_nbt::{dyn_nbt, dynamic::DynNBTList, DynNBT};
-use craftflow_protocol_core::datatypes::{array::ArrayInner, AnonymousNbt, Array, VarInt};
+use craftflow_nbt::{dyn_nbt, DynNBT};
+use craftflow_protocol_core::datatypes::{AnonymousNbt, Array, VarInt};
 use craftflow_protocol_versions::{
 	s2c::{
 		configuration::{
@@ -20,14 +21,14 @@ use craftflow_protocol_versions::{
 	IntoStateEnum, S2C,
 };
 use indexmap::IndexMap;
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{borrow::Cow, collections::HashMap, sync::OnceLock};
 
 // Minecraft SLOP
 // why tf is this even being sent
 // half of it is not even being used, other half could just be handled completely on the server
 
-#[derive(ShallowClone, Debug, Clone, PartialEq)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq)]
 pub struct AbConfRegistry<'a> {
 	/// Armor trim material registry
 	pub trim_material: IndexMap<Cow<'a, str>, DynNBT<'a>>,
@@ -51,7 +52,7 @@ impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 
 		macro_rules! populate {
 			($id:literal) => {{
-				let values = match nbt
+				let values = nbt
 					.get($id)
 					.context(concat!($id, " not found"))?
 					.as_compound()
@@ -59,11 +60,7 @@ impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 					.get("value")
 					.context(concat!($id, " value not found"))?
 					.as_list()
-					.context(concat!($id, " value expected to be list"))?
-				{
-					DynNBTList::Owned(vec) => vec,
-					DynNBTList::Borrowed(b) => *b,
-				};
+					.context(concat!($id, " value expected to be list"))?;
 
 				let mut values = values
 					.into_iter()
@@ -85,7 +82,7 @@ impl<'a> TryFrom<DynNBT<'a>> for AbConfRegistry<'a> {
 								.context(concat!($id, " value element not found"))?
 								.clone(), // same as above. honestly this whole file is a bit of a slop
 							           // and could really use someone with a brighter mind to make it efficient
-							           // and actually make use of ShallClone
+							           // and actually make use of ShallowClone
 						))
 					})
 					.collect::<Result<Vec<_>, Self::Error>>()
@@ -236,10 +233,7 @@ impl<'a> Iterator for RegistryPacketIter<'a> {
 }
 
 fn convert_entries<'a>(entries: Array<'a, VarInt, Entry>) -> IndexMap<Cow<'a, str>, DynNBT<'a>> {
-	let entries = match entries.inner {
-		ArrayInner::Owned(o) => o,
-		ArrayInner::Borrowed(b) => b.shallow_clone(),
-	};
+	let entries = entries.inner.into_owned();
 
 	let mut map = IndexMap::new();
 	for entry in entries {
@@ -257,7 +251,7 @@ fn convert_entries<'a>(entries: Array<'a, VarInt, Entry>) -> IndexMap<Cow<'a, st
 	map
 }
 
-#[derive(ShallowClone, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RegistryConstructor {
 	trim_material: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
 	trim_pattern: Option<IndexMap<Cow<'static, str>, DynNBT<'static>>>,
@@ -269,19 +263,19 @@ pub struct RegistryConstructor {
 
 impl AbPacketConstructor for Option<RegistryConstructor> {
 	type AbPacket = AbConfRegistry<'static>;
-	type Direction = S2C<'static>;
 
-	fn next_packet(
+	fn next_packet<'a>(
 		&mut self,
-		packet: &Self::Direction,
+		packet: ConcretePacket<'a>,
 	) -> Result<ConstructorResult<Self::AbPacket, ()>> {
 		let s = self
 			.as_mut()
 			.expect("ab registry constructor already finished");
+		let packet = packet.s2c();
 
 		match packet {
 			S2C::Configuration(Configuration::RegistryData(RegistryData::V00766(pkt))) => {
-				*match &*pkt.id {
+				let part = match &*pkt.id {
 					"minecraft:trim_material" => &mut s.trim_material,
 					"minecraft:trim_pattern" => &mut s.trim_pattern,
 					"minecraft:worldgen/biome" => &mut s.biome,
@@ -290,9 +284,11 @@ impl AbPacketConstructor for Option<RegistryConstructor> {
 					"minecraft:dimension_type" => &mut s.dimension_type,
 					_ => {
 						bail!("Unknown registry id: {:?}", pkt.id)
-					} // have to clone here because the constructor may live longer
-					  // than the individual packets
-				} = Some(convert_entries(pkt.entries.clone()));
+					}
+				};
+				// have to clone here because the constructor may live longer
+				// than the individual packets
+				*part = Some(convert_entries(pkt.entries.clone().make_owned()));
 
 				if s.biome.is_some()
 					&& s.chat_type.is_some()
@@ -301,14 +297,16 @@ impl AbPacketConstructor for Option<RegistryConstructor> {
 					&& s.trim_material.is_some()
 					&& s.trim_pattern.is_some()
 				{
-					Ok(ConstructorResult::Done(AbConfRegistry {
+					let finished = AbConfRegistry {
 						trim_material: s.trim_material.take().unwrap(),
 						trim_pattern: s.trim_pattern.take().unwrap(),
 						biome: s.biome.take().unwrap(),
 						chat_type: s.chat_type.take().unwrap(),
 						damage_type: s.damage_type.take().unwrap(),
 						dimension_type: s.dimension_type.take().unwrap(),
-					}))
+					};
+					*self = None;
+					Ok(ConstructorResult::Done(finished))
 				} else {
 					Ok(ConstructorResult::Continue(()))
 				}
@@ -383,7 +381,7 @@ impl<'a> AbPacketNew<'a> for AbConfRegistry<'a> {
 					_ => {
 						bail!("Unknown registry id: {:?}", pkt.id)
 					}
-				} = Some(convert_entries(pkt.entries.clone()));
+				} = Some(convert_entries(pkt.entries.clone().make_owned()));
 
 				ConstructorResult::Continue(Some(constructor))
 			}

@@ -95,7 +95,7 @@ fn secret_to_arr(secret: &Cow<[u8]>) -> Result<[u8; 16]> {
 
 impl<'a> AbPacketNew<'a> for AbLoginEncryption<'a> {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbLoginEncryption<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

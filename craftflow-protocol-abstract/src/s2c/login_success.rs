@@ -16,14 +16,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Indicates successful login and moves the state to Play/Configuration
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginSuccess<'a> {
 	pub uuid: u128,
 	pub username: Cow<'a, str>,
@@ -33,7 +33,7 @@ pub struct AbLoginSuccess<'a> {
 }
 
 /// A property of the player
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct Property<'a> {
 	pub name: Cow<'a, str>,
 	pub value: Cow<'a, str>,
@@ -108,7 +108,7 @@ impl<'a> AbPacketWrite<'a> for AbLoginSuccess<'a> {
 
 impl<'a> AbPacketNew<'a> for AbLoginSuccess<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbLoginSuccess<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

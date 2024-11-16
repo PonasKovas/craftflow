@@ -53,7 +53,7 @@ impl<'a> AbPacketWrite<'a> for AbConfAddResourcePack<'a> {
 
 impl<'a> AbPacketNew<'a> for AbConfAddResourcePack<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbConfAddResourcePack<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

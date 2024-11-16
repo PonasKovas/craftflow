@@ -7,10 +7,10 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::iter::{once, Once};
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfResetChat {}
 
 impl<'a> AbPacketWrite<'a> for AbConfResetChat {
@@ -33,7 +33,7 @@ impl<'a> AbPacketWrite<'a> for AbConfResetChat {
 
 impl<'a> AbPacketNew<'a> for AbConfResetChat {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbConfResetChat>;
 
 	fn construct(
 		packet: &'a Self::Direction,

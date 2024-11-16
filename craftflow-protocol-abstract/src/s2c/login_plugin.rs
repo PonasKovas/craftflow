@@ -8,14 +8,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Sends a plugin request to the client
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginPluginRequest<'a> {
 	/// ID of the message. The client will respond with a plugin message with a matching ID.
 	pub id: u32,
@@ -50,7 +50,7 @@ impl<'a> AbPacketWrite<'a> for AbLoginPluginRequest<'a> {
 
 impl<'a> AbPacketNew<'a> for AbLoginPluginRequest<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbLoginPluginRequest<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

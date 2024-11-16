@@ -77,7 +77,7 @@ impl<'a> AbPacketWrite<'a> for AbConfResourcePackResponse {
 
 impl<'a> AbPacketNew<'a> for AbConfResourcePackResponse {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbConfResourcePackResponse>;
 
 	fn construct(
 		packet: &'a Self::Direction,

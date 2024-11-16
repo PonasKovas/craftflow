@@ -9,7 +9,7 @@ use craftflow_protocol_versions::{
 	IntoStateEnum, S2C,
 };
 use serde::{Deserialize, Serialize};
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
@@ -17,7 +17,17 @@ use std::{
 
 /// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`][crate::c2s::AbStatusRequestInfo] packet
 #[derive(
-	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
+	Serialize,
+	Deserialize,
 )]
 #[serde(rename_all = "camelCase")]
 pub struct AbStatusInfo<'a> {
@@ -41,7 +51,17 @@ pub struct AbStatusInfo<'a> {
 
 /// Information about the version of the server.
 #[derive(
-	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
+	Serialize,
+	Deserialize,
 )]
 pub struct Version<'a> {
 	/// The text name of the version of the server.
@@ -55,7 +75,17 @@ pub struct Version<'a> {
 
 /// Information about the players on the server.
 #[derive(
-	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
+	Serialize,
+	Deserialize,
 )]
 pub struct Players<'a> {
 	/// The maximum number of players that can connect to the server. Only for display.
@@ -70,7 +100,17 @@ pub struct Players<'a> {
 
 /// An entry in the player sample list in [`Players`]
 #[derive(
-	ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord, Serialize, Deserialize,
+	ShallowClone,
+	MakeOwned,
+	Debug,
+	Clone,
+	PartialEq,
+	Hash,
+	Eq,
+	PartialOrd,
+	Ord,
+	Serialize,
+	Deserialize,
 )]
 pub struct PlayerSample<'a> {
 	/// The username of the player
@@ -101,7 +141,7 @@ impl<'a> AbPacketWrite<'a> for AbStatusInfo<'a> {
 
 impl<'a> AbPacketNew<'a> for AbStatusInfo<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, Self::Direction>;
+	type Constructor = NoConstructor<AbStatusInfo<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

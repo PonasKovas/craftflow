@@ -123,7 +123,7 @@ impl<'a> AbPacketWrite<'a> for AbClientSettings<'a> {
 
 impl<'a> AbPacketNew<'a> for AbClientSettings<'a> {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, Self::Direction>;
+	type Constructor = NoConstructor<AbClientSettings<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

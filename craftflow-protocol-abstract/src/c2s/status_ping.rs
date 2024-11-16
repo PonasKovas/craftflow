@@ -40,7 +40,7 @@ impl<'a> AbPacketWrite<'a> for AbStatusPing {
 
 impl<'a> AbPacketNew<'a> for AbStatusPing {
 	type Direction = C2S<'a>;
-	type Constructor = NoConstructor<Self, C2S<'a>>;
+	type Constructor = NoConstructor<AbStatusPing>;
 
 	fn construct(
 		packet: &'a Self::Direction,

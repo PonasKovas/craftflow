@@ -36,6 +36,21 @@ pub enum ConcretePacket<'a> {
 	S2C(&'a craftflow_protocol_versions::S2C<'a>),
 }
 
+impl<'a> ConcretePacket<'a> {
+	pub fn c2s(self) -> &'a craftflow_protocol_versions::C2S<'a> {
+		match self {
+			ConcretePacket::C2S(c2s) => c2s,
+			ConcretePacket::S2C(_) => panic!("expected C2S packet"),
+		}
+	}
+	pub fn s2c(self) -> &'a craftflow_protocol_versions::S2C<'a> {
+		match self {
+			ConcretePacket::C2S(_) => panic!("expected S2C packet"),
+			ConcretePacket::S2C(s2c) => s2c,
+		}
+	}
+}
+
 /// A constructor to be used when the packet is never gonna use a constructor.
 /// That means that the abstract packet will always be constructed from a single concrete packet.
 // invariant both over P and D for now, i just dont bother thinking what variance it should be

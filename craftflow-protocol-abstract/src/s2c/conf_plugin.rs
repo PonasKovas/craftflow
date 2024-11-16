@@ -8,14 +8,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Sends a plugin request to the client
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfPlugin<'a> {
 	/// Channel name of the plugin
 	pub channel: Cow<'a, str>,
@@ -47,7 +47,7 @@ impl<'a> AbPacketWrite<'a> for AbConfPlugin<'a> {
 
 impl<'a> AbPacketNew<'a> for AbConfPlugin<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbConfPlugin<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

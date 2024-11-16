@@ -14,14 +14,14 @@ use craftflow_protocol_versions::{
 	},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
 /// Initiates the encryption of the connection
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbLoginEncryptionBegin<'a> {
 	pub server_id: Cow<'a, str>,
 	pub public_key: Cow<'a, [u8]>,
@@ -68,7 +68,7 @@ impl<'a> AbPacketWrite<'a> for AbLoginEncryptionBegin<'a> {
 
 impl<'a> AbPacketNew<'a> for AbLoginEncryptionBegin<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbLoginEncryptionBegin<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,

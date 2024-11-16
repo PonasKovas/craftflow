@@ -12,13 +12,13 @@ use craftflow_protocol_versions::{
 	types::v00767::{tags::Tag, Tags},
 	IntoStateEnum, S2C,
 };
-use shallowclone::ShallowClone;
+use shallowclone::{MakeOwned, ShallowClone};
 use std::{
 	borrow::Cow,
 	iter::{once, Once},
 };
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct AbConfTags<'a> {
 	// these vecs could be specialised cows but im not gonna concern myself with that right now
 	// especially considering they wouldn't bring any performance benefits with the current
@@ -27,13 +27,13 @@ pub struct AbConfTags<'a> {
 	pub tags: Vec<TagRegistry<'a>>,
 }
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct TagRegistry<'a> {
 	pub name: Cow<'a, str>,
 	pub entries: Vec<TagEntry<'a>>,
 }
 
-#[derive(ShallowClone, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(ShallowClone, MakeOwned, Debug, Clone, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct TagEntry<'a> {
 	pub name: Cow<'a, str>,
 	pub entries: Cow<'a, [i32]>,
@@ -85,7 +85,7 @@ impl<'a> AbPacketWrite<'a> for AbConfTags<'a> {
 
 impl<'a> AbPacketNew<'a> for AbConfTags<'a> {
 	type Direction = S2C<'a>;
-	type Constructor = NoConstructor<Self, S2C<'a>>;
+	type Constructor = NoConstructor<AbConfTags<'static>>;
 
 	fn construct(
 		packet: &'a Self::Direction,
