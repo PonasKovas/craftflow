@@ -44,7 +44,9 @@ pub fn gen_event_macro(directions: &Directions) -> String {
 
 						impl $event_trait for {event_struct} {{
 						    /// The connection ID and the packet
-						    type Args<'a> = (u64, &'a mut {packet_path});
+    						///
+    						/// Obviously, don't try to change the connection ID, as it will propagate to other handlers
+						    type Args<'a> = (u64, {packet_path});
                             type Return = ();
 						}}
 

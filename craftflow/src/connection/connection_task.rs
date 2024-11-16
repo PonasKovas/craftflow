@@ -15,7 +15,7 @@ use anyhow::{bail, Context};
 use craftflow_protocol_abstract::{
 	c2s::{handshake::NextState, AbHandshake},
 	s2c::AbDisconnect,
-	AbPacketNew, AbPacketWrite, AbS2C, State,
+	AbC2S, AbPacketNew, AbPacketWrite, AbS2C, State,
 };
 use craftflow_protocol_core::text;
 use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION, S2C};
@@ -46,8 +46,9 @@ pub(super) async fn connection_task(
 	// First things first check if this is a legacy ping
 	if let Some(legacy_ping_format) = detect_legacy_ping(&mut reader.stream).await? {
 		// Trigger the legacy ping event
-		if let ControlFlow::Break(response) =
-			craftflow.reactor.event::<LegacyPing>(&craftflow, conn_id)
+		if let ControlFlow::Break(response) = craftflow
+			.reactor
+			.event::<LegacyPing>(&craftflow, &mut conn_id.clone())
 		{
 			if let Some(response) = response {
 				write_legacy_response(&mut writer.stream, legacy_ping_format, response).await?;
@@ -62,7 +63,7 @@ pub(super) async fn connection_task(
 	// we will read the handshake in this task before splitting into two tasks
 	// so we know the next state for both tasks
 
-	let mut handshake = match timeout(
+	let handshake = match timeout(
 		Duration::from_secs(5),
 		reader.read_packet(
 			&reader_state,
@@ -77,6 +78,11 @@ pub(super) async fn connection_task(
 		Ok(p) => p.context("reading handshake packet")?,
 		Err(_) => bail!("timed out"),
 	};
+
+	let (cont, handshake) = trigger_c2s_concrete(false, &craftflow, conn_id, handshake);
+	if !cont {
+		return Ok(());
+	}
 
 	let handshake_ab = AbHandshake::construct(&handshake)?.assume_done();
 
@@ -98,9 +104,10 @@ pub(super) async fn connection_task(
 		if !(MIN_VERSION <= client_version && client_version <= MAX_VERSION) {
 			let message = match craftflow
 				.reactor
-				.event::<UnsupportedClientVersion>(&craftflow, (conn_id, client_version))
+				.event::<UnsupportedClientVersion>(&craftflow, &mut (conn_id, client_version))
 			{
 				ControlFlow::Continue(_) => {
+					// default response
 					text!("Your version is not supported.", color = "white", bold)
 				}
 				ControlFlow::Break(message) => message,
@@ -123,13 +130,20 @@ pub(super) async fn connection_task(
 			return Ok(()); // close the connection
 		}
 	}
+	let handshake_ab: AbC2S = handshake_ab.into();
 
 	// trigger the handshake event
-	if trigger_c2s_concrete(false, &craftflow, conn_id, &mut handshake).is_continue()
-		&& trigger_c2s_abstract(false, &craftflow, conn_id, &mut handshake_ab.into()).is_continue()
-	{
-		trigger_c2s_concrete(true, &craftflow, conn_id, &mut handshake);
-		trigger_c2s_abstract(true, &craftflow, conn_id, &mut handshake_ab.into());
+	let (cont, handshake_ab) = trigger_c2s_abstract(false, &craftflow, conn_id, handshake_ab);
+	if !cont {
+		return Ok(());
+	}
+	let (cont, _handshake_ab) = trigger_c2s_abstract(true, &craftflow, conn_id, handshake_ab);
+	if !cont {
+		return Ok(());
+	}
+	let (cont, _handshake) = trigger_c2s_concrete(true, &craftflow, conn_id, handshake);
+	if !cont {
+		return Ok(());
 	}
 
 	// now we can finally split into two tasks

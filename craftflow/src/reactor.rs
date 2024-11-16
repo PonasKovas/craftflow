@@ -13,13 +13,13 @@ use std::{
 /// Given the implementation of this trait, the handlers that the reactor will use for this event
 /// will be
 /// ```ignore
-/// Fn(&CTX, Event::Args) -> ControlFlow<Event::Return>
+/// Fn(&CTX, &mut Event::Args) -> ControlFlow<Event::Return>
 /// ```
 /// Return `ControlFlow::Continue(())` to continue reacting to the event with the next registered
 /// handler, or `ControlFlow::Break(Event::Return)` to stop the event and return.
 pub trait Event: Any {
 	/// The type of the arguments that the event will receive
-	type Args<'a, 'b>;
+	type Args<'a>;
 	/// The type of the return value of the event
 	type Return;
 }
@@ -47,18 +47,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	/// Register a handler for an event
 	pub fn add_handler<
 		E: Event,
-		// The [&'b (); 0] is needed here to prove to rustc that 'b lifetime is bound.
-		// Without it rustc complains that the handler returns a 'b reference when it is
-		// not bound by the arguments.
-		// but rustc doesn't understand that
-		// if E::Args doesnt have 'b, then the output of the handler won't have 'b either
-		//
-		// In the future this could be fixed if someone makes rustc smarter
-		F: for<'a, 'b> Fn(
-				[&'b (); 0],
-				&'a CTX,
-				E::Args<'a, 'b>,
-			) -> ControlFlow<E::Return, E::Args<'a, 'b>>
+		F: for<'a, 'b> Fn(&'a CTX, &'a mut E::Args<'b>) -> ControlFlow<E::Return>
 			+ Sync
 			+ Send
 			+ 'static,
@@ -78,11 +67,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	/// If the position is greater than the number of handlers, the handler will be added at the end
 	pub fn add_handler_at_pos<
 		E: Event,
-		F: for<'a, 'b> Fn(
-				[&'b (); 0],
-				&'a CTX,
-				E::Args<'a, 'b>,
-			) -> ControlFlow<E::Return, E::Args<'a, 'b>>
+		F: for<'a, 'b> Fn(&'a CTX, &'a mut E::Args<'b>) -> ControlFlow<E::Return>
 			+ Sync
 			+ Send
 			+ 'static,
@@ -93,11 +78,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	) {
 		let closure = Box::new(handler)
 			as Box<
-				dyn for<'a, 'b> Fn(
-						[&'b (); 0],
-						&'a CTX,
-						E::Args<'a, 'b>,
-					) -> ControlFlow<E::Return, E::Args<'a, 'b>>
+				dyn for<'a, 'b> Fn(&'a CTX, &'a mut E::Args<'b>) -> ControlFlow<E::Return>
 					+ Send
 					+ Sync
 					+ 'static,
@@ -117,27 +98,23 @@ impl<CTX: 'static> Reactor<CTX> {
 	pub fn event<'a, 'b, E: Event>(
 		&self,
 		ctx: &'a CTX,
-		mut args: E::Args<'a, 'b>,
-	) -> ControlFlow<E::Return, E::Args<'a, 'b>> {
+		args: &'a mut E::Args<'b>,
+	) -> ControlFlow<E::Return> {
 		if let Some(handlers) = self.events.get(&TypeId::of::<E>()) {
 			for handler in handlers {
 				// Convert back to the real closure type
 				let closure: &Box<
-					dyn for<'c, 'd> Fn(
-							[&'d (); 0],
-							&'c CTX,
-							E::Args<'c, 'd>,
-						) -> ControlFlow<E::Return, E::Args<'c, 'd>>
+					dyn for<'c, 'd> Fn(&'c CTX, &'c mut E::Args<'d>) -> ControlFlow<E::Return>
 						+ Send
 						+ Sync
 						+ 'static,
 				> = handler.downcast_ref().unwrap();
 
-				args = closure([], ctx, args)?;
+				closure(ctx, args)?;
 			}
 		}
 
-		ControlFlow::Continue(args)
+		ControlFlow::Continue(())
 	}
 }
 
@@ -155,50 +132,55 @@ mod tests {
 	fn test_reactor() {
 		struct MyEvent;
 		impl Event for MyEvent {
-			type Args<'a, 'b> = u32;
+			type Args<'a> = u32;
 			type Return = ();
 		}
 
 		struct MyEvent2;
 		impl Event for MyEvent2 {
-			type Args<'a, 'b> = &'a str;
+			type Args<'a> = &'a str;
 			type Return = String;
 		}
 
 		let mut reactor = Reactor::<()>::new();
 
-		reactor.add_handler_at_pos::<MyEvent, _>(999, |_, _ctx, arg| {
+		reactor.add_handler_at_pos::<MyEvent, _>(999, |_ctx, arg| {
 			println!("First handler: {}", arg);
 
-			ControlFlow::Continue(arg)
+			ControlFlow::Continue(())
 		});
-		reactor.add_handler_at_pos::<MyEvent, _>(0, |_, _ctx, mut arg| {
+		reactor.add_handler_at_pos::<MyEvent, _>(0, |_ctx, arg| {
 			println!("Second handler: {}", arg);
 
-			arg *= 2;
+			*arg *= 2;
 
-			ControlFlow::Continue(arg)
+			ControlFlow::Continue(())
 		});
 
-		reactor.add_handler::<MyEvent2, _>(|_, _ctx, a| {
+		reactor.add_handler::<MyEvent2, _>(|_ctx, _| {
 			println!("first MyEvent2");
 
-			ControlFlow::Continue(a)
+			ControlFlow::Continue(())
 		});
-		reactor.add_handler_at_pos::<MyEvent2, _>(1, |_, _ctx, a| {
+		reactor.add_handler_at_pos::<MyEvent2, _>(1, |_ctx, a| {
 			println!("second MyEvent2");
 
 			ControlFlow::Break(format!("{a}-test"))
 		});
-		reactor.add_handler_at_pos::<MyEvent2, _>(2, |_, _ctx, _a| {
+		reactor.add_handler_at_pos::<MyEvent2, _>(2, |_ctx, _a| {
 			println!("third MyEvent2");
 
 			ControlFlow::Break("this should not be reached".to_string())
 		});
 
-		assert_eq!(reactor.event::<MyEvent>(&(), 7), ControlFlow::Continue(14));
+		let mut x = 7;
+		reactor
+			.event::<MyEvent>(&(), &mut x)
+			.continue_value()
+			.unwrap();
+		assert_eq!(x, 14);
 		assert_eq!(
-			reactor.event::<MyEvent2>(&(), "my event2 test string"),
+			reactor.event::<MyEvent2>(&(), &mut "my event2 test string"),
 			ControlFlow::Break("my event2 test string-test".to_string())
 		);
 	}

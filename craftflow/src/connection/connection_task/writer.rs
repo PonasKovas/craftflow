@@ -1,9 +1,6 @@
 use crate::{
 	connection::packet_writer::{Encryptor, PacketWriter},
-	packet_events::{
-		trigger_s2c_abstract_post, trigger_s2c_abstract_pre, trigger_s2c_concrete_post,
-		trigger_s2c_concrete_pre,
-	},
+	packet_events::{trigger_s2c_abstract, trigger_s2c_concrete},
 	CraftFlow,
 };
 use aes::cipher::KeyIvInit;
@@ -19,8 +16,8 @@ pub(super) async fn writer_task(
 	conn_id: u64,
 	version: u32,
 	mut writer: PacketWriter,
-	mut concrete_packet_sender: UnboundedReceiver<S2C>,
-	mut abstract_packet_sender: UnboundedReceiver<AbS2C>,
+	mut concrete_packet_sender: UnboundedReceiver<S2C<'static>>,
+	mut abstract_packet_sender: UnboundedReceiver<AbS2C<'static>>,
 	reader_state: Arc<RwLock<State>>,
 	writer_state: Arc<RwLock<State>>,
 	compression: Arc<OnceLock<usize>>,
@@ -31,16 +28,19 @@ pub(super) async fn writer_task(
 	loop {
 		select! {
 			abs = abstract_packet_sender.recv() => {
-				let mut abs = match abs {
+				let abs = match abs {
 					Some(p) => p,
 					None => return Ok(()), // This means the connection has to be closed, as the handle was dropped
 				};
 
-				trigger_s2c_abstract_pre(&craftflow, conn_id, &mut abs);
+				let (cont, abs) = trigger_s2c_abstract(false, &craftflow, conn_id, abs);
+				if !cont {
+					continue;
+				}
 
 				// convert the abstract packet to a series of concrete packets
 				let state = *writer_state.read().unwrap();
-				let iter = match abs.clone().convert(version, state) {
+				let iter = match abs.convert(version, state) {
 					Ok(WriteResult::Success(iter)) => iter,
 					Ok(WriteResult::Unsupported) => {
 						error!("Abstract packet {abs:?} not supported by this client (version {version}, state {state:?})");
@@ -57,7 +57,7 @@ pub(super) async fn writer_task(
 					send_concrete(&craftflow, conn_id, version, &mut writer, &reader_state, &writer_state, &compression, &mut encryptor, concrete).await?;
 				}
 
-				let _ = trigger_s2c_abstract_post(&craftflow, conn_id, &mut abs);
+				let _ = trigger_s2c_abstract(true, &craftflow, conn_id, abs);
 			},
 			concrete = concrete_packet_sender.recv() => {
 				let concrete = match concrete {
@@ -81,7 +81,7 @@ fn try_init_encryptor(encryption_secret: &OnceLock<[u8; 16]>, encryptor: &mut Op
 	}
 }
 
-async fn send_concrete(
+async fn send_concrete<'a>(
 	craftflow: &CraftFlow,
 	conn_id: u64,
 	version: u32,
@@ -90,10 +90,11 @@ async fn send_concrete(
 	writer_state: &RwLock<State>,
 	compression: &OnceLock<usize>,
 	encryptor: &mut Option<Encryptor>,
-	mut packet: S2C,
+	packet: S2C<'a>,
 ) -> anyhow::Result<()> {
 	// trigger the packet event, and actually send it if it was not cancelled
-	if trigger_s2c_concrete_pre(craftflow, conn_id, &mut packet).is_break() {
+	let (cont, packet) = trigger_s2c_concrete(false, craftflow, conn_id, packet);
+	if !cont {
 		return Ok(());
 	}
 
@@ -108,7 +109,8 @@ async fn send_concrete(
 	// some special packets that change the state of the connection
 	match packet {
 		S2C::Status(s2c::Status::Ping(_)) => {
-			craftflow.disconnect(conn_id);
+			craftflow.disconnect(conn_id); // todo i dont think this is the right place to do this
+			                      // try doing this in the ping module instead
 		}
 		S2C::Login(s2c::Login::Success(_)) => {
 			if version >= 764 {
@@ -127,7 +129,7 @@ async fn send_concrete(
 		_ => {}
 	}
 
-	let _ = trigger_s2c_concrete_post(craftflow, conn_id, &mut packet);
+	let (_cont, _packet) = trigger_s2c_concrete(true, craftflow, conn_id, packet);
 
 	Ok(())
 }

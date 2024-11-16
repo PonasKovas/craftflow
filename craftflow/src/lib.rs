@@ -61,7 +61,7 @@ impl CraftFlow {
 			// Emit the new connection event
 			if craftflow
 				.reactor
-				.event::<NewConnection>(&craftflow, id)
+				.event::<NewConnection>(&craftflow, &mut id.clone())
 				.is_break()
 			{
 				// immediately disconnect the client
@@ -86,7 +86,8 @@ impl CraftFlow {
 
 		if connections.connections.contains_key(&conn_id) {
 			// emit the disconnect event
-			self.reactor.event::<Disconnect>(&self, conn_id);
+			self.reactor
+				.event::<Disconnect>(&self, &mut conn_id.clone());
 		}
 
 		connections.connections.remove(&conn_id);

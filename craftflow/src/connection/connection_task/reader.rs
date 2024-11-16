@@ -42,7 +42,7 @@ pub(super) async fn reader_task(
 				version,
 				&compression,
 				&mut decryptor,
-				|mut packet| {
+				|packet| {
 					// Handle some special packets which change the state of the connection
 					match packet {
 						C2S::Login(c2s::Login::LoginAcknowledged(_)) => {
@@ -55,12 +55,13 @@ pub(super) async fn reader_task(
 					}
 
 					// trigger concrete packet event
-					if trigger_c2s_concrete(false, &craftflow, conn_id, &mut packet).is_break() {
+					let (cont, packet) = trigger_c2s_concrete(false, &craftflow, conn_id, packet);
+					if !cont {
 						return Ok(());
 					}
 
 					// try to construct abstract packet
-					let mut abstr = 'abstr: {
+					let abstr = 'abstr: {
 						// check all already started constructors
 						for i in 0..constructors.len() {
 							match constructors
@@ -88,17 +89,23 @@ pub(super) async fn reader_task(
 							}
 							ConstructorResult::Ignore => {
 								error!(
-									                         "Failed to construct abstract packet from concrete packet: {:?} (This is most likely a bug within craftflow)",
-									                         packet
-									                     );
+			                         "Failed to construct abstract packet from concrete packet: {:?} (This is most likely a bug within craftflow)",
+			                         packet
+			                     );
 								return Ok(());
 							}
 						}
 					};
 
-					trigger_c2s_abstract(false, &craftflow, conn_id, &mut abstr);
-					trigger_c2s_abstract(true, &craftflow, conn_id, &mut abstr);
-					trigger_c2s_concrete(true, &craftflow, conn_id, &mut packet);
+					let (cont, abstr) = trigger_c2s_abstract(false, &craftflow, conn_id, abstr);
+					if !cont {
+						return Ok(());
+					}
+					let (cont, _abstr) = trigger_c2s_abstract(true, &craftflow, conn_id, abstr);
+					if !cont {
+						return Ok(());
+					}
+					let (_cont, _packet) = trigger_c2s_concrete(true, &craftflow, conn_id, packet);
 
 					Ok(())
 				},

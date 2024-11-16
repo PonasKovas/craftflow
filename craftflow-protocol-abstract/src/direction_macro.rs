@@ -129,7 +129,9 @@ macro_rules! gen_direction_enum {
 
     				impl $event_trait for ${concat(S2C, $struct, Event)} {
     				    /// The connection ID and the packet
-    				    type Args<'a> = (u64, &'a mut $crate::s2c::$struct $( <$var_lifetime> )?);
+                        ///
+                        /// Obviously, don't try to change the connection ID, as it will propagate to other handlers
+    				    type Args<'a> = (u64, $crate::s2c::$struct $( <$var_lifetime> )?);
                         type Return = ();
     				}
 
@@ -171,7 +173,7 @@ macro_rules! gen_direction_enum {
 
     				impl $event_trait for ${concat(C2S, $struct, Event)} {
     				    /// The connection ID and the packet
-    				    type Args<'a> = (u64, &'a mut $crate::c2s::$struct $( <$var_lifetime> )?);
+    				    type Args<'a> = (u64, $crate::c2s::$struct $( <$var_lifetime> )?);
                         type Return = ();
     				}
 
