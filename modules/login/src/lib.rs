@@ -9,9 +9,13 @@ mod encryption_response;
 mod login_start;
 mod set_compression;
 
-use craftflow::{packet_events::Post, various_events::Disconnect, CraftFlow};
-use craftflow_protocol_abstract::c2s::{AbLoginEncryption, AbLoginStart};
-use craftflow_protocol_versions::s2c::login::compress::v00765::CompressV00047;
+use craftflow::{
+	packet_events::{
+		C2SAbLoginEncryptionEvent, C2SAbLoginStartEvent, Post, S2CAbLoginCompressEvent,
+	},
+	various_events::Disconnect,
+	CraftFlow,
+};
 use encryption_response::encryption_response;
 use login_start::login_start;
 use rsa::RsaPrivateKey;
@@ -74,13 +78,13 @@ impl Login {
 
 		craftflow
 			.reactor
-			.add_handler::<AbLoginStart, _>(login_start);
+			.add_handler::<C2SAbLoginStartEvent, _>(login_start);
 		craftflow
 			.reactor
-			.add_handler::<Post<CompressV00047>, _>(set_compression::set_compression);
+			.add_handler::<Post<S2CAbLoginCompressEvent>, _>(set_compression::set_compression);
 		craftflow
 			.reactor
-			.add_handler::<AbLoginEncryption, _>(encryption_response);
+			.add_handler::<C2SAbLoginEncryptionEvent, _>(encryption_response);
 
 		craftflow
 			.reactor
@@ -88,15 +92,15 @@ impl Login {
 	}
 }
 
-fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: u64) -> ControlFlow<(), u64> {
+fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: &mut u64) -> ControlFlow<()> {
 	cf.modules
 		.get::<Login>()
 		.player_names_uuids
 		.write()
 		.unwrap()
-		.remove(&conn_id);
+		.remove(conn_id);
 
-	ControlFlow::Continue(conn_id)
+	ControlFlow::Continue(())
 }
 
 impl Default for Login {

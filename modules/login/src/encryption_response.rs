@@ -5,10 +5,10 @@ use rsa::Pkcs1v15Encrypt;
 use std::ops::ControlFlow;
 use tracing::error;
 
-pub fn encryption_response<'a>(
+pub fn encryption_response(
 	cf: &CraftFlow,
-	(conn_id, request): (u64, &'a mut AbLoginEncryption),
-) -> ControlFlow<(), (u64, &'a mut AbLoginEncryption)> {
+	&mut (conn_id, ref mut request): &mut (u64, AbLoginEncryption),
+) -> ControlFlow<()> {
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
 		match (
 			rsa_key.decrypt(Pkcs1v15Encrypt, &request.shared_secret),
@@ -50,7 +50,7 @@ pub fn encryption_response<'a>(
 					.unwrap()
 					.get(&conn_id)
 				{
-					Some((name, uuid)) => (name.clone(), *uuid),
+					Some((name, uuid)) => (name.clone().into(), *uuid),
 					None => {
 						// Honestly I dont think this is possible, but just in case
 						error!(
@@ -78,5 +78,5 @@ pub fn encryption_response<'a>(
 		}
 	}
 
-	ControlFlow::Continue((conn_id, request))
+	ControlFlow::Continue(())
 }
