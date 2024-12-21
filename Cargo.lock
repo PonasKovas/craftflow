@@ -159,6 +159,7 @@ dependencies = [
  "flate2",
  "futures",
  "shallowclone",
+ "smallbox",
  "tokio",
  "tracing",
 ]
@@ -948,6 +949,11 @@ checksum = "8f92a496fb766b417c996b9c5e57daf2f7ad3b0bebe1ccfca4856390e3d3bb67"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "smallbox"
+version = "0.8.5"
+source = "git+https://github.com/PonasKovas/smallbox.git?branch=merged-covariant-future#5b5f062913c58d684611d2be1b015fc5c560ddea"
 
 [[package]]
 name = "smallvec"

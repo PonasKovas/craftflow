@@ -49,6 +49,7 @@ pub(super) async fn connection_task(
 		if let ControlFlow::Break(response) = craftflow
 			.reactor
 			.event::<LegacyPing>(&craftflow, &mut conn_id.clone())
+			.await
 		{
 			if let Some(response) = response {
 				write_legacy_response(&mut writer.stream, legacy_ping_format, response).await?;
@@ -65,21 +66,15 @@ pub(super) async fn connection_task(
 
 	let handshake = match timeout(
 		Duration::from_secs(5),
-		reader.read_packet(
-			&reader_state,
-			MIN_VERSION,
-			&compression,
-			&mut None,
-			|packet| packet.map(|p| p.make_owned()),
-		),
+		reader.read_packet(&reader_state, MIN_VERSION, &compression, &mut None),
 	)
 	.await
 	{
-		Ok(p) => p.context("reading handshake packet")?,
+		Ok(p) => p.context("reading handshake packet")?.make_owned(),
 		Err(_) => bail!("timed out"),
 	};
 
-	let (cont, handshake) = trigger_c2s_concrete(false, &craftflow, conn_id, handshake);
+	let (cont, handshake) = trigger_c2s_concrete(false, &craftflow, conn_id, handshake).await;
 	if !cont {
 		return Ok(());
 	}
@@ -105,6 +100,7 @@ pub(super) async fn connection_task(
 			let message = match craftflow
 				.reactor
 				.event::<UnsupportedClientVersion>(&craftflow, &mut (conn_id, client_version))
+				.await
 			{
 				ControlFlow::Continue(_) => {
 					// default response
@@ -133,15 +129,15 @@ pub(super) async fn connection_task(
 	let handshake_ab: AbC2S = handshake_ab.into();
 
 	// trigger the handshake event
-	let (cont, handshake_ab) = trigger_c2s_abstract(false, &craftflow, conn_id, handshake_ab);
+	let (cont, handshake_ab) = trigger_c2s_abstract(false, &craftflow, conn_id, handshake_ab).await;
 	if !cont {
 		return Ok(());
 	}
-	let (cont, _handshake_ab) = trigger_c2s_abstract(true, &craftflow, conn_id, handshake_ab);
+	let (cont, _handshake_ab) = trigger_c2s_abstract(true, &craftflow, conn_id, handshake_ab).await;
 	if !cont {
 		return Ok(());
 	}
-	let (cont, _handshake) = trigger_c2s_concrete(true, &craftflow, conn_id, handshake);
+	let (cont, _handshake) = trigger_c2s_concrete(true, &craftflow, conn_id, handshake).await;
 	if !cont {
 		return Ok(());
 	}
@@ -164,24 +160,25 @@ pub(super) async fn connection_task(
 		.await
 	});
 
-	let writer_task = spawn(async move {
-		writer_task(
-			craftflow,
-			conn_id,
-			client_version,
-			writer,
-			concrete_packet_sender,
-			abstract_packet_sender,
-			reader_state,
-			writer_state,
-			compression,
-			encryption_secret,
-		)
-		.await
-	});
+	// let writer_task = spawn(async move {
+	// 	writer_task(
+	// 		craftflow,
+	// 		conn_id,
+	// 		client_version,
+	// 		writer,
+	// 		concrete_packet_sender,
+	// 		abstract_packet_sender,
+	// 		reader_state,
+	// 		writer_state,
+	// 		compression,
+	// 		encryption_secret,
+	// 	)
+	// 	.await
+	// });
 
-	select! {
-		r = reader_task => r?.context("reader task"),
-		r = writer_task => r?.context("writer task"),
-	}
+	// select! {
+	// 	r = reader_task => r?.context("reader task"),
+	// 	r = writer_task => r?.context("writer task"),
+	// }
+	Ok(())
 }

@@ -1,6 +1,7 @@
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
+use anyhow::bail;
 use craftflow_protocol_abstract::State;
-use craftflow_protocol_core::{datatypes::VarInt, Error, MCPRead};
+use craftflow_protocol_core::{datatypes::VarInt, MCPRead};
 use craftflow_protocol_versions::{
 	c2s::{Configuration, Handshaking, Login, Status},
 	IntoStateEnum, PacketRead, C2S,
@@ -23,6 +24,8 @@ pub(crate) struct PacketReader {
 	pub(crate) stream: OwnedReadHalf,
 	pub(crate) buffer: Vec<u8>,
 	pub(crate) decompression_buffer: Vec<u8>,
+	// If Some, this number of bytes will be removed from the buffer when starting to read a new packet
+	last_packet_len: Option<usize>,
 }
 
 impl PacketReader {
@@ -31,45 +34,22 @@ impl PacketReader {
 			stream,
 			buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
 			decompression_buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+			last_packet_len: None,
 		}
 	}
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet<
-		'a,
-		T,
-		F: for<'b> FnOnce(anyhow::Result<C2S<'b>>) -> anyhow::Result<T>,
-	>(
+	pub(crate) async fn read_packet<'a>(
 		&'a mut self,
 		state: &RwLock<State>,
 		protocol_version: u32,
 		compression: &OnceLock<usize>,
 		decryptor: &mut Option<Decryptor>,
-		handler: F,
-	) -> anyhow::Result<T> {
-		let (packet_len, packet) = match self
-			.read_packet_inner(state, protocol_version, compression, decryptor)
-			.await
-		{
-			Ok((packet_len, packet)) => (packet_len, Ok(packet)),
-			Err(e) => (0, Err(e.into())),
-		};
+	) -> anyhow::Result<C2S<'a>> {
+		if let Some(last_packet_len) = self.last_packet_len.take() {
+			// remove the packet bytes from the buffer
+			self.buffer.drain(..last_packet_len);
+		}
 
-		let result = handler(packet);
-
-		// remove the packet bytes from the buffer
-		self.buffer.drain(..packet_len);
-
-		result
-	}
-	// reads a packet and returns the length of the packet (to be removed from the buffer)
-	// and the packet itself
-	async fn read_packet_inner<'a>(
-		&'a mut self,
-		state: &RwLock<State>,
-		protocol_version: u32,
-		compression: &OnceLock<usize>,
-		decryptor: &mut Option<Decryptor>,
-	) -> craftflow_protocol_core::Result<(usize, C2S<'a>)> {
 		// wait for the length of the next packet
 		let packet_len = self.read_varint_at_pos(0, decryptor).await?;
 
@@ -79,9 +59,7 @@ impl PacketReader {
 		let total_packet_len = packet_len + packet_start; // the length of the packet including the length prefix
 
 		if packet_len as usize > MAX_PACKET_SIZE {
-			return Err(Error::InvalidData(format!(
-				"packet len must be less than {MAX_PACKET_SIZE} bytes (got {packet_len} bytes)"
-			)));
+			bail!("packet len must be less than {MAX_PACKET_SIZE} bytes (got {packet_len} bytes)");
 		}
 
 		// if compression is enabled, read the uncompressed data length
@@ -100,10 +78,7 @@ impl PacketReader {
 				} else if length == 0 {
 					None
 				} else {
-					return Err(Error::InvalidData(format!(
-						"Invalid decompressed data length: {}",
-						length
-					)));
+					bail!("Invalid decompressed data length: {}", length);
 				}
 			}
 		};
@@ -128,11 +103,11 @@ impl PacketReader {
 			writer.finish()?;
 
 			if self.decompression_buffer.len() != decompressed_len {
-				return Err(Error::InvalidData(format!(
+				bail!(
 					"Decompressed data length mismatch: expected {}, got {}",
 					decompressed_len,
 					self.decompression_buffer.len()
-				)));
+				);
 			}
 
 			packet_bytes = &mut self.decompression_buffer[..];
@@ -161,13 +136,15 @@ impl PacketReader {
 
 		// simple sanity test of parsing the packet, all the bytes should have been used to parse it
 		if remaining.len() != 0 {
-			return Err(Error::InvalidData(format!(
+			bail!(
 				"Parsed packet and got {} remaining bytes left",
 				remaining.len()
-			)));
+			);
 		}
 
-		Ok((total_packet_len, packet))
+		self.last_packet_len = Some(total_packet_len);
+
+		Ok(packet)
 	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	/// without removing the bytes from the buffer

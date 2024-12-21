@@ -42,25 +42,34 @@ craftflow_protocol_abstract::__gen_events_for_packets_c2s! { Event, PacketToEven
 
 // Helper functions that trigger a packet event
 // returns true if the event was not stopped
-fn helper<'a, 'b, P>(craftflow: &'a CraftFlow, conn_id: u64, packet: P) -> (bool, P)
+async fn helper<'a, 'b, P>(craftflow: &'a CraftFlow, conn_id: u64, packet: P) -> (bool, P)
 where
-	P: PacketToEventPointer<'b>,
+	P: PacketToEventPointer<'b> + Send,
 {
 	trace!(
 		"{} event",
 		std::any::type_name::<<P as PacketToEventPointer>::Event>()
 	);
 	let mut args = (conn_id, packet);
-	if craftflow
-		.reactor
-		.event::<<P as PacketToEventPointer>::Event>(craftflow, &mut args)
-		.is_break()
-	{
-		return (false, args.1);
-	}
-	(true, args.1)
+
+	fn assert_send<T: Send>(_: T) {}
+	assert_send(
+		craftflow
+			.reactor
+			.event::<<P as PacketToEventPointer>::Event>(craftflow, &mut args),
+	);
+	todo!()
+	// if craftflow
+	// 	.reactor
+	// 	.event::<<P as PacketToEventPointer>::Event>(craftflow, &mut args)
+	// 	.await
+	// 	.is_break()
+	// {
+	// 	return (false, args.1);
+	// }
+	// (true, args.1)
 }
-fn helper_post<'a, 'b, P>(craftflow: &'a CraftFlow, conn_id: u64, packet: P) -> (bool, P)
+async fn helper_post<'a, 'b, P>(craftflow: &'a CraftFlow, conn_id: u64, packet: P) -> (bool, P)
 where
 	P: PacketToEventPointer<'b>,
 	Post<<P as PacketToEventPointer<'b>>::Event>: Event<Args<'b> = (u64, P)>,
@@ -73,6 +82,7 @@ where
 	if craftflow
 		.reactor
 		.event::<Post<<P as PacketToEventPointer>::Event>>(craftflow, &mut args)
+		.await
 		.is_break()
 	{
 		return (false, args.1);
@@ -82,47 +92,50 @@ where
 
 // More macro slop below
 
-pub(super) fn trigger_c2s_concrete<'a, 'b>(
+pub(super) async fn trigger_c2s_concrete<'a, 'b>(
 	post: bool,
 	craftflow: &'a CraftFlow,
 	conn_id: u64,
 	packet: C2S<'b>,
 ) -> (bool, C2S<'b>) {
 	craftflow_protocol_versions::__destructure_packet_enum__!(direction=C2S, packet -> inner {
-		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner) } else { helper_post(craftflow, conn_id, inner) };
+		// fn assert_send<T: Send>(_: T) {}
+		// assert_send(helper(craftflow, conn_id, inner));
+		// todo!()
+		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into_state_enum())
 	})
 }
-pub(super) fn trigger_s2c_concrete<'a, 'b>(
+pub(super) async fn trigger_s2c_concrete<'a, 'b>(
 	post: bool,
 	craftflow: &'a CraftFlow,
 	conn_id: u64,
 	packet: S2C<'b>,
 ) -> (bool, S2C<'b>) {
 	craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, packet -> inner {
-		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner) } else { helper_post(craftflow, conn_id, inner) };
+		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into_state_enum())
 	})
 }
-pub(super) fn trigger_c2s_abstract<'a, 'b>(
+pub(super) async fn trigger_c2s_abstract<'a, 'b>(
 	post: bool,
 	craftflow: &'a CraftFlow,
 	conn_id: u64,
 	packet: AbC2S<'b>,
 ) -> (bool, AbC2S<'b>) {
 	craftflow_protocol_abstract::__destructure_c2s__!(packet -> inner {
-		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner) } else { helper_post(craftflow, conn_id, inner) };
+		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
 	})
 }
-pub(super) fn trigger_s2c_abstract<'a, 'b>(
+pub(super) async fn trigger_s2c_abstract<'a, 'b>(
 	post: bool,
 	craftflow: &'a CraftFlow,
 	conn_id: u64,
 	packet: AbS2C<'b>,
 ) -> (bool, AbS2C<'b>) {
 	craftflow_protocol_abstract::__destructure_s2c__!(packet -> inner {
-		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner) } else { helper_post(craftflow, conn_id, inner) };
+		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
 	})
 }

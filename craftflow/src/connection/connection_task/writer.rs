@@ -33,7 +33,7 @@ pub(super) async fn writer_task(
 					None => return Ok(()), // This means the connection has to be closed, as the handle was dropped
 				};
 
-				let (cont, abs) = trigger_s2c_abstract(false, &craftflow, conn_id, abs);
+				let (cont, abs) = trigger_s2c_abstract(false, &craftflow, conn_id, abs).await;
 				if !cont {
 					continue;
 				}
@@ -93,7 +93,7 @@ async fn send_concrete<'a>(
 	packet: S2C<'a>,
 ) -> anyhow::Result<()> {
 	// trigger the packet event, and actually send it if it was not cancelled
-	let (cont, packet) = trigger_s2c_concrete(false, craftflow, conn_id, packet);
+	let (cont, packet) = trigger_s2c_concrete(false, craftflow, conn_id, packet).await;
 	if !cont {
 		return Ok(());
 	}
@@ -129,7 +129,7 @@ async fn send_concrete<'a>(
 		_ => {}
 	}
 
-	let (_cont, _packet) = trigger_s2c_concrete(true, craftflow, conn_id, packet);
+	let (_cont, _packet) = trigger_s2c_concrete(true, craftflow, conn_id, packet).await;
 
 	Ok(())
 }

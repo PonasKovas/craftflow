@@ -62,6 +62,7 @@ impl CraftFlow {
 			if craftflow
 				.reactor
 				.event::<NewConnection>(&craftflow, &mut id.clone())
+				.await
 				.is_break()
 			{
 				// immediately disconnect the client
