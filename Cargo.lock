@@ -35,12 +35,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "always_send"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b628c617100dc3b59649fd9092ca9105433b5289ad9b43a82a71e3b6e08d26d"
-
-[[package]]
 name = "anyhow"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -157,7 +151,6 @@ name = "craftflow"
 version = "0.1.0"
 dependencies = [
  "aes",
- "always_send",
  "anyhow",
  "cfb8",
  "craftflow-protocol-abstract",

@@ -1,9 +1,6 @@
 //! The reactor is a structure that allows to register functions that will run on specific events
 //!
 
-mod event;
-mod handle_macro;
-
 use smallbox::SmallBox;
 use std::{
 	any::{Any, TypeId},
@@ -13,10 +10,43 @@ use std::{
 	ops::ControlFlow,
 };
 
-pub use event::{Event, EventArgs};
+/// Convenience macro for registering a handler for an event
+///
+/// # Usage
+///
+/// ```ignore
+/// let reactor: Reactor<_> = ...;
+/// handle!(reactor => MyEvent: {
+///    println!("MyEvent handler");
+///    ControlFlow::Continue(())
+/// });
+/// ```
+#[macro_export]
+macro_rules! handle {
+	($reactor:expr => $event:ty: $ctx:pat, $arg:pat => $code:tt) => {
+		$reactor
+			.add_handler::<$event, _>(|$ctx, $arg| ::smallbox::SmallBox::new(async move $code ))
+	};
+}
 
 // The stack size of the smallboxes.
 type S = [usize; 4]; // 4 words
+
+/// Marks an event type
+///
+/// Given the implementation of this trait, the handlers that the reactor will use for this event
+/// will be
+/// ```ignore
+/// Fn(&CTX, &mut Event::Args) -> SmallBox<dyn Future<Output = ControlFlow<Event::Return>>>
+/// ```
+/// Return `ControlFlow::Continue(())` to continue reacting to the event with the next registered
+/// handler, or `ControlFlow::Break(Event::Return)` to stop the event and return.
+pub trait Event: Any {
+	/// The type of the arguments that the event will receive
+	type Args<'a>;
+	/// The type of the return value of the event
+	type Return;
+}
 
 /// The reactor structure allows to register functions that will run on specific events
 /// and then trigger the events
@@ -43,7 +73,7 @@ impl<CTX: 'static> Reactor<CTX> {
 		E: Event,
 		F: for<'a, 'b> Fn(
 				&'a CTX,
-				&'a mut <E as EventArgs<'b>>::Args,
+				&'a mut E::Args<'b>,
 			) -> SmallBox<
 				dyn Future<Output = ControlFlow<E::Return>> + Send + Sync + 'a,
 				S,
@@ -58,7 +88,7 @@ impl<CTX: 'static> Reactor<CTX> {
 			as Box<
 				dyn for<'a, 'b> Fn(
 						&'a CTX,
-						&'a mut <E as EventArgs<'b>>::Args,
+						&'a mut E::Args<'b>,
 					) -> SmallBox<
 						dyn Future<Output = ControlFlow<E::Return>> + Send + Sync + 'a,
 						S,
@@ -78,7 +108,7 @@ impl<CTX: 'static> Reactor<CTX> {
 	pub async fn event<E: Event>(
 		&self,
 		ctx: &CTX,
-		args: &mut <E as EventArgs<'_>>::Args,
+		args: &mut E::Args<'_>,
 	) -> ControlFlow<E::Return> {
 		if let Some(handlers) = self.events.get(&TypeId::of::<E>()) {
 			for handler in handlers {
@@ -86,7 +116,7 @@ impl<CTX: 'static> Reactor<CTX> {
 				let closure: &Box<
 					dyn for<'c, 'd> Fn(
 							&'c CTX,
-							&'c mut <E as EventArgs<'d>>::Args,
+							&'c mut E::Args<'d>,
 						) -> SmallBox<
 							dyn Future<Output = ControlFlow<E::Return>> + Send + Sync + 'c,
 							S,
@@ -113,23 +143,18 @@ impl<CTX> std::fmt::Debug for Reactor<CTX> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::handle;
 
 	#[tokio::test]
 	async fn test_reactor() {
 		struct MyEvent;
-		impl<'a> EventArgs<'a> for MyEvent {
-			type Args = u32;
-		}
 		impl Event for MyEvent {
+			type Args<'a> = u32;
 			type Return = ();
 		}
 
 		struct MyEvent2;
-		impl<'a> EventArgs<'a> for MyEvent2 {
-			type Args = &'a str;
-		}
 		impl Event for MyEvent2 {
+			type Args<'a> = &'a str;
 			type Return = String;
 		}
 

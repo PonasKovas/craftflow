@@ -42,13 +42,11 @@ pub fn gen_event_macro(directions: &Directions) -> String {
 						/// Event for the [{dir} {state} {packet} {version}][{packet_path}] packet
 						pub struct {event_struct};
 
-						impl<'a> $eventargs_trait<'a> for {event_struct} {{
+						impl $event_trait for {event_struct} {{
 						    /// The connection ID and the packet
     						///
     						/// Obviously, don't try to change the connection ID, as it will propagate to other handlers
-						    type Args = (u64, {packet_path});
-						}}
-						impl $event_trait for {event_struct} {{
+						    type Args<'a> = (u64, {packet_path});
                             type Return = ();
 						}}
 
@@ -67,7 +65,7 @@ pub fn gen_event_macro(directions: &Directions) -> String {
 		#[doc(hidden)]
 		#[macro_export]
 		macro_rules! __gen_events_for_packets__ {{
-		    ($event_trait:ident, $eventargs_trait:ident, $pointer_trait:ident) => {{ {inner} }};
+		    ($event_trait:ident, $pointer_trait:ident) => {{ {inner} }};
 		}}"
 	)
 }
