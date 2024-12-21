@@ -114,7 +114,7 @@ macro_rules! gen_direction_enum {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __gen_events_for_packets_s2c {
-            ($event_trait:ident, $pointer_trait:ident) => {
+            ($event_trait:ident, $eventargs_trait:ident, $pointer_trait:ident) => {
                 $(
                     #[doc = concat!(
                         "Event for the [abstract S2C ",
@@ -127,11 +127,13 @@ macro_rules! gen_direction_enum {
                     )]
     				pub struct ${concat(S2C, $struct, Event)};
 
-    				impl $event_trait for ${concat(S2C, $struct, Event)} {
+     				impl<'a> $eventargs_trait<'a> for ${concat(S2C, $struct, Event)} {
     				    /// The connection ID and the packet
                         ///
                         /// Obviously, don't try to change the connection ID, as it will propagate to other handlers
-    				    type Args<'a> = (u64, $crate::s2c::$struct $( <$var_lifetime> )?);
+    				    type Args = (u64, $crate::s2c::$struct $( <$var_lifetime> )?);
+    				}
+    				impl $event_trait for ${concat(S2C, $struct, Event)} {
                         type Return = ();
     				}
 
@@ -158,7 +160,7 @@ macro_rules! gen_direction_enum {
         #[doc(hidden)]
         #[macro_export]
         macro_rules! __gen_events_for_packets_c2s {
-            ($event_trait:ident, $pointer_trait:ident) => {
+            ($event_trait:ident, $eventargs_trait:ident, $pointer_trait:ident) => {
                 $(
                     #[doc = concat!(
                         "Event for the [abstract C2S ",
@@ -171,9 +173,11 @@ macro_rules! gen_direction_enum {
                     )]
     				pub struct ${concat(C2S, $struct, Event)};
 
-    				impl $event_trait for ${concat(C2S, $struct, Event)} {
+        			impl<'a> $eventargs_trait<'a> for ${concat(C2S, $struct, Event)} {
     				    /// The connection ID and the packet
-    				    type Args<'a> = (u64, $crate::c2s::$struct $( <$var_lifetime> )?);
+    				    type Args = (u64, $crate::c2s::$struct $( <$var_lifetime> )?);
+    				}
+    				impl $event_trait for ${concat(C2S, $struct, Event)} {
                         type Return = ();
     				}
 

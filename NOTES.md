@@ -70,4 +70,4 @@ trait EventArgs<'a> {
 
 It might be a good idea to revisit this and check if it could be simplified back, once next solver is more usable.
 
-Last commit that attempted to use GATs: ed0adf675755c12b9f7377e668b676ec9c8afa7a
+Last commit that attempted to use GATs: `ed0adf675755c12b9f7377e668b676ec9c8afa7a`
