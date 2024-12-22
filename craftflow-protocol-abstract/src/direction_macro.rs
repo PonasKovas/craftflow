@@ -135,7 +135,7 @@ macro_rules! gen_direction_enum {
                         type Return = ();
     				}
 
-                    impl<'a> $pointer_trait<'a> for $crate::s2c::$struct $( <$var_lifetime> )? {
+                    impl $( <$var_lifetime> )? $pointer_trait for $crate::s2c::$struct $( <$var_lifetime> )? {
                         type Event = ${concat(S2C, $struct, Event)};
                     }
                 )*
@@ -177,7 +177,7 @@ macro_rules! gen_direction_enum {
                         type Return = ();
     				}
 
-                    impl<'a> $pointer_trait<'a> for $crate::c2s::$struct $( <$var_lifetime> )? {
+                    impl $( <$var_lifetime> )? $pointer_trait for $crate::c2s::$struct $( <$var_lifetime> )? {
                         type Event = ${concat(C2S, $struct, Event)};
                     }
                 )*

@@ -1,5 +1,5 @@
 [workspace]
-members = [
+members = [ "closureslop",
 	"craftflow",
 	"craftflow-nbt",
 	"craftflow-protocol-abstract",

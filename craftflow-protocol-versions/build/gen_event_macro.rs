@@ -50,7 +50,7 @@ pub fn gen_event_macro(directions: &Directions) -> String {
                             type Return = ();
 						}}
 
-						impl<'a> $pointer_trait<'a> for {packet_path} {{
+						impl {generics} $pointer_trait for {packet_path} {{
 						    type Event = {event_struct};
 						}}
 					"#
