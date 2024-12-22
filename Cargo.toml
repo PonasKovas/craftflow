@@ -1,5 +1,6 @@
 [workspace]
-members = [ "closureslop",
+members = [
+	"closureslop",
 	"craftflow",
 	"craftflow-nbt",
 	"craftflow-protocol-abstract",
@@ -29,6 +30,7 @@ thiserror = "1.0"
 cesu8 = "1.1.0"
 indexmap = "2.6"
 proc-macro-error = "1.0"
+is_type = "0.2.1"
 smallbox = { git = "https://github.com/PonasKovas/smallbox.git", branch = "merged-covariant-future", features = [
 	"nightly",
 ] }

@@ -1,4 +1,4 @@
-use crate::reactor::Event;
+use closureslop::Event;
 use craftflow_protocol_core::common_structures::Text;
 
 /// This event is triggered when a new connection is established.

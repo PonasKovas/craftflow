@@ -162,11 +162,13 @@ dependencies = [
  "aes",
  "anyhow",
  "cfb8",
+ "closureslop",
  "craftflow-protocol-abstract",
  "craftflow-protocol-core",
  "craftflow-protocol-versions",
  "flate2",
  "futures",
+ "is_type",
  "shallowclone",
  "smallbox",
  "tokio",
@@ -452,6 +454,12 @@ checksum = "a0c10553d664a4d0bcff9f4215d0aac67a639cc68ef660840afe309b807bc9f5"
 dependencies = [
  "generic-array",
 ]
+
+[[package]]
+name = "is_type"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fee7cda167bfafe6eb1c70926de545028f3169c9a8bcfa6db9d53f67aab2f3ec"
 
 [[package]]
 name = "itoa"

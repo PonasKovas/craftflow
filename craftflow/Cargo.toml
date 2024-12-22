@@ -8,6 +8,7 @@ craftflow-protocol-core = { path = "../craftflow-protocol-core" }
 craftflow-protocol-versions = { path = "../craftflow-protocol-versions" }
 craftflow-protocol-abstract = { path = "../craftflow-protocol-abstract" }
 shallowclone = { path = "../shallowclone" }
+closureslop = { path = "../closureslop" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
@@ -16,3 +17,4 @@ cfb8 = { workspace = true }
 flate2 = { workspace = true }
 futures = { workspace = true }
 smallbox = { workspace = true }
+is_type = { workspace = true }

@@ -10,12 +10,11 @@
 pub mod connection;
 pub mod modules;
 pub mod packet_events;
-pub mod reactor;
 pub mod various_events;
 
+use closureslop::Reactor;
 use connection::{new_conn_interface, ConnectionInterface};
 use modules::Modules;
-use reactor::Reactor;
 use std::{
 	collections::HashMap,
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
@@ -61,7 +60,7 @@ impl CraftFlow {
 			// Emit the new connection event
 			if craftflow
 				.reactor
-				.event::<NewConnection>(&craftflow, &mut id.clone())
+				.trigger::<NewConnection>(&craftflow, &mut id.clone())
 				.await
 				.is_break()
 			{
