@@ -1,6 +1,6 @@
 [workspace]
 members = [
-	"closureslop",
+	"closureslop", "closureslop-macros",
 	"craftflow",
 	"craftflow-nbt",
 	"craftflow-protocol-abstract",

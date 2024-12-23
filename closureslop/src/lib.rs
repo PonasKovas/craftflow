@@ -4,12 +4,20 @@
 //! to create events, register multiple handlers for them and trigger them.
 //!
 
+/// macro related stuff
+#[doc(hidden)]
+#[path = "macroslop.rs"]
+pub mod __private_macroslop;
 mod event;
-mod macroslop;
 mod reactor;
 
+pub use closureslop_macros::{callback, init};
 pub use event::Event;
 pub use reactor::Reactor;
+
+/// The stack size of the smallboxes of futures in async closures.
+#[doc(hidden)]
+type _SmallBoxSize = [usize; 4];
 
 #[cfg(test)]
 mod tests {
@@ -33,6 +41,19 @@ mod tests {
 			ControlFlow::Continue(())
 		}));
 
+		// also check if functions can be used
+		// this is pretty horrible but we have macros
+		add_callback!(reactor, MyEvent => "second" => second);
+		fn second<'a>(
+			_: &(),
+			_: &'a mut (),
+		) -> SmallBox<dyn Future<Output = ControlFlow<()>> + Send + 'a, _SmallBoxSize> {
+			SmallBox::new(async move {
+				println!("yippy!");
+				ControlFlow::Continue(())
+			})
+		}
+
 		reactor.trigger::<MyEvent>(&(), &mut ()).await;
 	}
 
@@ -49,7 +70,7 @@ mod tests {
 		add_callback!(reactor, MyEvent => "lala" => |_ctx, args| SmallBox::new(async move {
 			*args += 1;
 			ControlFlow::Continue(())
-		}));
+		}),);
 
 		let mut x = 2;
 		reactor.trigger::<MyEvent>(&(), &mut x).await;

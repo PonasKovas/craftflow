@@ -31,3 +31,8 @@ macro_rules! add_callback {
 		)?
 	};
 }
+
+// re-exports used in closureslop-macros proc macros expansions
+
+pub use linkme::distributed_slice;
+pub use smallbox::SmallBox;

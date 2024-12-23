@@ -19,6 +19,9 @@ use craftflow_protocol_core::{common_structures::Text, text};
 use smallbox::SmallBox;
 use std::borrow::Cow;
 
+// todo
+// closureslop::init!(CraftFlow);
+
 /// A simple ping module
 /// Responds to the ping packet with a simple fixed message, shows the true online player count.
 pub struct SimplePing {

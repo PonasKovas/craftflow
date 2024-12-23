@@ -1,6 +1,6 @@
 mod callbacks;
 
-use crate::Event;
+use crate::{_SmallBoxSize, Event};
 use callbacks::{Callback, Callbacks};
 use smallbox::SmallBox;
 use std::{
@@ -9,9 +9,6 @@ use std::{
 	marker::PhantomData,
 	ops::ControlFlow,
 };
-
-// The stack size of the smallboxes of futures in async closures.
-type S = [usize; 4];
 
 /// The reactor structure allows to register functions that will run on specific events
 /// and then trigger the events
@@ -43,8 +40,10 @@ impl<CTX: 'static> Reactor<CTX> {
 		F: for<'a> Fn(
 				&'a CTX,
 				&'a mut E::Args<'_>,
-			) -> SmallBox<dyn Future<Output = ControlFlow<E::Return>> + Send + 'a, S>
-			+ Send
+			) -> SmallBox<
+				dyn Future<Output = ControlFlow<E::Return>> + Send + 'a,
+				_SmallBoxSize,
+			> + Send
 			+ Sync
 			+ 'static,
 	>(
@@ -61,7 +60,7 @@ impl<CTX: 'static> Reactor<CTX> {
 						&'a mut E::Args<'_>,
 					) -> SmallBox<
 						dyn Future<Output = ControlFlow<E::Return>> + Send + 'a,
-						S,
+						_SmallBoxSize,
 					> + Send
 					+ Sync
 					+ 'static,
@@ -94,7 +93,7 @@ impl<CTX: 'static> Reactor<CTX> {
 							&'a mut E::Args<'_>,
 						) -> SmallBox<
 							dyn Future<Output = ControlFlow<E::Return>> + Send + 'a,
-							S,
+							_SmallBoxSize,
 						> + Send
 						+ Sync
 						+ 'static,

@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+closureslop-macros = { path = "../closureslop-macros" }
 petgraph = "0.6.5"
 smallbox = { workspace = true }
+linkme = "0.3"
 
 [dev-dependencies]
 pollster = { version = "0.4.0", features = ["macro"] }
