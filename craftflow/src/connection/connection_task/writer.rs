@@ -109,8 +109,8 @@ async fn send_concrete<'a>(
 	// some special packets that change the state of the connection
 	match packet {
 		S2C::Status(s2c::Status::Ping(_)) => {
-			craftflow.disconnect(conn_id); // todo i dont think this is the right place to do this
-			                      // try doing this in the ping module instead
+			craftflow.disconnect(conn_id).await; // todo i dont think this is the right place to do this
+			                            // try doing this in the ping module instead
 		}
 		S2C::Login(s2c::Login::Success(_)) => {
 			if version >= 764 {

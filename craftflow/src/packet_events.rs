@@ -48,6 +48,7 @@ trait PacketToEventPointer {
 }
 
 // The following macros generate a unit struct for each packet and implements Event for it
+// and also implements PacketToEventPointer for the packet, pointing to the generated unit struct
 craftflow_protocol_versions::__gen_events_for_packets__! {Event, PacketToEventPointer }
 craftflow_protocol_abstract::__gen_events_for_packets_s2c! { Event, PacketToEventPointer }
 craftflow_protocol_abstract::__gen_events_for_packets_c2s! { Event, PacketToEventPointer }

@@ -3,7 +3,10 @@ use craftflow::{connection::legacy::LegacyPingResponse, CraftFlow};
 use craftflow_protocol_core::common_structures::{text::TextContent, Text};
 use std::ops::ControlFlow;
 
-pub fn legacy_ping(cf: &CraftFlow, _conn_id: &mut u64) -> ControlFlow<Option<LegacyPingResponse>> {
+pub async fn legacy_ping(
+	cf: &CraftFlow,
+	_conn_id: &mut u64,
+) -> ControlFlow<Option<LegacyPingResponse>> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway
 	let online_players = cf.connections().len() as i32; // more or less. (less)
 	let max_players = 1000; // todo after implementing max connections

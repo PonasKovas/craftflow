@@ -57,60 +57,58 @@ pub(super) async fn reader_task(
 			_ => {}
 		}
 
-		fn assert_send<T: Send>(_: T) {}
-		assert_send(trigger_c2s_concrete(false, &craftflow, conn_id, packet));
 		// trigger concrete packet event
-		// let (cont, packet) = trigger_c2s_concrete(false, &craftflow, conn_id, packet).await;
-		// if !cont {
-		// 	continue;
-		// }
+		let (cont, packet) = trigger_c2s_concrete(false, &craftflow, conn_id, packet).await;
+		if !cont {
+			continue;
+		}
 
-		// // try to construct abstract packet
-		// let abstr = 'abstr: {
-		// 	// check all already started constructors
-		// 	for i in 0..constructors.len() {
-		// 		match constructors
-		// 			.get_mut(i)
-		// 			.unwrap()
-		// 			.next_packet(ConcretePacket::C2S(&packet))
-		// 			.context("abstract")?
-		// 		{
-		// 			ConstructorResult::Done(p) => {
-		// 				constructors.remove(i);
-		// 				break 'abstr p;
-		// 			}
-		// 			ConstructorResult::Continue(()) => {
-		// 				return Ok(());
-		// 			}
-		// 			ConstructorResult::Ignore => {}
-		// 		}
-		// 	}
+		// try to construct abstract packet
+		let abstr = 'abstr: {
+			// check all already started constructors
+			for i in 0..constructors.len() {
+				match constructors
+					.get_mut(i)
+					.unwrap()
+					.next_packet(ConcretePacket::C2S(&packet))
+					.context("abstract")?
+				{
+					ConstructorResult::Done(p) => {
+						constructors.remove(i);
+						break 'abstr p;
+					}
+					ConstructorResult::Continue(()) => {
+						return Ok(());
+					}
+					ConstructorResult::Ignore => {}
+				}
+			}
 
-		// 	// Otherwise try constructing a new one
-		// 	match AbC2S::construct(&packet).context("abstract")? {
-		// 		ConstructorResult::Done(p) => break 'abstr p,
-		// 		ConstructorResult::Continue(c) => {
-		// 			constructors.push(c);
-		// 			return Ok(());
-		// 		}
-		// 		ConstructorResult::Ignore => {
-		// 			error!(
-		//                     "Failed to construct abstract packet from concrete packet: {:?} (This is most likely a bug within craftflow)",
-		//                     packet
-		//                 );
-		// 			return Ok(());
-		// 		}
-		// 	}
-		// };
+			// Otherwise try constructing a new one
+			match AbC2S::construct(&packet).context("abstract")? {
+				ConstructorResult::Done(p) => break 'abstr p,
+				ConstructorResult::Continue(c) => {
+					constructors.push(c);
+					return Ok(());
+				}
+				ConstructorResult::Ignore => {
+					error!(
+		                    "Failed to construct abstract packet from concrete packet: {:?} (This is most likely a bug within craftflow)",
+		                    packet
+		                );
+					return Ok(());
+				}
+			}
+		};
 
-		// let (cont, abstr) = trigger_c2s_abstract(false, &craftflow, conn_id, abstr).await;
-		// if !cont {
-		// 	continue;
-		// }
-		// let (cont, _abstr) = trigger_c2s_abstract(true, &craftflow, conn_id, abstr).await;
-		// if !cont {
-		// 	continue;
-		// }
-		// let (_cont, _packet) = trigger_c2s_concrete(true, &craftflow, conn_id, packet).await;
+		let (cont, abstr) = trigger_c2s_abstract(false, &craftflow, conn_id, abstr).await;
+		if !cont {
+			continue;
+		}
+		let (cont, _abstr) = trigger_c2s_abstract(true, &craftflow, conn_id, abstr).await;
+		if !cont {
+			continue;
+		}
+		let (_cont, _packet) = trigger_c2s_concrete(true, &craftflow, conn_id, packet).await;
 	}
 }

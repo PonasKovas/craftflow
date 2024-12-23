@@ -10,7 +10,7 @@ macro_rules! add_callback {
 			add_callback!(@order: after, before => [ $($order)* ]);
 		)?
 
-		$reactor.add_async_callback::<$event, _>(
+		$reactor.add_callback::<$event, _>(
 			format!("{}:{}", env!("CARGO_PKG_NAME"), $name),
 			after,
 			before,

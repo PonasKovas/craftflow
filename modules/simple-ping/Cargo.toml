@@ -9,3 +9,4 @@ craftflow-protocol-abstract = { path = "../../craftflow-protocol-abstract/" }
 craftflow-protocol-core = { path = "../../craftflow-protocol-core/" }
 base64 = { workspace = true }
 serde_json = { workspace = true }
+smallbox = { workspace = true }

@@ -48,7 +48,7 @@ pub(super) async fn connection_task(
 		// Trigger the legacy ping event
 		if let ControlFlow::Break(response) = craftflow
 			.reactor
-			.event::<LegacyPing>(&craftflow, &mut conn_id.clone())
+			.trigger::<LegacyPing>(&craftflow, &mut conn_id.clone())
 			.await
 		{
 			if let Some(response) = response {
@@ -99,7 +99,7 @@ pub(super) async fn connection_task(
 		if !(MIN_VERSION <= client_version && client_version <= MAX_VERSION) {
 			let message = match craftflow
 				.reactor
-				.event::<UnsupportedClientVersion>(&craftflow, &mut (conn_id, client_version))
+				.trigger::<UnsupportedClientVersion>(&craftflow, &mut (conn_id, client_version))
 				.await
 			{
 				ControlFlow::Continue(_) => {
@@ -160,25 +160,24 @@ pub(super) async fn connection_task(
 		.await
 	});
 
-	// let writer_task = spawn(async move {
-	// 	writer_task(
-	// 		craftflow,
-	// 		conn_id,
-	// 		client_version,
-	// 		writer,
-	// 		concrete_packet_sender,
-	// 		abstract_packet_sender,
-	// 		reader_state,
-	// 		writer_state,
-	// 		compression,
-	// 		encryption_secret,
-	// 	)
-	// 	.await
-	// });
+	let writer_task = spawn(async move {
+		writer_task(
+			craftflow,
+			conn_id,
+			client_version,
+			writer,
+			concrete_packet_sender,
+			abstract_packet_sender,
+			reader_state,
+			writer_state,
+			compression,
+			encryption_secret,
+		)
+		.await
+	});
 
-	// select! {
-	// 	r = reader_task => r?.context("reader task"),
-	// 	r = writer_task => r?.context("writer task"),
-	// }
-	Ok(())
+	select! {
+		r = reader_task => r?.context("reader task"),
+		r = writer_task => r?.context("writer task"),
+	}
 }

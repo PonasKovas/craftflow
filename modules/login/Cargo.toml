@@ -12,3 +12,4 @@ rsa = "0.9.6"
 rand = "0.8.5"
 rsa-der = "0.3.0"
 tracing = { workspace = true }
+smallbox = { workspace = true }

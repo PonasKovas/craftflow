@@ -7,6 +7,8 @@
 // used for Craftflow::get to get access to a connection through a lock
 #![feature(mapped_lock_guards)]
 
+pub use closureslop::add_callback;
+
 pub mod connection;
 pub mod modules;
 pub mod packet_events;
@@ -65,7 +67,7 @@ impl CraftFlow {
 				.is_break()
 			{
 				// immediately disconnect the client
-				craftflow.disconnect(id);
+				craftflow.disconnect(id).await;
 			}
 		}
 	}
@@ -77,20 +79,19 @@ impl CraftFlow {
 	}
 	/// Disconnects the client with the given connection ID
 	/// No-op if the client is already disconnected, panic if the client ID was never connected
-	pub fn disconnect(&self, conn_id: u64) {
-		let mut connections = self.connections.write().unwrap();
-
-		if connections.next_conn_id <= conn_id {
-			panic!("attempt to disconnect client with ID {conn_id} that was never connected");
-		}
-
-		if connections.connections.contains_key(&conn_id) {
+	pub async fn disconnect(&self, conn_id: u64) {
+		if self.connections.read().unwrap().is_connected(conn_id) {
 			// emit the disconnect event
 			self.reactor
-				.event::<Disconnect>(&self, &mut conn_id.clone());
-		}
+				.trigger::<Disconnect>(&self, &mut conn_id.clone())
+				.await;
 
-		connections.connections.remove(&conn_id);
+			self.connections
+				.write()
+				.unwrap()
+				.connections
+				.remove(&conn_id);
+		}
 	}
 	/// Accesses the connections map
 	/// There is no mutable access because it is not meant to be modified directly
@@ -99,5 +100,18 @@ impl CraftFlow {
 		&'a self,
 	) -> MappedRwLockReadGuard<'a, HashMap<u64, ConnectionInterface>> {
 		RwLockReadGuard::map(self.connections.read().unwrap(), |inner| &inner.connections)
+	}
+}
+
+impl Connections {
+	/// Checks if the given connection ID is connected
+	///
+	/// Panics if this ID was never connected
+	fn is_connected(&self, conn_id: u64) -> bool {
+		if self.next_conn_id <= conn_id {
+			panic!("attempt to disconnect client with ID {conn_id} that was never connected");
+		}
+
+		self.connections.contains_key(&conn_id)
 	}
 }

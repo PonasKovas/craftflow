@@ -10,11 +10,13 @@ mod ping;
 mod status;
 
 use craftflow::{
+	add_callback,
 	connection::legacy::LegacyPing,
 	packet_events::{C2SAbStatusPingEvent, C2SAbStatusRequestInfoEvent},
 	CraftFlow,
 };
 use craftflow_protocol_core::{common_structures::Text, text};
+use smallbox::SmallBox;
 use std::borrow::Cow;
 
 /// A simple ping module
@@ -49,15 +51,9 @@ impl SimplePing {
 	pub fn register(self, craftflow: &mut CraftFlow) {
 		craftflow.modules.register(self);
 
-		craftflow
-			.reactor
-			.add_handler::<LegacyPing, _>(legacy_ping::legacy_ping);
-		craftflow
-			.reactor
-			.add_handler::<C2SAbStatusRequestInfoEvent, _>(status::status);
-		craftflow
-			.reactor
-			.add_handler::<C2SAbStatusPingEvent, _>(ping::ping);
+		add_callback!(craftflow.reactor, LegacyPing => "legacy_ping" => |ctx, args| SmallBox::new(legacy_ping::legacy_ping(ctx, args)));
+		add_callback!(craftflow.reactor, C2SAbStatusRequestInfoEvent => "status" => |ctx, args| SmallBox::new(status::status(ctx, args)));
+		add_callback!(craftflow.reactor, C2SAbStatusPingEvent => "ping" => |ctx, args| SmallBox::new(ping::ping(ctx, args)));
 	}
 }
 

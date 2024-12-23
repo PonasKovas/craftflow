@@ -3,7 +3,7 @@ use craftflow::CraftFlow;
 use craftflow_protocol_abstract::s2c::AbLoginCompress;
 use std::ops::ControlFlow;
 
-pub fn set_compression(
+pub async fn set_compression(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut _request): &mut (u64, AbLoginCompress),
 ) -> ControlFlow<()> {

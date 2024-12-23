@@ -287,6 +287,7 @@ dependencies = [
  "craftflow-protocol-core",
  "login",
  "simple-ping",
+ "smallbox",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -515,6 +516,7 @@ dependencies = [
  "rand",
  "rsa",
  "rsa-der",
+ "smallbox",
  "tracing",
 ]
 
@@ -980,6 +982,7 @@ dependencies = [
  "craftflow-protocol-abstract",
  "craftflow-protocol-core",
  "serde_json",
+ "smallbox",
 ]
 
 [[package]]
@@ -1005,8 +1008,9 @@ dependencies = [
 
 [[package]]
 name = "smallbox"
-version = "0.8.5"
-source = "git+https://github.com/PonasKovas/smallbox.git?branch=merged-covariant-future#5b5f062913c58d684611d2be1b015fc5c560ddea"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43d92e0947c1c04c508c9fd39608a1557226141410fd33b5b314d73fa76508d3"
 
 [[package]]
 name = "smallvec"

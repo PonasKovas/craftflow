@@ -7,9 +7,9 @@ use craftflow_protocol_abstract::{
 use rsa::traits::PublicKeyParts;
 use std::ops::ControlFlow;
 
-pub fn login_start(
+pub async fn login_start(
 	cf: &CraftFlow,
-	&mut (conn_id, ref mut request): &mut (u64, AbLoginStart),
+	&mut (conn_id, ref mut request): &mut (u64, AbLoginStart<'_>),
 ) -> ControlFlow<()> {
 	cf.modules
 		.get::<Login>()

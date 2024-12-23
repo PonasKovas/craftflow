@@ -58,34 +58,34 @@ pub(crate) fn new_conn_interface(craftflow: &Arc<CraftFlow>, stream: TcpStream) 
 
 	// Spawn a task for handling this connection
 	let craftflow = Arc::clone(&craftflow);
-	// spawn(async move {
-	// 	let r = AssertUnwindSafe(connection_task(
-	// 		Arc::clone(&craftflow),
-	// 		id,
-	// 		packet_reader,
-	// 		packet_writer,
-	// 		concrete_packet_sender_out,
-	// 		abstract_packet_sender_out,
-	// 		reader_state,
-	// 		writer_state,
-	// 		protocol_version,
-	// 		compression,
-	// 		encryption_secret,
-	// 	))
-	// 	.catch_unwind() // generally this shouldnt panic, but if it does, we still want to remove the connection
-	// 	.await;
+	spawn(async move {
+		let r = AssertUnwindSafe(connection_task(
+			Arc::clone(&craftflow),
+			id,
+			packet_reader,
+			packet_writer,
+			concrete_packet_sender_out,
+			abstract_packet_sender_out,
+			reader_state,
+			writer_state,
+			protocol_version,
+			compression,
+			encryption_secret,
+		))
+		.catch_unwind() // generally this shouldnt panic, but if it does, we still want to remove the connection
+		.await;
 
-	// 	match r {
-	// 		Ok(Ok(_)) => {} // ended peacefully 😊
-	// 		Ok(Err(e)) => {
-	// 			error!("{e:?}");
-	// 		}
-	// 		Err(_) => {} // panicked... wow.. cringe
-	// 	}
+		match r {
+			Ok(Ok(_)) => {} // ended peacefully 😊
+			Ok(Err(e)) => {
+				error!("{e:?}");
+			}
+			Err(_) => {} // panicked... wow.. cringe
+		}
 
-	// 	// remove the connection from the list
-	// 	craftflow.disconnect(id);
-	// });
+		// remove the connection from the list
+		craftflow.disconnect(id).await;
+	});
 
 	id
 }

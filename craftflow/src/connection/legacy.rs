@@ -1,7 +1,7 @@
 mod response;
 
-use crate::reactor::Event;
 use anyhow::bail;
+use closureslop::Event;
 use std::time::Duration;
 use tokio::{
 	io::AsyncWriteExt,

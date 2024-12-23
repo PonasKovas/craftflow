@@ -10,7 +10,7 @@ use craftflow_protocol_abstract::{
 };
 use std::ops::ControlFlow;
 
-pub fn status(
+pub async fn status(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut _request): &mut (u64, AbStatusRequestInfo),
 ) -> ControlFlow<()> {

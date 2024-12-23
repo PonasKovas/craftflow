@@ -33,12 +33,12 @@ impl<CTX: 'static> Reactor<CTX> {
 			_phantom: PhantomData,
 		}
 	}
-	/// Register a callback for an event.
+	/// Register a callback for an event. Prefer using the [`add_callback!`][crate::add_callback] macro instead.
 	///
 	/// Panics if there are cyclic dependencies detected in the callbacks (e.g. A must come after B, but B must come after A)
 	///
 	/// Panics if there's already a callback with the same id for this event.
-	pub fn add_async_callback<
+	pub fn add_callback<
 		E: Event,
 		F: for<'a> Fn(
 				&'a CTX,
