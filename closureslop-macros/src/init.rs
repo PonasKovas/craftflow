@@ -40,7 +40,8 @@ pub fn init(args: TokenStream) -> TokenStream {
 	quote! {
 		#[doc(hidden)]
 		#[allow(non_upper_case_globals)]
-		#[::closureslop::__private_macroslop::distributed_slice]
+		#[::closureslop::__private_macroslop::linkme::distributed_slice]
+		#[linkme(crate = ::closureslop::__private_macroslop::linkme)]
 		pub static #static_name: [fn(&mut ::closureslop::Reactor<#context_path>)];
 	}
 	.into()

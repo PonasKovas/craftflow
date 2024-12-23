@@ -11,7 +11,7 @@ pub mod __private_macroslop;
 mod event;
 mod reactor;
 
-pub use closureslop_macros::{callback, init};
+pub use closureslop_macros::{callback, init, reg};
 pub use event::Event;
 pub use reactor::Reactor;
 

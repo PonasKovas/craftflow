@@ -4,10 +4,16 @@ use syn::{Ident, LitStr};
 
 mod callback;
 mod init;
+mod reg;
 
 #[proc_macro]
 pub fn init(args: TokenStream) -> TokenStream {
 	init::init(args)
+}
+
+#[proc_macro]
+pub fn reg(args: TokenStream) -> TokenStream {
+	reg::reg(args)
 }
 
 #[proc_macro_attribute]

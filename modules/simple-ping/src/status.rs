@@ -1,5 +1,5 @@
 use crate::SimplePing;
-use craftflow::CraftFlow;
+use craftflow::{packet_events::C2SAbStatusRequestInfoEvent, CraftFlow};
 use craftflow_protocol_abstract::{
 	c2s::AbStatusRequestInfo,
 	s2c::{
@@ -10,6 +10,7 @@ use craftflow_protocol_abstract::{
 };
 use std::ops::ControlFlow;
 
+#[closureslop::callback(C2SAbStatusRequestInfoEvent)]
 pub async fn status(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut _request): &mut (u64, AbStatusRequestInfo),

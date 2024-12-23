@@ -7,7 +7,7 @@ macro_rules! add_callback {
 		let mut before = Vec::new();
 
 		$(
-			add_callback!(@order: after, before => [ $($order)* ]);
+			$crate::add_callback!(@order: after, before => [ $($order)* ]);
 		)?
 
 		$reactor.add_callback::<$event, _>(
@@ -21,18 +21,18 @@ macro_rules! add_callback {
 	(@order: $after:ident, $before:ident => [after $target:expr $(, $($order:tt)* )?]) => {
 		$after.push($target.to_string());
 		$(
-			add_callback!(@order: $after, $before => [ $($order)* ]);
+			$crate::add_callback!(@order: $after, $before => [ $($order)* ]);
 		)?
 	};
 	(@order: $after:ident, $before:ident => [before $target:expr $(, $($order:tt)* )?]) => {
 		$before.push($target.to_string());
 		$(
-			add_callback!(@order: $after, $before => [ $($order)* ]);
+			$crate::add_callback!(@order: $after, $before => [ $($order)* ]);
 		)?
 	};
 }
 
 // re-exports used in closureslop-macros proc macros expansions
 
-pub use linkme::distributed_slice;
-pub use smallbox::SmallBox;
+pub use linkme;
+pub use smallbox;

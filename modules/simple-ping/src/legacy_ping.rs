@@ -1,8 +1,12 @@
 use crate::SimplePing;
-use craftflow::{connection::legacy::LegacyPingResponse, CraftFlow};
+use craftflow::{
+	connection::legacy::{LegacyPing, LegacyPingResponse},
+	CraftFlow,
+};
 use craftflow_protocol_core::common_structures::{text::TextContent, Text};
 use std::ops::ControlFlow;
 
+#[closureslop::callback(LegacyPing)]
 pub async fn legacy_ping(
 	cf: &CraftFlow,
 	_conn_id: &mut u64,

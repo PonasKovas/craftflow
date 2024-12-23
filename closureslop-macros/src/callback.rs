@@ -65,28 +65,16 @@ pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 	// we need it to write out the type of the reactor
 	let context_path = get_context_type(&input);
 
-	let argument_count = input.sig.inputs.len() - 1; // excluding the context argument
-	let args: Vec<_> = (0..argument_count)
-		.map(|i| {
-			let index = syn::Index::from(i); // Generate index for arg.i
-			quote! { args.#index }
-		})
-		.collect();
-
 	quote! {
 		const _: () = {
-			#[::closureslop::__private_macroslop::distributed_slice(crate::#collector_name)]
+			#[::closureslop::__private_macroslop::linkme::distributed_slice(crate::#collector_name)]
+			#[linkme(crate = ::closureslop::__private_macroslop::linkme)]
 			fn _add_callback(reactor: &mut ::closureslop::Reactor<#context_path>) {
-				let wrapper = |ctx, mut args| {
-					// clever hack to make sure we have the right number of arguments
-					// (this will fail to compile if the user given callback function takes less arguments than expected)
-					args = (#(#args),*);
-
-					::closureslop::__private_macroslop::SmallBox::new(async move {
-						#function_name(ctx, #(#args),*).await
+				::closureslop::add_callback!(reactor, #event => #callback_name => |ctx, args| {
+					::closureslop::__private_macroslop::smallbox::SmallBox::new(async move {
+						#function_name(ctx, args).await
 					})
-				};
-				::closureslop::add_callback!(reactor, #event => #callback_name => wrapper, #order_info);
+				}, #order_info);
 			}
 		};
 
@@ -110,5 +98,8 @@ fn get_context_type(input: &ItemFn) -> syn::Type {
 		syn::FnArg::Typed(pat_type) => pat_type,
 	};
 
-	(*arg.ty).clone()
+	match &*arg.ty {
+		syn::Type::Reference(type_reference) => (*type_reference.elem).clone(),
+		_ => panic!("context type must be a reference"),
+	}
 }
