@@ -9,19 +9,11 @@ mod encryption_response;
 mod login_start;
 mod set_compression;
 
-use craftflow::{
-	add_callback,
-	packet_events::{
-		C2SAbLoginEncryptionEvent, C2SAbLoginStartEvent, Post, S2CAbLoginCompressEvent,
-	},
-	various_events::Disconnect,
-	CraftFlow,
-};
-use encryption_response::encryption_response;
-use login_start::login_start;
+use craftflow::{various_events::Disconnect, CraftFlow};
 use rsa::RsaPrivateKey;
-use smallbox::SmallBox;
 use std::{collections::BTreeMap, ops::ControlFlow, sync::RwLock};
+
+craftflow::init!(CraftFlow);
 
 /// A module that handles the login phase of the minecraft protocol
 /// This includes:
@@ -78,13 +70,11 @@ impl Login {
 	pub fn register(self, craftflow: &mut CraftFlow) {
 		craftflow.modules.register(self);
 
-		add_callback!(craftflow.reactor, C2SAbLoginStartEvent => "login_start" => |ctx, args| SmallBox::new(login_start(ctx, args)));
-		add_callback!(craftflow.reactor, Post<S2CAbLoginCompressEvent> => "set_compression" => |ctx, args| SmallBox::new(set_compression::set_compression(ctx, args)));
-		add_callback!(craftflow.reactor, C2SAbLoginEncryptionEvent => "encryption_response" => |ctx, args| SmallBox::new(encryption_response(ctx, args)));
-		add_callback!(craftflow.reactor, Disconnect => "cleanup_player_names_uuids" => |ctx, args| SmallBox::new(cleanup_player_names_uuids(ctx, args)));
+		craftflow::reg!(&mut craftflow.reactor);
 	}
 }
 
+#[craftflow::callback(Disconnect)]
 async fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: &mut u64) -> ControlFlow<()> {
 	cf.modules
 		.get::<Login>()

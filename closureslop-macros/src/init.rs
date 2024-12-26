@@ -8,12 +8,20 @@ use syn::{
 };
 
 struct Args {
+	closureslop_crate: Option<Path>,
 	context_path: Path,
 	id: Option<LitStr>,
 }
 
 impl Parse for Args {
 	fn parse(input: ParseStream) -> Result<Self> {
+		let closureslop_crate: Option<Path> = if input.peek(Token![@]) {
+			input.parse::<Token![@]>()?;
+			Some(input.parse()?)
+		} else {
+			None
+		};
+
 		let context_path: Path = input.parse()?;
 
 		let id: Option<LitStr> = if input.peek(Token![,]) {
@@ -28,21 +36,34 @@ impl Parse for Args {
 			input.parse::<Token![,]>()?;
 		}
 
-		Ok(Self { context_path, id })
+		Ok(Self {
+			closureslop_crate,
+			context_path,
+			id,
+		})
 	}
 }
 
 pub fn init(args: TokenStream) -> TokenStream {
-	let Args { context_path, id } = parse_macro_input!(args as Args);
+	let Args {
+		closureslop_crate,
+		context_path,
+		id,
+	} = parse_macro_input!(args as Args);
+
+	let closureslop_path = match closureslop_crate {
+		Some(path) => quote! { #path },
+		None => quote!(::closureslop),
+	};
 
 	let static_name = collector_name(&id);
 
 	quote! {
 		#[doc(hidden)]
 		#[allow(non_upper_case_globals)]
-		#[::closureslop::__private_macroslop::linkme::distributed_slice]
-		#[linkme(crate = ::closureslop::__private_macroslop::linkme)]
-		pub static #static_name: [fn(&mut ::closureslop::Reactor<#context_path>)];
+		#[#closureslop_path::__private_macroslop::linkme::distributed_slice]
+		#[linkme(crate = #closureslop_path::__private_macroslop::linkme)]
+		pub static #static_name: [fn(&mut #closureslop_path::Reactor<#context_path>)];
 	}
 	.into()
 }

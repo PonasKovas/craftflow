@@ -7,7 +7,6 @@ edition = "2021"
 craftflow = { path = "../../craftflow/" }
 craftflow-protocol-abstract = { path = "../../craftflow-protocol-abstract/" }
 craftflow-protocol-core = { path = "../../craftflow-protocol-core/" }
-closureslop = { path = "../../closureslop/" }
 base64 = { workspace = true }
 serde_json = { workspace = true }
 smallbox = { workspace = true }

@@ -7,7 +7,8 @@
 // used for Craftflow::get to get access to a connection through a lock
 #![feature(mapped_lock_guards)]
 
-pub use closureslop::add_callback;
+pub use closureslop::{self, add_callback};
+pub use craftflow_macros::{callback, init, reg};
 
 pub mod connection;
 pub mod modules;

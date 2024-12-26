@@ -9,6 +9,7 @@ use syn::{
 };
 
 struct Args {
+	closureslop_crate: Option<Path>,
 	id: Option<LitStr>,
 	event: Path,
 	order_info: TokenStream2,
@@ -16,6 +17,13 @@ struct Args {
 
 impl Parse for Args {
 	fn parse(input: ParseStream) -> Result<Self> {
+		let closureslop_crate: Option<Path> = if input.peek(Token![@]) {
+			input.parse::<Token![@]>()?;
+			Some(input.parse()?)
+		} else {
+			None
+		};
+
 		let id = if input.peek(syn::token::Paren) {
 			let content;
 			parenthesized!(content in input);
@@ -40,6 +48,7 @@ impl Parse for Args {
 		let order_info = input.parse()?;
 
 		Ok(Self {
+			closureslop_crate,
 			id,
 			event,
 			order_info,
@@ -49,11 +58,17 @@ impl Parse for Args {
 
 pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 	let Args {
+		closureslop_crate,
 		id,
 		event,
 		order_info,
 	} = parse_macro_input!(args as Args);
 	let input = parse_macro_input!(input as ItemFn);
+
+	let closureslop_path = match closureslop_crate {
+		Some(path) => quote! { #path },
+		None => quote!(::closureslop),
+	};
 
 	let function_name = &input.sig.ident;
 	let callback_name = LitStr::new(&input.sig.ident.to_string(), Span::call_site());
@@ -67,11 +82,11 @@ pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 
 	quote! {
 		const _: () = {
-			#[::closureslop::__private_macroslop::linkme::distributed_slice(crate::#collector_name)]
-			#[linkme(crate = ::closureslop::__private_macroslop::linkme)]
-			fn _add_callback(reactor: &mut ::closureslop::Reactor<#context_path>) {
-				::closureslop::add_callback!(reactor, #event => #callback_name => |ctx, args| {
-					::closureslop::__private_macroslop::smallbox::SmallBox::new(async move {
+			#[#closureslop_path::__private_macroslop::linkme::distributed_slice(crate::#collector_name)]
+			#[linkme(crate = #closureslop_path::__private_macroslop::linkme)]
+			fn _add_callback(reactor: &mut #closureslop_path::Reactor<#context_path>) {
+				#closureslop_path::add_callback!(reactor, #event => #callback_name => |ctx, args| {
+					#closureslop_path::__private_macroslop::smallbox::SmallBox::new(async move {
 						#function_name(ctx, args).await
 					})
 				}, #order_info);
@@ -83,6 +98,7 @@ pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 	.into()
 }
 
+/// Extracts the type of the first argument of the function
 fn get_context_type(input: &ItemFn) -> syn::Type {
 	let arg = input
 		.sig

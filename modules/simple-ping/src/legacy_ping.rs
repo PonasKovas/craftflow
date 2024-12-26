@@ -6,7 +6,7 @@ use craftflow::{
 use craftflow_protocol_core::common_structures::{text::TextContent, Text};
 use std::ops::ControlFlow;
 
-#[closureslop::callback(LegacyPing)]
+#[craftflow::callback(LegacyPing)]
 pub async fn legacy_ping(
 	cf: &CraftFlow,
 	_conn_id: &mut u64,

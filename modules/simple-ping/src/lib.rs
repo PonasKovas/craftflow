@@ -13,7 +13,7 @@ use craftflow::CraftFlow;
 use craftflow_protocol_core::{common_structures::Text, text};
 use std::borrow::Cow;
 
-closureslop::init!(CraftFlow);
+craftflow::init!(CraftFlow);
 
 /// A simple ping module
 /// Responds to the ping packet with a simple fixed message, shows the true online player count.
@@ -47,7 +47,7 @@ impl SimplePing {
 	pub fn register(self, craftflow: &mut CraftFlow) {
 		craftflow.modules.register(self);
 
-		closureslop::reg!(&mut craftflow.reactor);
+		craftflow::reg!(&mut craftflow.reactor);
 	}
 }
 

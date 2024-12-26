@@ -1,10 +1,12 @@
 use crate::{Login, VERIFY_TOKEN};
+use craftflow::packet_events::C2SAbLoginEncryptionEvent;
 use craftflow::CraftFlow;
 use craftflow_protocol_abstract::{c2s::AbLoginEncryption, s2c::AbLoginSuccess};
 use rsa::Pkcs1v15Encrypt;
 use std::ops::ControlFlow;
 use tracing::error;
 
+#[craftflow::callback(C2SAbLoginEncryptionEvent)]
 pub async fn encryption_response(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut request): &mut (u64, AbLoginEncryption<'_>),

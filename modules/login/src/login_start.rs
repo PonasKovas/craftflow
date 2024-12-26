@@ -1,5 +1,5 @@
 use crate::{Login, VERIFY_TOKEN};
-use craftflow::CraftFlow;
+use craftflow::{packet_events::C2SAbLoginStartEvent, CraftFlow};
 use craftflow_protocol_abstract::{
 	c2s::AbLoginStart,
 	s2c::{AbLoginCompress, AbLoginEncryptionBegin},
@@ -7,6 +7,7 @@ use craftflow_protocol_abstract::{
 use rsa::traits::PublicKeyParts;
 use std::ops::ControlFlow;
 
+#[craftflow::callback(C2SAbLoginStartEvent)]
 pub async fn login_start(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut request): &mut (u64, AbLoginStart<'_>),
