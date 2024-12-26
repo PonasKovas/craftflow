@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 craftflow-nbt = { path = "../craftflow-nbt" }
 craftflow-protocol-core = { path = "../craftflow-protocol-core" }
-shallowclone = { path = "../shallowclone" }
+shallowclone = { workspace = true }
 serde = { workspace = true }

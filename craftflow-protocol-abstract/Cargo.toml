@@ -7,7 +7,7 @@ edition = "2021"
 craftflow-protocol-core = { path = "../craftflow-protocol-core" }
 craftflow-protocol-versions = { path = "../craftflow-protocol-versions" }
 craftflow-nbt = { path = "../craftflow-nbt" }
-shallowclone = { path = "../shallowclone", features = ["indexmap"] }
+shallowclone = { workspace = true, features = ["indexmap"] }
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
