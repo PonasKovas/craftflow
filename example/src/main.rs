@@ -3,7 +3,7 @@ use craftflow_protocol_core::text;
 use login::Login;
 use simple_ping::SimplePing;
 use smallbox::SmallBox;
-use tracing::{info, level_filters};
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
