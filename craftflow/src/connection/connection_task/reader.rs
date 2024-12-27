@@ -9,20 +9,18 @@ use craftflow_protocol_abstract::{
 	AbC2S, AbPacketConstructor, AbPacketNew, ConcretePacket, ConstructorResult, State,
 };
 use craftflow_protocol_versions::{c2s, C2S};
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::Arc;
 use tracing::error;
+
+use super::ConnectionInfo;
 
 type DynConstructor =
 	Box<dyn AbPacketConstructor<AbPacket = AbC2S<'static>> + Send + Sync + 'static>;
 
 pub(super) async fn reader_task(
 	craftflow: Arc<CraftFlow>,
-	conn_id: u64,
-	version: u32,
 	mut reader: PacketReader,
-	reader_state: Arc<RwLock<State>>,
-	compression: Arc<OnceLock<usize>>,
-	encryption_secret: Arc<OnceLock<[u8; 16]>>,
+	conn: ConnectionInfo,
 ) -> anyhow::Result<()> {
 	let mut constructors: Vec<DynConstructor> = Vec::new();
 
@@ -31,37 +29,34 @@ pub(super) async fn reader_task(
 	loop {
 		if decryptor.is_none() {
 			// check if encryption secret received
-			if let Some(secret) = encryption_secret.get() {
+			if let Some(secret) = conn.encryption_secret.get() {
 				decryptor = Some(Decryptor::new(secret.into(), secret.into()));
 			}
 		}
 
+		let state = *conn.reader_state.read().unwrap();
 		let packet = reader
-			.read_packet(&reader_state, version, &compression, &mut decryptor)
+			.read_packet(
+				state,
+				conn.version,
+				conn.compression.get().copied(),
+				&mut decryptor,
+			)
 			.await
-			.with_context(|| {
-				format!(
-					"reading concrete packet (state {:?})",
-					reader_state.read().unwrap()
-				)
-			})?;
+			.with_context(|| format!("reading concrete packet (state {:?})", state))?;
 
 		// Handle some special packets which change the state of the connection
 		match packet {
 			C2S::Login(c2s::Login::LoginAcknowledged(_)) => {
-				*reader_state.write().unwrap() = State::Configuration;
+				*conn.reader_state.write().unwrap() = State::Configuration;
 			}
 			C2S::Configuration(c2s::Configuration::FinishConfiguration(_)) => {
-				*reader_state.write().unwrap() = State::Play;
+				*conn.reader_state.write().unwrap() = State::Play;
 			}
 			_ => {}
 		}
 
-		// trigger concrete packet event
-		let (cont, packet) = trigger_c2s_concrete(false, &craftflow, conn_id, packet).await;
-		if !cont {
-			continue;
-		}
+		let (cont, packet) = trigger_c2s_concrete(false, &craftflow, conn.id, packet).await;
 
 		// try to construct abstract packet
 		let abstr = 'abstr: {
@@ -101,14 +96,17 @@ pub(super) async fn reader_task(
 			}
 		};
 
-		let (cont, abstr) = trigger_c2s_abstract(false, &craftflow, conn_id, abstr).await;
 		if !cont {
 			continue;
 		}
-		let (cont, _abstr) = trigger_c2s_abstract(true, &craftflow, conn_id, abstr).await;
+		let (cont, abstr) = trigger_c2s_abstract(false, &craftflow, conn.id, abstr).await;
 		if !cont {
 			continue;
 		}
-		let (_cont, _packet) = trigger_c2s_concrete(true, &craftflow, conn_id, packet).await;
+		let (cont, _abstr) = trigger_c2s_abstract(true, &craftflow, conn.id, abstr).await;
+		if !cont {
+			continue;
+		}
+		let (_cont, _packet) = trigger_c2s_concrete(true, &craftflow, conn.id, packet).await;
 	}
 }

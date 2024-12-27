@@ -9,7 +9,7 @@ craftflow-protocol-core = { path = "../craftflow-protocol-core" }
 craftflow-protocol-abstract = { path = "../craftflow-protocol-abstract" }
 tokio = { workspace = true }
 anyhow = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing = { workspace = true }
 simple-ping = { path = "../modules/simple-ping" }
 login = { path = "../modules/login" }

@@ -5,6 +5,7 @@ use super::{
 	legacy::{detect_legacy_ping, write_legacy_response, LegacyPing},
 	packet_reader::PacketReader,
 	packet_writer::PacketWriter,
+	ConnectionInterface,
 };
 use crate::{
 	packet_events::{trigger_c2s_abstract, trigger_c2s_concrete},
@@ -15,44 +16,51 @@ use anyhow::{bail, Context};
 use craftflow_protocol_abstract::{
 	c2s::{handshake::NextState, AbHandshake},
 	s2c::AbDisconnect,
-	AbC2S, AbPacketNew, AbPacketWrite, AbS2C, State,
+	AbC2S, AbPacketNew, AbPacketWrite, State,
 };
 use craftflow_protocol_core::text;
-use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION, S2C};
+use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
 use reader::reader_task;
 use shallowclone::MakeOwned;
 use std::{
+	net::SocketAddr,
 	ops::ControlFlow,
 	sync::{Arc, OnceLock, RwLock},
 	time::Duration,
 };
-use tokio::{select, spawn, sync::mpsc::UnboundedReceiver, time::timeout};
+use tokio::{net::TcpStream, select, spawn, sync::mpsc, time::timeout};
+use tracing::error;
 use writer::writer_task;
 
-/// The task that handles the connection and later splits into two tasks: reader and writer.
-pub(super) async fn connection_task(
-	craftflow: Arc<CraftFlow>,
-	conn_id: u64,
-	mut reader: PacketReader,
-	mut writer: PacketWriter,
-	concrete_packet_sender: UnboundedReceiver<S2C<'static>>,
-	abstract_packet_sender: UnboundedReceiver<AbS2C<'static>>,
-	reader_state: Arc<RwLock<State>>,
-	writer_state: Arc<RwLock<State>>,
-	protocol_version: Arc<OnceLock<u32>>,
+const CONCRETE_PACKET_CHANNEL_SIZE: usize = 16;
+const ABSTRACT_PACKET_CHANNEL_SIZE: usize = 16;
+
+#[derive(Clone, Debug)]
+struct ConnectionInfo {
+	id: u64,
+	version: u32,
 	compression: Arc<OnceLock<usize>>,
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
+	reader_state: Arc<RwLock<State>>,
+	writer_state: Arc<RwLock<State>>,
+}
+
+/// Handles a fresh connection, managing handshake and adding to the client list
+pub(crate) async fn handle_new_conn(
+	craftflow: Arc<CraftFlow>,
+	mut stream: TcpStream,
+	socket_addr: SocketAddr,
 ) -> anyhow::Result<()> {
 	// First things first check if this is a legacy ping
-	if let Some(legacy_ping_format) = detect_legacy_ping(&mut reader.stream).await? {
+	if let Some(legacy_ping_format) = detect_legacy_ping(&mut stream).await? {
 		// Trigger the legacy ping event
 		if let ControlFlow::Break(response) = craftflow
 			.reactor
-			.trigger::<LegacyPing>(&craftflow, &mut conn_id.clone())
+			.trigger::<LegacyPing>(&craftflow, &mut socket_addr.ip())
 			.await
 		{
 			if let Some(response) = response {
-				write_legacy_response(&mut writer.stream, legacy_ping_format, response).await?;
+				write_legacy_response(&mut stream, legacy_ping_format, response).await?;
 			}
 
 			return Ok(()); // close the connection
@@ -64,42 +72,41 @@ pub(super) async fn connection_task(
 	// we will read the handshake in this task before splitting into two tasks
 	// so we know the next state for both tasks
 
+	let (reader, writer) = stream.into_split();
+
+	let mut packet_reader = PacketReader::new(reader);
+	let mut packet_writer = PacketWriter::new(writer);
+
 	let handshake = match timeout(
 		Duration::from_secs(5),
-		reader.read_packet(&reader_state, MIN_VERSION, &compression, &mut None),
+		packet_reader.read_packet(State::Handshake, MIN_VERSION, None, &mut None),
 	)
 	.await
 	{
+		// normally we dont make packets owned, but here we have to because of how the event triggers are spaced out
 		Ok(p) => p.context("reading handshake packet")?.make_owned(),
-		Err(_) => bail!("timed out"),
+		Err(_) => bail!("timed out trying to read handshake"),
 	};
 
-	let (cont, handshake) = trigger_c2s_concrete(false, &craftflow, conn_id, handshake).await;
-	if !cont {
-		return Ok(());
-	}
-
-	let handshake_ab = AbHandshake::construct(&handshake)?.assume_done();
-
-	// set the client protocol version
-	let client_version = handshake_ab.protocol_version;
-	protocol_version
-		.set(client_version)
-		.expect("just got handshake but client protocol version already set");
+	// normally we dont make packets owned, but here we have to because of how the event triggers are spaced out
+	let handshake_ab = AbHandshake::construct(&handshake)?
+		.assume_done()
+		.make_owned();
 
 	let next_state = match handshake_ab.next_state {
 		NextState::Status => State::Status,
 		NextState::Login | NextState::Transfer => State::Login,
 	};
-	*reader_state.write().unwrap() = next_state;
-	*writer_state.write().unwrap() = next_state;
 
 	// unless the next state is status, we need to check that the client protocol version is supported
 	if handshake_ab.next_state != NextState::Status {
-		if !(MIN_VERSION <= client_version && client_version <= MAX_VERSION) {
+		if !(MIN_VERSION..=MAX_VERSION).contains(&handshake_ab.protocol_version) {
 			let message = match craftflow
 				.reactor
-				.trigger::<UnsupportedClientVersion>(&craftflow, &mut (conn_id, client_version))
+				.trigger::<UnsupportedClientVersion>(
+					&craftflow,
+					&mut (socket_addr.ip(), handshake_ab.protocol_version),
+				)
 				.await
 			{
 				ControlFlow::Continue(_) => {
@@ -109,75 +116,132 @@ pub(super) async fn connection_task(
 				ControlFlow::Break(message) => message,
 			};
 
-			writer
+			let abs_pkt = AbDisconnect { message };
+			let concrete_pkt = abs_pkt
+				.convert(handshake_ab.protocol_version, State::Login)?
+				.assume_success()
+				.next()
+				.unwrap();
+			packet_writer
 				.send(
 					next_state,
-					client_version,
+					handshake_ab.protocol_version,
 					None,
 					&mut None,
-					&AbDisconnect { message }
-						.convert(client_version, State::Login)?
-						.assume()
-						.next()
-						.unwrap(),
+					&concrete_pkt,
 				)
 				.await?;
 
 			return Ok(()); // close the connection
 		}
 	}
-	let handshake_ab: AbC2S = handshake_ab.into();
 
-	// trigger the handshake event
-	let (cont, handshake_ab) = trigger_c2s_abstract(false, &craftflow, conn_id, handshake_ab).await;
-	if !cont {
-		return Ok(());
-	}
-	let (cont, _handshake_ab) = trigger_c2s_abstract(true, &craftflow, conn_id, handshake_ab).await;
-	if !cont {
-		return Ok(());
-	}
-	let (cont, _handshake) = trigger_c2s_concrete(true, &craftflow, conn_id, handshake).await;
-	if !cont {
-		return Ok(());
-	}
+	// All is good, can add to the client list now and spawn the tasks for reading/writing to it
+	let (concrete_packet_sender_in, concrete_packet_sender_out) =
+		mpsc::channel(CONCRETE_PACKET_CHANNEL_SIZE);
+	let (abstract_packet_sender_in, abstract_packet_sender_out) =
+		mpsc::channel(ABSTRACT_PACKET_CHANNEL_SIZE);
+	let reader_state = Arc::new(RwLock::new(next_state));
+	let writer_state = Arc::new(RwLock::new(next_state));
+	let compression = Arc::new(OnceLock::new());
+	let encryption_secret = Arc::new(OnceLock::new());
+	let id = {
+		let mut lock = craftflow.connections.write().unwrap();
 
-	// now we can finally split into two tasks
-	let cf_clone = Arc::clone(&craftflow);
-	let reader_state_clone = Arc::clone(&reader_state);
-	let compression_clone = Arc::clone(&compression);
-	let encryption_secret_clone = Arc::clone(&encryption_secret);
-	let reader_task = spawn(async move {
-		reader_task(
-			cf_clone,
-			conn_id,
-			client_version,
-			reader,
-			reader_state_clone,
-			compression_clone,
-			encryption_secret_clone,
-		)
-		.await
-	});
+		let id = lock.next_conn_id;
+		lock.next_conn_id += 1;
 
+		lock.connections.insert(
+			id,
+			Arc::new(ConnectionInterface {
+				id,
+				ip: socket_addr.ip(),
+				protocol_version: handshake_ab.protocol_version,
+				concrete_packet_sender: concrete_packet_sender_in,
+				abstract_packet_sender: abstract_packet_sender_in,
+				encryption_secret: Arc::clone(&encryption_secret),
+				compression: Arc::clone(&compression),
+				writer_state: Arc::clone(&writer_state),
+			}),
+		);
+
+		id
+	};
+
+	let conn_info = ConnectionInfo {
+		id,
+		version: handshake_ab.protocol_version,
+		compression,
+		encryption_secret,
+		reader_state,
+		writer_state,
+	};
+	let conn_info_clone = conn_info.clone();
+
+	let craftflow_clone = Arc::clone(&craftflow);
+	let craftflow_clone2 = Arc::clone(&craftflow);
+	let reader_task =
+		spawn(async move { reader_task(craftflow_clone, packet_reader, conn_info_clone).await });
 	let writer_task = spawn(async move {
 		writer_task(
-			craftflow,
-			conn_id,
-			client_version,
-			writer,
-			concrete_packet_sender,
-			abstract_packet_sender,
-			reader_state,
-			writer_state,
-			compression,
-			encryption_secret,
+			craftflow_clone2,
+			packet_writer,
+			concrete_packet_sender_out,
+			abstract_packet_sender_out,
+			conn_info,
 		)
 		.await
 	});
 
-	select! {
-		r = reader_task => r?.context("reader task"),
-		r = writer_task => r?.context("writer task"),
+	// now that the tasks are up and running and everything is ready
+	// just emit the handshake events for consistency with all other packets
+
+	let handshake_ab: AbC2S = handshake_ab.into();
+	'events: {
+		let (cont, handshake) = trigger_c2s_concrete(false, &craftflow, id, handshake).await;
+		if !cont {
+			break 'events;
+		}
+		let (cont, handshake_ab) = trigger_c2s_abstract(false, &craftflow, id, handshake_ab).await;
+		if !cont {
+			break 'events;
+		}
+		let (cont, _handshake_ab) = trigger_c2s_abstract(true, &craftflow, id, handshake_ab).await;
+		if !cont {
+			break 'events;
+		}
+		let (cont, _handshake) = trigger_c2s_concrete(true, &craftflow, id, handshake).await;
+		if !cont {
+			break 'events;
+		}
 	}
+
+	// and now just wait for the tasks to finish for any reason and clean up
+	let reader_abort = reader_task.abort_handle();
+	let writer_abort = writer_task.abort_handle();
+
+	let result = select! {
+		r = reader_task => r.map(|inner| inner.context("reader task")).context("reader task"),
+		r = writer_task => r.map(|inner| inner.context("writer task")).context("writer task"),
+	};
+
+	// generally i dont condone abortions but in this case its fine
+	reader_abort.abort();
+	writer_abort.abort();
+
+	match result {
+		Ok(Ok(_)) => {} // ended peacefully 😊
+		Ok(Err(e)) => {
+			error!("connection task error: {e:?}");
+		}
+		Err(e) => {
+			// panicked... wow.. cringe
+			error!("connection task panicked: {e:?}");
+		}
+	}
+
+	// remove the connection from the list
+	craftflow.disconnect(id).await;
+
+	Ok(())
 }

@@ -16,13 +16,14 @@ pub mod packet_events;
 pub mod various_events;
 
 use closureslop::Reactor;
-use connection::{new_conn_interface, ConnectionInterface};
+use connection::{handle_new_conn, ConnectionInterface};
 use modules::Modules;
 use std::{
 	collections::HashMap,
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, spawn};
+use tracing::error;
 use various_events::{Disconnect, NewConnection};
 
 pub struct CraftFlow {
@@ -32,7 +33,7 @@ pub struct CraftFlow {
 }
 
 struct Connections {
-	connections: HashMap<u64, ConnectionInterface>,
+	connections: HashMap<u64, Arc<ConnectionInterface>>,
 	next_conn_id: u64,
 }
 
@@ -56,27 +57,29 @@ impl CraftFlow {
 		let listener = TcpListener::bind("0.0.0.0:25565").await?;
 
 		loop {
-			let (stream, _) = listener.accept().await?;
-
-			let id = new_conn_interface(&craftflow, stream);
+			let (stream, socket_addr) = listener.accept().await?;
 
 			// Emit the new connection event
 			if craftflow
 				.reactor
-				.trigger::<NewConnection>(&craftflow, &mut id.clone())
+				.trigger::<NewConnection>(&craftflow, &mut socket_addr.ip())
 				.await
 				.is_break()
 			{
-				// immediately disconnect the client
-				craftflow.disconnect(id).await;
+				continue;
 			}
+
+			let craftflow_clone = Arc::clone(&craftflow);
+			spawn(async move {
+				if let Err(e) = handle_new_conn(craftflow_clone, stream, socket_addr).await {
+					error!("handling new connection: {e}");
+				}
+			});
 		}
 	}
 	/// Accesses the connection handle of the given connection ID
-	pub fn get<'a>(&'a self, conn_id: u64) -> MappedRwLockReadGuard<'a, ConnectionInterface> {
-		RwLockReadGuard::map(self.connections.read().unwrap(), |inner| {
-			&inner.connections[&conn_id]
-		})
+	pub fn get(&self, conn_id: u64) -> Arc<ConnectionInterface> {
+		Arc::clone(&self.connections.read().unwrap().connections[&conn_id])
 	}
 	/// Disconnects the client with the given connection ID
 	/// No-op if the client is already disconnected, panic if the client ID was never connected
@@ -99,7 +102,7 @@ impl CraftFlow {
 	/// Use the `disconnect` method to disconnect a client
 	pub fn connections<'a>(
 		&'a self,
-	) -> MappedRwLockReadGuard<'a, HashMap<u64, ConnectionInterface>> {
+	) -> MappedRwLockReadGuard<'a, HashMap<u64, Arc<ConnectionInterface>>> {
 		RwLockReadGuard::map(self.connections.read().unwrap(), |inner| &inner.connections)
 	}
 }

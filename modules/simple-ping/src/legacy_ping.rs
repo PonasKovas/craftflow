@@ -4,12 +4,12 @@ use craftflow::{
 	CraftFlow,
 };
 use craftflow_protocol_core::common_structures::{text::TextContent, Text};
-use std::ops::ControlFlow;
+use std::{net::IpAddr, ops::ControlFlow};
 
 #[craftflow::callback(event: LegacyPing)]
 pub async fn legacy_ping(
 	cf: &CraftFlow,
-	_conn_id: &mut u64,
+	_ip: &mut IpAddr,
 ) -> ControlFlow<Option<LegacyPingResponse>> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway
 	let online_players = cf.connections().len() as i32; // more or less. (less)

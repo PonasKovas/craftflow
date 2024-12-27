@@ -105,7 +105,7 @@ impl<CTX: 'static> Reactor<CTX> {
 
 		ControlFlow::Continue(())
 	}
-	/// Returns a nested list of all registered callbacks: ["event type" -> ["callback id"]]
+	/// Returns a nested list of all registered callbacks: `["event type" -> ["callback id"]]`
 	pub fn list_callbacks(
 		&self,
 	) -> impl Iterator<Item = (&'static str, impl Iterator<Item = &str>)> {

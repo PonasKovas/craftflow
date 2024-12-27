@@ -7,10 +7,7 @@ use craftflow_protocol_versions::{
 	IntoStateEnum, PacketRead, C2S,
 };
 use flate2::write::ZlibDecoder;
-use std::{
-	io::Write,
-	sync::{OnceLock, RwLock},
-};
+use std::io::Write;
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 
 const MAX_PACKET_SIZE: usize = 2usize.pow(21);
@@ -40,9 +37,9 @@ impl PacketReader {
 	/// Reads a single packet from the client (Cancel-safe)
 	pub(crate) async fn read_packet<'a>(
 		&'a mut self,
-		state: &RwLock<State>,
+		state: State,
 		protocol_version: u32,
-		compression: &OnceLock<usize>,
+		compression: Option<usize>,
 		decryptor: &mut Option<Decryptor>,
 	) -> anyhow::Result<C2S<'a>> {
 		if let Some(last_packet_len) = self.last_packet_len.take() {
@@ -65,9 +62,9 @@ impl PacketReader {
 		// if compression is enabled, read the uncompressed data length
 		// this will be set to Some(uncompressed_len) if the packet is compressed
 		// (threshold was reached)
-		let decompressed_len = match compression.get() {
+		let decompressed_len = match compression {
 			None => None,
-			Some(&threshold) => {
+			Some(threshold) => {
 				// read the uncompressed data length
 				let length = self.read_varint_at_pos(packet_start, decryptor).await?;
 				packet_start += length.len();
@@ -114,7 +111,7 @@ impl PacketReader {
 		}
 
 		// Parse the packet
-		let (remaining, packet) = match *state.read().unwrap() {
+		let (remaining, packet) = match state {
 			State::Handshake => {
 				let (input, packet) = Handshaking::read_packet(packet_bytes, protocol_version)?;
 				(input, packet.into_state_enum())

@@ -1,4 +1,3 @@
-mod add;
 mod connection_task;
 pub mod legacy;
 mod packet_reader;
@@ -11,24 +10,23 @@ use std::{
 	net::IpAddr,
 	sync::{Arc, OnceLock, RwLock},
 };
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::Sender;
 use tracing::error;
 
-pub(crate) use add::new_conn_interface;
+pub(crate) use connection_task::handle_new_conn;
 
 /// An interface to a client connection.
 /// Use this to send packets or end the connection (by dropping this handle).
 pub struct ConnectionInterface {
 	id: u64,
 	ip: IpAddr,
-	concrete_packet_sender: UnboundedSender<S2C<'static>>,
-	abstract_packet_sender: UnboundedSender<AbS2C<'static>>,
+	protocol_version: u32,
+	concrete_packet_sender: Sender<S2C<'static>>,
+	abstract_packet_sender: Sender<AbS2C<'static>>,
 
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
 	compression: Arc<OnceLock<usize>>,
-	// the protocol version of the client
-	// it is set by the reader task when handshake is received
-	protocol_version: Arc<OnceLock<u32>>,
+
 	// the state of the writing half of the connection.
 	// almost in all cases this will be the same as the reading half
 	writer_state: Arc<RwLock<State>>,
@@ -36,13 +34,26 @@ pub struct ConnectionInterface {
 
 impl ConnectionInterface {
 	/// Send an abstract packet to this client.
-	pub fn send(&self, packet: impl Into<AbS2C<'static>>) {
-		let _ = self.abstract_packet_sender.send(packet.into());
+	pub async fn send(&self, packet: impl Into<AbS2C<'static>>) {
+		if self
+			.abstract_packet_sender
+			.send(packet.into())
+			.await
+			.is_err()
+		{
+			error!("tried to send concrete packet but client writer task dead");
+		}
 	}
 	/// Send a concrete packet to this client.
-	pub fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C<'static>>) {
-		// dont care if the client is disconnected
-		let _ = self.concrete_packet_sender.send(packet.into_state_enum());
+	pub async fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C<'static>>) {
+		if self
+			.concrete_packet_sender
+			.send(packet.into_state_enum())
+			.await
+			.is_err()
+		{
+			error!("tried to send abstract packet but client writer task dead");
+		}
 	}
 	/// Set the encryption shared secret for this client.
 	/// Make sure you send and handle the appropriate packets EncryptionRequest and EncryptionResponse
@@ -65,9 +76,8 @@ impl ConnectionInterface {
 		}
 	}
 	/// Returns the protocol version of the client
-	/// If handshake packet not received yet will return 0
 	pub fn protocol_version(&self) -> u32 {
-		self.protocol_version.get().copied().unwrap_or(0)
+		self.protocol_version
 	}
 	/// Returns the state of the connection
 	pub fn state(&self) -> State {

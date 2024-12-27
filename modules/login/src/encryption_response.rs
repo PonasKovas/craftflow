@@ -66,12 +66,14 @@ pub async fn encryption_response(
 				};
 
 				// And finish the login process
-				cf.get(conn_id).send(AbLoginSuccess {
-					uuid: uuid.unwrap_or(0),
-					username: username.into(),
-					properties: Vec::new(),
-					strict_error_handling: false,
-				});
+				cf.get(conn_id)
+					.send(AbLoginSuccess {
+						uuid: uuid.unwrap_or(0),
+						username: username.into(),
+						properties: Vec::new(),
+						strict_error_handling: false,
+					})
+					.await;
 			}
 			_ => {
 				// couldnt decrypt the shared secret or verify token

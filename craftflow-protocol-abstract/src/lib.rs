@@ -75,7 +75,7 @@ impl<D, C> ConstructorResult<D, C> {
 
 impl<T> WriteResult<T> {
 	/// Unwraps the `Success` variant, panicking if it's `Unsupported`
-	pub fn assume(self) -> T {
+	pub fn assume_success(self) -> T {
 		match self {
 			Self::Success(inner) => inner,
 			_ => panic!("WriteResult::assume: not Success"),

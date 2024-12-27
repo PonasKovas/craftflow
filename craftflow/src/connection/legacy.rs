@@ -2,10 +2,10 @@ mod response;
 
 use anyhow::bail;
 use closureslop::Event;
-use std::time::Duration;
+use std::{net::IpAddr, time::Duration};
 use tokio::{
 	io::AsyncWriteExt,
-	net::tcp::{OwnedReadHalf, OwnedWriteHalf},
+	net::TcpStream,
 	time::{sleep, timeout},
 };
 
@@ -23,15 +23,15 @@ pub enum LegacyPingFormat {
 pub struct LegacyPing;
 
 impl Event for LegacyPing {
-	/// Connection ID
-	type Args<'a> = u64;
+	/// Connection IP
+	type Args<'a> = IpAddr;
 	/// The response to the legacy ping. `None` if should be ignored.
 	type Return = Option<LegacyPingResponse>;
 }
 
 /// Returns true if legacy ping detected
 pub(crate) async fn detect_legacy_ping(
-	stream: &mut OwnedReadHalf,
+	stream: &mut TcpStream,
 ) -> anyhow::Result<Option<LegacyPingFormat>> {
 	let mut temp_buf = [0_u8; 3];
 	let mut n = match timeout(Duration::from_secs(5), stream.peek(&mut temp_buf)).await {
@@ -80,7 +80,7 @@ pub(crate) async fn detect_legacy_ping(
 }
 
 pub(crate) async fn write_legacy_response(
-	stream: &mut OwnedWriteHalf,
+	stream: &mut TcpStream,
 	format: LegacyPingFormat,
 	mut response: LegacyPingResponse,
 ) -> anyhow::Result<()> {

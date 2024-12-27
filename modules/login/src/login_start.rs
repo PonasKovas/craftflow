@@ -21,23 +21,27 @@ pub async fn login_start(
 
 	if let &Some(threshold) = &cf.modules.get::<Login>().compression_threshold {
 		// Send the packet to enable compression
-		cf.get(conn_id).send(AbLoginCompress {
-			threshold: threshold as i32,
-		});
+		cf.get(conn_id)
+			.send(AbLoginCompress {
+				threshold: threshold as i32,
+			})
+			.await;
 	}
 
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
 		// Send the packet to enable encryption
-		cf.get(conn_id).send(AbLoginEncryptionBegin {
-			server_id: "".into(), // unused
-			public_key: rsa_der::public_key_to_der(
-				&rsa_key.n().to_bytes_be(),
-				&rsa_key.e().to_bytes_be(),
-			)
-			.into(),
-			verify_token: VERIFY_TOKEN.as_bytes().into(),
-			should_authenticate: true,
-		});
+		cf.get(conn_id)
+			.send(AbLoginEncryptionBegin {
+				server_id: "".into(), // unused
+				public_key: rsa_der::public_key_to_der(
+					&rsa_key.n().to_bytes_be(),
+					&rsa_key.e().to_bytes_be(),
+				)
+				.into(),
+				verify_token: VERIFY_TOKEN.as_bytes().into(),
+				should_authenticate: true,
+			})
+			.await;
 	}
 
 	ControlFlow::Continue(())
