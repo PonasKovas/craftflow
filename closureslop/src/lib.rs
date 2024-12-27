@@ -94,19 +94,19 @@ mod tests {
 		add_callback!(reactor, MyEvent => "B" => |_ctx, args| SmallBox::new(async move {
 			args.push('B');
 			ControlFlow::Continue(())
-		}), after "closureslop:D", after "closureslop:E");
+		}), after: "closureslop:D", after: "closureslop:E");
 		add_callback!(reactor, MyEvent => "C" => |_ctx, args| SmallBox::new(async move {
 			args.push('C');
 			ControlFlow::Continue(())
-		}), before "closureslop:A");
+		}), before: "closureslop:A");
 		add_callback!(reactor, MyEvent => "D" => |_ctx, args| SmallBox::new(async move {
 			args.push('D');
 			ControlFlow::Continue(())
-		}), after "closureslop:C", after "closureslop:A", before "closureslop:B");
+		}), after: "closureslop:C", after: "closureslop:A", before: "closureslop:B");
 		add_callback!(reactor, MyEvent => "E" => |_ctx, args| SmallBox::new(async move {
 			args.push('E');
 			ControlFlow::Continue(())
-		}), after "closureslop:A");
+		}), after: "closureslop:A");
 
 		let mut x = Vec::new();
 		reactor.trigger::<MyEvent>(&(), &mut x).await;

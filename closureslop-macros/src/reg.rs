@@ -2,7 +2,7 @@ use crate::collector_name;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{
-	Expr, LitStr, Token, parenthesized,
+	Expr, Ident, LitStr, Token,
 	parse::{Parse, ParseStream, Result},
 	parse_macro_input,
 };
@@ -14,23 +14,42 @@ struct Args {
 
 impl Parse for Args {
 	fn parse(input: ParseStream) -> Result<Self> {
-		let id = if input.peek(syn::token::Paren) {
-			let content;
-			parenthesized!(content in input);
+		let mut id = None;
+		let mut reactor = None;
+		loop {
+			let keyword = match input.parse::<Ident>() {
+				Ok(keyword) => keyword,
+				Err(_) => break,
+			};
+			input.parse::<Token![:]>()?;
 
-			input.parse::<Token![,]>()?;
+			match keyword.to_string().as_str() {
+				"group" => {
+					if id.is_some() {
+						return Err(input.error("unexpected group"));
+					}
+					id = Some(input.parse()?);
+				}
+				"to" => {
+					if reactor.is_some() {
+						return Err(input.error("unexpected to"));
+					}
+					reactor = Some(input.parse()?);
+				}
+				_ => {
+					return Err(input.error("unexpected keyword"));
+				}
+			}
 
-			Some(content.parse()?)
-		} else {
-			None
-		};
-
-		let reactor: Expr = input.parse()?;
-
-		// Allow a trailing comma at the end
-		if input.peek(Token![,]) {
-			input.parse::<Token![,]>()?;
+			if input.peek(Token![,]) {
+				input.parse::<Token![,]>()?;
+			}
 		}
+
+		let reactor = match reactor {
+			Some(r) => r,
+			None => return Err(input.error("missing reactor")),
+		};
 
 		Ok(Self { id, reactor })
 	}

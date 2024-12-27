@@ -22,18 +22,15 @@ pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 fn collector_name(id: &Option<LitStr>) -> Ident {
-	let suffix = match id {
-		Some(id) => &id.value(),
-		None => "CALLBACKS",
-	};
-
 	// we need to get an unique identifier for the specific crate using this macro, so their collectors dont conflict
 	let crate_id = crate_id();
 
-	Ident::new(
-		&format!("__PRIVATE_CLOSURESLOP_{crate_id}_{suffix}"),
-		Span::call_site(),
-	)
+	let name = match id {
+		Some(id) => format!("___CLOSURESLOP_{crate_id}_{}", id.value()),
+		None => format!("___CLOSURESLOP_BASE_{crate_id}"),
+	};
+
+	Ident::new(&name, Span::call_site())
 }
 
 /// Returns an unique identifier for this specific crate being compiled

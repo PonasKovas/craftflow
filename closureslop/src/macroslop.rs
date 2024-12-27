@@ -11,20 +11,20 @@ macro_rules! add_callback {
 		)?
 
 		$reactor.add_callback::<$event, _>(
-			format!("{}:{}", env!("CARGO_PKG_NAME"), $name),
+			format!("{}:{}", env!("CARGO_CRATE_NAME"), $name),
 			after,
 			before,
 			$callback,
 		);
 	};
 	(@order: $after:ident, $before:ident => []) => {};
-	(@order: $after:ident, $before:ident => [after $target:expr $(, $($order:tt)* )?]) => {
+	(@order: $after:ident, $before:ident => [after: $target:expr $(, $($order:tt)* )?]) => {
 		$after.push($target.to_string());
 		$(
 			$crate::add_callback!(@order: $after, $before => [ $($order)* ]);
 		)?
 	};
-	(@order: $after:ident, $before:ident => [before $target:expr $(, $($order:tt)* )?]) => {
+	(@order: $after:ident, $before:ident => [before: $target:expr $(, $($order:tt)* )?]) => {
 		$before.push($target.to_string());
 		$(
 			$crate::add_callback!(@order: $after, $before => [ $($order)* ]);

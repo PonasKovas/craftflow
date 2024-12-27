@@ -7,7 +7,7 @@ use craftflow_protocol_abstract::{
 use rsa::traits::PublicKeyParts;
 use std::ops::ControlFlow;
 
-#[craftflow::callback(C2SAbLoginStartEvent)]
+#[craftflow::callback(event: C2SAbLoginStartEvent)]
 pub async fn login_start(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut request): &mut (u64, AbLoginStart<'_>),

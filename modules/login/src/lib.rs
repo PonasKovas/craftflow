@@ -13,7 +13,7 @@ use craftflow::{various_events::Disconnect, CraftFlow};
 use rsa::RsaPrivateKey;
 use std::{collections::BTreeMap, ops::ControlFlow, sync::RwLock};
 
-craftflow::init!(CraftFlow);
+craftflow::init!(ctx: CraftFlow);
 
 /// A module that handles the login phase of the minecraft protocol
 /// This includes:
@@ -70,11 +70,11 @@ impl Login {
 	pub fn register(self, craftflow: &mut CraftFlow) {
 		craftflow.modules.register(self);
 
-		craftflow::reg!(&mut craftflow.reactor);
+		craftflow::reg!(to: &mut craftflow.reactor);
 	}
 }
 
-#[craftflow::callback(Disconnect)]
+#[craftflow::callback(event: Disconnect)]
 async fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: &mut u64) -> ControlFlow<()> {
 	cf.modules
 		.get::<Login>()

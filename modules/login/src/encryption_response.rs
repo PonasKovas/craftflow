@@ -6,7 +6,7 @@ use rsa::Pkcs1v15Encrypt;
 use std::ops::ControlFlow;
 use tracing::error;
 
-#[craftflow::callback(C2SAbLoginEncryptionEvent)]
+#[craftflow::callback(event: C2SAbLoginEncryptionEvent)]
 pub async fn encryption_response(
 	cf: &CraftFlow,
 	&mut (conn_id, ref mut request): &mut (u64, AbLoginEncryption<'_>),

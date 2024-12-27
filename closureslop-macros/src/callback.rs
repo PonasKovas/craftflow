@@ -1,9 +1,9 @@
 use crate::collector_name;
 use proc_macro::TokenStream;
-use proc_macro2::{Span, TokenStream as TokenStream2};
+use proc_macro2::Span;
 use quote::quote;
 use syn::{
-	ItemFn, LitStr, Path, Token, parenthesized,
+	Error, Ident, ItemFn, LitStr, Path, Token, Type,
 	parse::{Parse, ParseStream, Result},
 	parse_macro_input,
 };
@@ -11,8 +11,13 @@ use syn::{
 struct Args {
 	closureslop_crate: Option<Path>,
 	id: Option<LitStr>,
-	event: Path,
-	order_info: TokenStream2,
+	event: Type,
+	order: OrderInfo,
+}
+
+struct OrderInfo {
+	before: Vec<LitStr>,
+	after: Vec<LitStr>,
 }
 
 impl Parse for Args {
@@ -24,34 +29,56 @@ impl Parse for Args {
 			None
 		};
 
-		let id = if input.peek(syn::token::Paren) {
-			let content;
-			parenthesized!(content in input);
+		let mut id = None;
+		let mut event = None;
+		let mut before = Vec::new();
+		let mut after = Vec::new();
+		loop {
+			let keyword = match input.parse::<Ident>() {
+				Ok(keyword) => keyword,
+				Err(_) => break,
+			};
+			input.parse::<Token![:]>()?;
 
-			input.parse::<Token![,]>()?;
+			match keyword.to_string().as_str() {
+				"group" => {
+					if id.is_some() {
+						return Err(Error::new(keyword.span(), "unexpected group"));
+					}
+					id = Some(input.parse()?);
+				}
+				"event" => {
+					if event.is_some() {
+						return Err(Error::new(keyword.span(), "unexpected event"));
+					}
+					event = Some(input.parse()?);
+				}
+				"before" => {
+					before.push(input.parse()?);
+				}
+				"after" => {
+					after.push(input.parse()?);
+				}
+				_ => {
+					return Err(input.error("unexpected keyword"));
+				}
+			}
 
-			Some(content.parse()?)
-		} else {
-			None
-		};
-
-		let event: Path = input.parse()?;
-
-		// Allow a trailing comma at the end
-		if input.peek(Token![,]) {
-			input.parse::<Token![,]>()?;
+			if input.peek(Token![,]) {
+				input.parse::<Token![,]>()?;
+			}
 		}
 
-		// if there is anything more, it must be the order info
-		// which will be handled by the inner (declarative) macro
-		// (located in closureslop crate)
-		let order_info = input.parse()?;
+		let event = match event {
+			Some(ev) => ev,
+			None => return Err(Error::new(input.span(), "missing event")),
+		};
 
 		Ok(Self {
 			closureslop_crate,
 			id,
 			event,
-			order_info,
+			order: OrderInfo { before, after },
 		})
 	}
 }
@@ -61,7 +88,7 @@ pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 		closureslop_crate,
 		id,
 		event,
-		order_info,
+		order: OrderInfo { before, after },
 	} = parse_macro_input!(args as Args);
 	let input = parse_macro_input!(input as ItemFn);
 
@@ -89,7 +116,7 @@ pub fn callback(args: TokenStream, input: TokenStream) -> TokenStream {
 					#closureslop_path::__private_macroslop::smallbox::SmallBox::new(async move {
 						#function_name(ctx, args).await
 					})
-				}, #order_info);
+				}, #(before: #before,)* #(after: #after,)*);
 			}
 		};
 
