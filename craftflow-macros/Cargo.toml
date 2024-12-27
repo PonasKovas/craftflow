@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [lib]
+doc = false       # https://github.com/rust-lang/cargo/issues/10368
 proc-macro = true
 
 [dependencies]

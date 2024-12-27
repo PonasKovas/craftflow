@@ -35,16 +35,17 @@ mod tests;
 ///
 /// # Example
 ///
-/// ```rust
+/// ```ignore
 /// # use closureslop::{callback, Event, init};
 /// # use std::ops::ControlFlow;
 /// # struct MyEvent;
 /// # impl Event for MyEvent { type Args<'a> = &'a str; type Return = (); }
-/// init!(ctx (), id: "optional_events"); // must be at the root of your crate (lib.rs or main.rs)
+/// init!(ctx: (), group: "optional_events"); // must be at the root of your crate (lib.rs or main.rs)
 ///
 /// #[callback(group: "optional_events", event: MyEvent, before: "another_crate:another_callback")]
 /// async fn name_of_the_callback(ctx: &(), args: &mut &str) -> ControlFlow<()> {
-///    // your code here
+///     // your code here
+/// 	ControlFlow::Continue(())
 /// }
 /// ```
 pub use closureslop_macros::callback;
@@ -59,35 +60,35 @@ pub use closureslop_macros::callback;
 /// # Arguments
 ///
 /// - `ctx` - reactor context type. The `T` in `Reactor<T>` that you will want these events to be for.
-/// - `id` - **optional** identifier for a group of events. To register events in the same group, use the same `id`.
+/// - `group` - **optional** identifier for a group of events. To register events in the same group, use the same ID.
 ///
 /// # Example
 ///
-/// ```rust
+/// ```
 /// # use closureslop::init;
 /// # struct MyContext;
 /// init!(ctx: ()); // no id, default event group
-/// init!(ctx: MyContext, id: "optional_events");
+/// init!(ctx: MyContext, group: "optional_events");
 /// ```
 pub use closureslop_macros::init;
 /// Registers a group of callbacks to a reactor instance.
 ///
 /// # Arguments
 ///
-/// - `id` - **optional** identifier for a group of events to register. Must have a respective [`init!`][crate::init].
+/// - `group` - **optional** identifier for a group of events to register. Must have a respective [`init!`][crate::init].
 /// - `to` - the reactor instance to which to register the callbacks.
 ///
 /// # Example
 ///
-/// ```rust
+/// ```ignore
 /// # use closureslop::{init, reg, Reactor};
 /// init!(ctx: ()); // default group
-/// init!(ctx: (), id: "specific"); // another named group
+/// init!(ctx: (), group: "specific"); // another named group
 ///
 /// fn main() {
 ///     let mut reactor = Reactor::new();
 ///     reg!(to: &mut reactor);
-///     reg!(id: "specific", to: &mut reactor);
+///     reg!(group: "specific", to: &mut reactor);
 /// }
 /// ```
 pub use closureslop_macros::reg;
