@@ -1,0 +1,4 @@
+[build]
+# https://github.com/dtolnay/linkme/issues/49
+rustflags = ["-Zlinker-features=-lld"]
+rustdocflags = ["-Zlinker-features=-lld"]

@@ -62,7 +62,8 @@ pub fn reg(args: TokenStream) -> TokenStream {
 
 	quote! {
 		{
-			let reactor = #reactor;
+			use ::std::borrow::BorrowMut as _;
+			let reactor = #reactor.borrow_mut();
 			for f in &*crate::#static_name {
 				f(reactor);
 			}

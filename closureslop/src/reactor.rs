@@ -19,7 +19,7 @@ pub struct Reactor<CTX> {
 	// The `dyn Any` is actually a type erased `Box<dyn Fn(...) -> ...`
 	// But we can't store it directly because Event is different for each event type
 	events: BTreeMap<TypeId, Callbacks>,
-	_phantom: PhantomData<fn(CTX) -> CTX>,
+	_phantom: PhantomData<fn(CTX)>,
 }
 
 impl<CTX: 'static> Reactor<CTX> {
@@ -30,7 +30,7 @@ impl<CTX: 'static> Reactor<CTX> {
 			_phantom: PhantomData,
 		}
 	}
-	/// Register a callback for an event. Prefer using the [`add_callback!`][crate::add_callback] macro instead.
+	/// Register a callback for an event. Prefer using macros instead.
 	///
 	/// Panics if there are cyclic dependencies detected in the callbacks (e.g. A must come after B, but B must come after A)
 	///

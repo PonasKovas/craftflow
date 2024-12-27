@@ -5,6 +5,8 @@ init!(ctx: ());
 init!(group: "1", ctx: ());
 init!(group: "2", ctx: ());
 init!(group: "ordered", ctx: ());
+init!(group: "m1", ctx: ());
+init!(group: "m2", ctx: ());
 
 struct Adder;
 impl Event for Adder {
@@ -22,7 +24,7 @@ async fn base() {
 		ControlFlow::Continue(())
 	}
 
-	reg!(to: &mut reactor);
+	reg!(to: reactor);
 
 	let mut acc = String::new();
 	reactor.trigger::<Adder>(&(), &mut acc).await;
@@ -46,8 +48,8 @@ async fn with_groups() {
 		ControlFlow::Continue(())
 	}
 
-	reg!(to: &mut reactor, group: "1");
-	reg!(to: &mut reactor, group: "2");
+	reg!(to: reactor, group: "1");
+	reg!(to: reactor, group: "2");
 
 	let mut acc = String::new();
 	reactor.trigger::<Adder>(&(), &mut acc).await;
@@ -75,10 +77,32 @@ async fn with_order() {
 		ControlFlow::Continue(())
 	}
 
-	reg!(to: &mut reactor, group: "ordered");
+	reg!(to: reactor, group: "ordered");
 
 	let mut acc = String::new();
 	reactor.trigger::<Adder>(&(), &mut acc).await;
 
 	assert_eq!(acc, "123")
+}
+
+#[pollster::test]
+async fn multiple_groups() {
+	let mut reactor1 = Reactor::new();
+	let mut reactor2 = Reactor::new();
+
+	#[callback(event: Adder, group: "m1")]
+	#[callback(event: Adder, group: "m2")]
+	async fn foo(_ctx: &(), acc: &mut String) -> ControlFlow<()> {
+		*acc += "ye";
+		ControlFlow::Continue(())
+	}
+
+	reg!(to: reactor1, group: "m1");
+	reg!(to: reactor2, group: "m2");
+
+	let mut acc = String::new();
+	reactor1.trigger::<Adder>(&(), &mut acc).await;
+	reactor2.trigger::<Adder>(&(), &mut acc).await;
+
+	assert_eq!(acc, "yeye")
 }
