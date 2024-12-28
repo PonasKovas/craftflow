@@ -83,8 +83,13 @@ pub(crate) async fn handle_new_conn(
 	)
 	.await
 	{
-		// normally we dont make packets owned, but here we have to because of how the event triggers are spaced out
-		Ok(p) => p.context("reading handshake packet")?.make_owned(),
+		Ok(r) => match r.context("reading handshake packet")? {
+			// normally we dont make packets owned, but here we have to because of how the event triggers are spaced out
+			Some(p) => p.make_owned(),
+			None => {
+				bail!("connection closed before handshake was received");
+			}
+		},
 		Err(_) => bail!("timed out trying to read handshake"),
 	};
 

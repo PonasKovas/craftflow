@@ -72,7 +72,7 @@ impl CraftFlow {
 			let craftflow_clone = Arc::clone(&craftflow);
 			spawn(async move {
 				if let Err(e) = handle_new_conn(craftflow_clone, stream, socket_addr).await {
-					error!("handling new connection: {e}");
+					error!("handling new connection: {e:?}");
 				}
 			});
 		}

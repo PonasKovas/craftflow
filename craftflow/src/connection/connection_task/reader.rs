@@ -45,6 +45,13 @@ pub(super) async fn reader_task(
 			.await
 			.with_context(|| format!("reading concrete packet (state {:?})", state))?;
 
+		// If None returned, that means the connection was cleanly closed on a packet boundary
+		// in which case we dont want to print any errors
+		let packet = match packet {
+			Some(p) => p,
+			None => return Ok(()),
+		};
+
 		// Handle some special packets which change the state of the connection
 		match packet {
 			C2S::Login(c2s::Login::LoginAcknowledged(_)) => {

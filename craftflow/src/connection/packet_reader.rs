@@ -1,5 +1,5 @@
 use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
-use anyhow::bail;
+use anyhow::{bail, Context};
 use craftflow_protocol_abstract::State;
 use craftflow_protocol_core::{datatypes::VarInt, MCPRead};
 use craftflow_protocol_versions::{
@@ -41,14 +41,37 @@ impl PacketReader {
 		protocol_version: u32,
 		compression: Option<usize>,
 		decryptor: &mut Option<Decryptor>,
-	) -> anyhow::Result<C2S<'a>> {
+	) -> anyhow::Result<Option<C2S<'a>>> {
 		if let Some(last_packet_len) = self.last_packet_len.take() {
 			// remove the packet bytes from the buffer
 			self.buffer.drain(..last_packet_len);
 		}
 
 		// wait for the length of the next packet
-		let packet_len = self.read_varint_at_pos(0, decryptor).await?;
+		let packet_len = match self.read_varint_at_pos(0, decryptor).await {
+			Ok(l) => l,
+			Err(e) => {
+				// if we get an error while reading the length, it might be that the connection was just closed
+				// and in that case we don't want to print any errors, if it was closed cleanly on a packet boundary
+				match e {
+					craftflow_protocol_core::Error::IOError(ref error) => {
+						// make sure there are no unparsed bytes left in the buffer too,
+						// which would mean that the conn didnt close on a packet boundary
+						if error.kind() == std::io::ErrorKind::UnexpectedEof
+							&& self.buffer.is_empty()
+						{
+							// yep looks like the connection was closed
+							// so just return None, signaling that the connection was cleanly closed
+							return Ok(None);
+						}
+
+						Err(e)
+					}
+					other => Err(other),
+				}
+				.context("reading packet length")?
+			}
+		};
 
 		let mut packet_start = packet_len.len();
 		let packet_len = packet_len.0 as usize;
@@ -141,7 +164,7 @@ impl PacketReader {
 
 		self.last_packet_len = Some(total_packet_len);
 
-		Ok(packet)
+		Ok(Some(packet))
 	}
 	/// Reads a VarInt in a cancel safe way at a specific position in the buffer
 	/// without removing the bytes from the buffer
