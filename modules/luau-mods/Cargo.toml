@@ -1,0 +1,11 @@
+[package]
+name = "luau-mods"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+craftflow = { path = "../../craftflow/" }
+craftflow-protocol-abstract = { path = "../../craftflow-protocol-abstract/" }
+craftflow-protocol-core = { path = "../../craftflow-protocol-core/" }
+mlua = { version = "0.10.2", features = ["luau"] }
+anyhow = { workspace = true }
