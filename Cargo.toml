@@ -27,11 +27,13 @@ flate2 = "1.0.33"
 base64 = "0.22.1"
 futures = "0.3.30"
 thiserror = "1.0"
-cesu8 = "1.1.0"
 indexmap = "2.6"
 proc-macro-error = "1.0"
 is_type = "0.2.1"
 smallbox = { version = "0.8.6", features = ["nightly"] }
+simd_cesu8 = { version = "1.0.1", features = ["nightly"] }
+bytes = "1.9.0"
+bytemuck = { version = "1.21.0", features = ["latest_stable_rust", "nightly_portable_simd"] }
 
 [profile.dev]
 opt-level = 1

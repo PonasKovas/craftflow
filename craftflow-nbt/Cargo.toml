@@ -1,13 +1,13 @@
 [package]
 name = "craftflow-nbt"
-version = "2.1.0"
+version = "3.0.0"
 edition = "2021"
-description = "A serde-based NBT (from Minecraft) binary format implementation"
+description = "A zero-copy NBT (from Minecraft) binary format implementation"
 repository = "https://github.com/PonasKovas/craftflow/tree/master/craftflow-nbt"
 license = "MPL-2.0"
 
 [dependencies]
-shallowclone = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
-serde = { workspace = true }
-cesu8 = { workspace = true }
+simd_cesu8 = { workspace = true }
+bytes = { workspace = true }
+bytemuck = { workspace = true }

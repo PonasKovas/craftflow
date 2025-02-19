@@ -1,20 +1,30 @@
-#![doc(
-	html_favicon_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
-)]
-#![doc(
-	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
-)]
+#![feature(portable_simd)]
 
-pub mod arrays;
-pub(crate) mod de;
-pub mod dynamic;
+//! NOTE THAT IT IS OF UPMOST IMPORTANCE THAT YOU ARE READING YOUR DATA INTO A
+
+mod byteswap;
+mod casts;
 mod error;
-pub(crate) mod ser;
-pub(crate) mod tag;
-#[cfg(test)]
-pub(crate) mod tests;
+mod nbt_format;
+mod primitive;
+mod tag;
+mod value;
 
-pub use de::{from_slice, from_slice_named};
-pub use dynamic::DynNBT;
 pub use error::{Error, Result};
-pub use ser::{to_writer, to_writer_named};
+pub use value::{NbtString, NbtValue};
+
+/// helper function that advances a slice by n bytes
+fn advance<T>(s: &mut &mut [T], n: usize) {
+	// this is very simple but i wanted to put it in a function because the code
+	// is a clever workaround to the borrow checker and might not be easy to understand
+	//
+	// Basically it does the same as
+	// *s = &mut s[1..];
+	// but the above wouldnt compile, since it borrows the inner slice from the outer
+	// and this results in the outer lifetime, which is not necessarily as long as the inner one,
+	// so we cant assign like this.
+	//
+	// mem::take() doesnt borrow from the outer, instead just takes it, replacing it with an empty slice
+	// and then we can have the inner lifetime, and assign it back
+	*s = &mut std::mem::take(s)[n..];
+}
