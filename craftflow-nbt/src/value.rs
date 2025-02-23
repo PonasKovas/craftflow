@@ -1,5 +1,5 @@
 use crate::tag::Tag;
-use crate::{nbt_format::NbtFormat, Error, Result};
+use crate::{Error, Result, nbt_format::NbtFormat};
 use bytes::BytesMut;
 
 // pub use nbtarray::{NbtByteArray, NbtIntArray, NbtLongArray};

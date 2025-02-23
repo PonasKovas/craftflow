@@ -1,7 +1,7 @@
 //! slop for converting between `Vec<T>` and `Vec<u8>` with primitives
 //! And also for swapping the bytes of those slices to a different endianness
 
-use std::mem::{size_of, ManuallyDrop};
+use std::mem::{ManuallyDrop, size_of};
 
 pub(super) trait ToVecByteArray: Sized {
 	fn into_vec_byte_arr(self) -> Vec<u8>;
