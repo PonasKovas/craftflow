@@ -1,37 +1,38 @@
-use super::{BytesAbstr, BytesMutAbstr, NbtBytes};
+use super::{AbstrBytes, AbstrBytesMut, NbtGet, NbtValidate, NbtWrite};
 use crate::{Error, Result};
-use bytes::{Buf, Bytes};
 use core::str;
 use std::{borrow::Cow, ops::Deref};
 use typenum::U0;
 
 const PADDING: u8 = 0xC0;
 
-pub(crate) struct StringBytes<T> {
-	pub(crate) bytes: T,
+pub(crate) struct StringBytes<B> {
+	pub(crate) bytes: B,
 }
 
-impl<T: BytesAbstr> StringBytes<T> {
+impl<B: AbstrBytes> StringBytes<B> {
 	pub fn as_str(&self) -> &str {
 		unsafe { str::from_utf8(&self.bytes[..]).unwrap_unchecked() }
 	}
 }
 
-impl<T: BytesAbstr> NbtBytes<T> for StringBytes<T> {
-	type ConstSize = U0; // not statically sized
+impl<B: AbstrBytes> NbtValidate for StringBytes<B> {
+	const IS_STATIC: bool = false;
+	type StaticSize = U0;
 
-	fn validate<B: BytesMutAbstr<Immutable = T>>(data: &mut B) -> Result<Self> {
+	fn dynamic_validate<B2: AbstrBytesMut>(data: &mut B2) -> Result<B2::Immutable> {
 		if data.len() < 2 {
 			return Err(Error::InsufficientData(2 - data.len()));
 		}
-		let len = i16::from_be_bytes([data[0], data[1]]) as usize + 2;
+		let len = i16::from_be_bytes([data[0], data[1]]) as usize;
+		data.advance(2);
 
 		if data.len() < len {
 			return Err(Error::InsufficientData(len - data.len()));
 		}
 
 		// gotta validate that it's good mutf8 and convert to utf8 in place
-		let utf8 = simd_cesu8::mutf8::decode_strict(&data[2..len])?;
+		let utf8 = simd_cesu8::mutf8::decode_strict(&data[..len])?;
 
 		// clever optimization here.
 		// we know that utf8 is never longer than its equivalent mutf8
@@ -43,18 +44,21 @@ impl<T: BytesAbstr> NbtBytes<T> for StringBytes<T> {
 		// check get() method for this
 		if let Cow::Owned(utf8) = utf8 {
 			// only if owned, bcs if borrowed, no need to change anything anyway
-			data[2..(2 + utf8.len())].copy_from_slice(utf8.as_bytes());
-			data[(2 + utf8.len())..len].fill(PADDING);
+			data[..utf8.len()].copy_from_slice(utf8.as_bytes());
+			data[utf8.len()..len].fill(PADDING);
 		}
 
-		let mut bytes = data.split_chunk(len).freeze();
+		let bytes = data.split_bytes(len).freeze();
 
-		Ok(unsafe { Self::new(&mut bytes) })
+		Ok(bytes)
 	}
-	unsafe fn new(data: &mut T) -> Self {
-		let len = unsafe { i16::new(data) } as usize;
+}
 
-		let mut buffer = data.split_chunk(len);
+impl<B: AbstrBytes> NbtGet<B> for StringBytes<B> {
+	unsafe fn get(data: &mut B) -> Self {
+		let len = unsafe { i16::get(data) } as usize;
+
+		let mut buffer = data.split_bytes(len);
 
 		// remove 0xC0 padding
 		let real_length = buffer[..].iter().rposition(|b| *b != PADDING).unwrap_or(0);
@@ -63,6 +67,9 @@ impl<T: BytesAbstr> NbtBytes<T> for StringBytes<T> {
 
 		Self { bytes: buffer }
 	}
+}
+
+impl<B: AbstrBytes> NbtWrite for StringBytes<B> {
 	fn write(&self, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
@@ -84,7 +91,7 @@ impl<T: BytesAbstr> NbtBytes<T> for StringBytes<T> {
 	}
 }
 
-impl<T: BytesAbstr> Deref for StringBytes<T> {
+impl<T: AbstrBytes> Deref for StringBytes<T> {
 	type Target = str;
 
 	fn deref(&self) -> &Self::Target {
