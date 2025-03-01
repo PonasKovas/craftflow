@@ -11,5 +11,3 @@ thiserror = { workspace = true }
 simd_cesu8 = { workspace = true }
 bytes = { workspace = true }
 bytemuck = { workspace = true }
-typenum = "1.18.0"
-generic-array = "1.2.0"

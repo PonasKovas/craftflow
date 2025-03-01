@@ -1,5 +1,5 @@
 use bytemuck::cast_slice_mut;
-use std::simd::{Simd, SimdElement, num::SimdUint};
+use std::simd::{num::SimdUint, Simd, SimdElement};
 
 #[inline]
 pub(super) fn swap_endian(slice: &mut [u8], size: usize) {
