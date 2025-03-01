@@ -1,5 +1,4 @@
 mod primitives;
-mod seq;
 mod string;
 
 use crate::Result;
@@ -11,7 +10,7 @@ pub(crate) trait NbtBytes<T: BytesAbstr>: Sized {
 	/// otherwise this is set to 0
 	type ConstSize: ArrayLength;
 
-	/// Validates (and optimizes if possible) the bytes. Advances the given buffer
+	/// Validates (and optimizes if possible) the bytes.
 	fn validate<B: BytesMutAbstr<Immutable = T>>(data: &mut B) -> Result<Self>;
 	/// Splits off Self from the bytes. Must only be called on already validated bytes.
 	/// May not included all related bytes in the returned structure. For getting size - compare how much it advanced the input
