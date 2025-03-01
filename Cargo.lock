@@ -83,26 +83,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
 
 [[package]]
-name = "bytemuck"
-version = "1.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef657dfab802224e671f5818e9a4935f9b1957ed18e58292690cc39e7a4092a3"
-dependencies = [
- "bytemuck_derive",
-]
-
-[[package]]
-name = "bytemuck_derive"
-version = "1.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fa76293b4f7bb636ab88fd78228235b5248b4d05cc589aed610f954af5d7c7a"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.92",
-]
-
-[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -113,6 +93,12 @@ name = "bytes"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
+
+[[package]]
+name = "cesu8"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d43a04d8753f35258c91f8ec639f792891f748a1edbd759cf1dcea3382ad83c"
 
 [[package]]
 name = "cfb8"
@@ -205,11 +191,11 @@ dependencies = [
 
 [[package]]
 name = "craftflow-nbt"
-version = "3.0.0"
+version = "2.1.0"
 dependencies = [
- "bytemuck",
- "bytes",
- "simd_cesu8",
+ "cesu8",
+ "serde",
+ "shallowclone",
  "thiserror",
 ]
 
@@ -962,15 +948,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
 
 [[package]]
-name = "rustc_version"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
-dependencies = [
- "semver",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -981,12 +958,6 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
-
-[[package]]
-name = "semver"
-version = "1.0.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f79dfe2d285b0488816f30e700a7438c5a73d816b5b7d3ac72fbc48b0d185e03"
 
 [[package]]
 name = "serde"
@@ -1026,6 +997,7 @@ version = "0.1.0"
 source = "git+https://github.com/PonasKovas/shallowclone.git#be65f2ec923cac6ceedbc8db520c89969ebfce7c"
 dependencies = [
  "indexmap",
+ "serde",
  "shallowclone-derive",
 ]
 
@@ -1067,22 +1039,6 @@ dependencies = [
  "digest",
  "rand_core",
 ]
-
-[[package]]
-name = "simd_cesu8"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c14f02c32cc4ef5068b0e15bee4513942f59165add7778a518b4d507b3b97ab"
-dependencies = [
- "rustc_version",
- "simdutf8",
-]
-
-[[package]]
-name = "simdutf8"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
 name = "simple-ping"

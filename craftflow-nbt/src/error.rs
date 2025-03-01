@@ -8,14 +8,20 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Either IO Error or invalid data
 #[derive(Error, Debug)]
 pub enum Error {
-	#[error("invalid NBT tag {0}")]
-	InvalidTag(u8),
-	#[error("insufficient data, expected {0} more")]
-	InsufficientData(usize),
-	#[error("unexpected TAG_END (usually indicates a not present optional value)")]
-	UnexpectedNone,
-	#[error("invalid modified-cesu8 string data")]
-	InvalidStringData(#[from] simd_cesu8::DecodingError),
-	#[error("unexpected TAG_END as type of list or compound")]
-	UnexpectedTagEnd,
+	#[error("IO error: {0}")]
+	IOError(#[from] std::io::Error),
+	#[error("Invalid data: {0}")]
+	InvalidData(String),
+}
+
+impl serde::ser::Error for Error {
+	fn custom<T: std::fmt::Display>(msg: T) -> Self {
+		Error::InvalidData(msg.to_string())
+	}
+}
+
+impl serde::de::Error for Error {
+	fn custom<T: std::fmt::Display>(msg: T) -> Self {
+		Error::InvalidData(msg.to_string())
+	}
 }
