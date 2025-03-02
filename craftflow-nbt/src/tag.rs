@@ -36,30 +36,8 @@ impl Tag {
 			10 => Ok(Tag::Compound),
 			11 => Ok(Tag::IntArray),
 			12 => Ok(Tag::LongArray),
-			_ => Err(Error::InvalidData(format!("Unknown tag: {}", tag))),
+			_ => Err(Error::InvalidTag(tag)),
 		}
-	}
-	/// Returns `true` if `self` can be used where `other` is expected.
-	///
-	/// For example, `Byte` can be used where `Int` is expected, but not the other way around.
-	pub fn compatible_with(&self, other: &Self) -> bool {
-		// short circuit for equal types
-		if self == other {
-			return true;
-		}
-
-		let c: &[Tag] = match self {
-			Tag::Byte => &[Tag::Short, Tag::Int, Tag::Long],
-			Tag::Short => &[Tag::Int, Tag::Long],
-			Tag::Int => &[Tag::Long],
-			Tag::Float => &[Tag::Double],
-			Tag::ByteArray => &[Tag::List, Tag::IntArray, Tag::LongArray],
-			Tag::IntArray => &[Tag::List, Tag::LongArray],
-			Tag::LongArray => &[Tag::List],
-			_ => &[],
-		};
-
-		c.contains(other)
 	}
 }
 

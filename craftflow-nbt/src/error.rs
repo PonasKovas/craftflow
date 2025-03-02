@@ -1,3 +1,4 @@
+use crate::tag::Tag;
 use thiserror::Error;
 
 /// The result type used in this crate
@@ -8,20 +9,16 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Either IO Error or invalid data
 #[derive(Error, Debug)]
 pub enum Error {
-	#[error("IO error: {0}")]
-	IOError(#[from] std::io::Error),
-	#[error("Invalid data: {0}")]
-	InvalidData(String),
-}
-
-impl serde::ser::Error for Error {
-	fn custom<T: std::fmt::Display>(msg: T) -> Self {
-		Error::InvalidData(msg.to_string())
-	}
-}
-
-impl serde::de::Error for Error {
-	fn custom<T: std::fmt::Display>(msg: T) -> Self {
-		Error::InvalidData(msg.to_string())
-	}
+	#[error("not enough bytes (at least {0} more needed)")]
+	NotEnoughData(usize),
+	#[error("string not valid modified cesu-8")]
+	InvalidString(#[from] simd_cesu8::DecodingError),
+	#[error("invalid nbt tag {0}")]
+	InvalidTag(u8),
+	#[error("unexpected nbt tag {0}")]
+	UnexpectedTag(Tag),
+	#[error("invalid length {0}")]
+	InvalidLength(i32),
+	#[error("key collision in compound {0:?}")]
+	KeyCollision(String),
 }
