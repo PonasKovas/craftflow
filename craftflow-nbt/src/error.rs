@@ -1,4 +1,4 @@
-use crate::tag::Tag;
+use crate::Tag;
 use thiserror::Error;
 
 /// The result type used in this crate
@@ -17,8 +17,16 @@ pub enum Error {
 	InvalidTag(u8),
 	#[error("unexpected nbt tag {0}")]
 	UnexpectedTag(Tag),
+	#[error("unexpected nbt tag for {field_name:?}: expected {expected}, found {found}")]
+	WrongTag {
+		field_name: &'static str,
+		expected: Tag,
+		found: Tag,
+	},
 	#[error("invalid length {0}")]
 	InvalidLength(i32),
 	#[error("key collision in compound {0:?}")]
 	KeyCollision(String),
+	#[error("keys not found in compound {0:?}")]
+	MissingKeys(Vec<&'static str>),
 }

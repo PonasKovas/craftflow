@@ -6,19 +6,27 @@
 )]
 
 mod error;
-mod internal;
+// for derive macro
+#[doc(hidden)]
+pub mod internal;
 mod nbtvalue;
 mod tag;
-// #[cfg(test)]
-// pub(crate) mod tests;
+#[cfg(test)]
+mod tests;
+
+pub use craftflow_nbt_derive::Nbt;
 
 pub use error::{Error, Result};
+pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue};
+pub use tag::Tag;
+
 use internal::{
+	InternalNbtRead, InternalNbtWrite,
 	read::read_tag,
 	write::{write_str, write_tag},
-	InternalNbtRead, InternalNbtWrite,
 };
 
+/// The main trait that allows to write and read NBT data.
 pub trait Nbt: Sized {
 	fn nbt_write(&self, output: &mut Vec<u8>) -> usize;
 	fn nbt_write_named(&self, name: &str, output: &mut Vec<u8>) -> usize;

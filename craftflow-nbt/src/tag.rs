@@ -1,22 +1,25 @@
 use crate::{Error, Result};
 use std::fmt::Display;
 
+/// NBT value tag
+///
+/// Most likely you don't need to use it directly. Only exported because it's used in the [`Error`] type
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tag {
 	End = 0,
-	Byte,
-	Short,
-	Int,
-	Long,
-	Float,
-	Double,
-	ByteArray,
-	String,
-	List,
-	Compound,
-	IntArray,
-	LongArray,
+	Byte = 1,
+	Short = 2,
+	Int = 3,
+	Long = 4,
+	Float = 5,
+	Double = 6,
+	ByteArray = 7,
+	String = 8,
+	List = 9,
+	Compound = 10,
+	IntArray = 11,
+	LongArray = 12,
 }
 
 impl Tag {

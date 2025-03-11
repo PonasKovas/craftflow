@@ -4,7 +4,7 @@ members = [
 	"closureslop-macros",
 	"craftflow",
 	"craftflow-macros",
-	"craftflow-nbt",
+	"craftflow-nbt", "craftflow-nbt-derive",
 	"craftflow-protocol-abstract",
 	"craftflow-protocol-core",
 	"craftflow-protocol-versions",

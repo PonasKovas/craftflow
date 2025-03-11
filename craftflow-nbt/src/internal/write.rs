@@ -1,25 +1,26 @@
 use super::InternalNbtWrite;
 use crate::{
+	Tag,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
-	tag::Tag,
 };
-use std::{ptr::copy_nonoverlapping, slice};
+use std::{collections::HashMap, ptr::copy_nonoverlapping, slice};
 use typenum::Unsigned;
 
-pub(crate) fn write_tag(tag: Tag, output: &mut Vec<u8>) -> usize {
+pub fn write_tag(tag: Tag, output: &mut Vec<u8>) -> usize {
 	output.push(tag as u8);
 	1
 }
 
-pub(crate) fn write_str(s: &str, output: &mut Vec<u8>) -> usize {
+pub fn write_str(s: &str, output: &mut Vec<u8>) -> usize {
 	let encoded = simd_cesu8::encode(s);
 
+	let written = encoded.len() + (encoded.len() as i16).nbt_iwrite(output);
 	output.extend_from_slice(&encoded);
 
-	encoded.len()
+	written
 }
 
-pub(crate) fn write_value(value: &NbtValue, output: &mut Vec<u8>) -> usize {
+pub fn write_value(value: &NbtValue, output: &mut Vec<u8>) -> usize {
 	match value {
 		NbtValue::Byte(v) => v.nbt_iwrite(output),
 		NbtValue::Short(v) => v.nbt_iwrite(output),
@@ -36,7 +37,7 @@ pub(crate) fn write_value(value: &NbtValue, output: &mut Vec<u8>) -> usize {
 	}
 }
 
-pub(crate) fn write_seq<T: InternalNbtWrite>(seq: &Vec<T>, output: &mut Vec<u8>) -> usize {
+pub fn write_seq<T: InternalNbtWrite>(seq: &Vec<T>, output: &mut Vec<u8>) -> usize {
 	let mut written = 0;
 
 	written += (seq.len() as i32).nbt_iwrite(output);
@@ -140,6 +141,32 @@ impl InternalNbtWrite for NbtCompound {
 			written += write_tag(v.tag(), output);
 			written += k.nbt_iwrite(output);
 			written += write_value(v, output);
+		}
+
+		written += write_tag(Tag::End, output);
+
+		written
+	}
+}
+
+impl<T: InternalNbtWrite> InternalNbtWrite for Vec<T> {
+	fn nbt_iwrite(&self, output: &mut Vec<u8>) -> usize {
+		let mut written = 0;
+
+		written += write_tag(T::TAG, output);
+		written += write_seq(self, output);
+
+		written
+	}
+}
+impl<T: InternalNbtWrite> InternalNbtWrite for HashMap<String, T> {
+	fn nbt_iwrite(&self, output: &mut Vec<u8>) -> usize {
+		let mut written = 0;
+
+		for (k, v) in self {
+			written += write_tag(T::TAG, output);
+			written += k.nbt_iwrite(output);
+			written += v.nbt_iwrite(output);
 		}
 
 		written += write_tag(Tag::End, output);

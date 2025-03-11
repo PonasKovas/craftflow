@@ -1,19 +1,16 @@
 use super::InternalNbtRead;
 use crate::{
+	Error, Result, Tag,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
-	tag::Tag,
-	Error, Result,
 };
-use indexmap::IndexMap;
-use std::{ptr::copy_nonoverlapping, slice};
+use std::{
+	collections::{HashMap, hash_map::Entry},
+	ptr::copy_nonoverlapping,
+	slice,
+};
 use typenum::Unsigned;
 
-/// mm yea... 🤤
-pub(crate) fn advance(input: &mut &[u8], n: usize) {
-	*input = &std::mem::take(input)[n..];
-}
-
-pub(crate) fn read_tag(input: &mut &[u8]) -> Result<Tag> {
+pub fn read_tag(input: &mut &[u8]) -> Result<Tag> {
 	if input.len() < 1 {
 		return Err(Error::NotEnoughData(1));
 	}
@@ -24,7 +21,7 @@ pub(crate) fn read_tag(input: &mut &[u8]) -> Result<Tag> {
 	Ok(tag)
 }
 
-pub(crate) fn read_value(input: &mut &[u8], tag: Tag) -> Result<NbtValue> {
+pub fn read_value(input: &mut &[u8], tag: Tag) -> Result<NbtValue> {
 	let val = match tag {
 		Tag::End => return Err(Error::InvalidTag(0)),
 		Tag::Byte => NbtValue::Byte(i8::nbt_iread(input)?),
@@ -44,7 +41,7 @@ pub(crate) fn read_value(input: &mut &[u8], tag: Tag) -> Result<NbtValue> {
 	Ok(val)
 }
 
-pub(crate) fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> {
+pub fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> {
 	let size = i32::nbt_iread(input)?;
 
 	if size.is_negative() {
@@ -79,10 +76,16 @@ pub(crate) fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> 
 					chunk.reverse();
 				}
 			}
+			advance(input, len_bytes);
 		}
 	}
 
 	Ok(vec)
+}
+
+/// mm yea... 🤤
+fn advance(input: &mut &[u8], n: usize) {
+	*input = &std::mem::take(input)[n..];
 }
 
 macro_rules! gen_impl_simple {
@@ -118,6 +121,7 @@ impl InternalNbtRead for String {
 		}
 
 		let decoded = simd_cesu8::decode_strict(&input[..size as usize])?;
+		advance(input, size as usize);
 
 		Ok(decoded.into_owned())
 	}
@@ -141,7 +145,14 @@ impl InternalNbtRead for NbtLongArray {
 impl InternalNbtRead for NbtList {
 	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
 		let v = match read_tag(input)? {
-			Tag::End => return Err(Error::InvalidTag(0)),
+			Tag::End => {
+				// only allowed if length is 0
+				if i32::nbt_iread(input)? == 0 {
+					return Ok(NbtList::Byte(Vec::new()));
+				}
+
+				return Err(Error::InvalidTag(0));
+			}
 			Tag::Byte => NbtList::Byte(read_seq(input)?),
 			Tag::Short => NbtList::Short(read_seq(input)?),
 			Tag::Int => NbtList::Int(read_seq(input)?),
@@ -162,7 +173,7 @@ impl InternalNbtRead for NbtList {
 
 impl InternalNbtRead for NbtCompound {
 	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
-		let mut map = IndexMap::new();
+		let mut map = NbtCompound::new();
 
 		loop {
 			let tag = read_tag(input)?;
@@ -174,10 +185,66 @@ impl InternalNbtRead for NbtCompound {
 			let value = read_value(input, tag)?;
 
 			match map.entry(key) {
-				indexmap::map::Entry::Occupied(entry) => {
+				Entry::Occupied(entry) => {
 					return Err(Error::KeyCollision(entry.key().clone()));
 				}
-				indexmap::map::Entry::Vacant(entry) => {
+				Entry::Vacant(entry) => {
+					entry.insert(value);
+				}
+			}
+		}
+
+		Ok(map)
+	}
+}
+
+impl<T: InternalNbtRead> InternalNbtRead for Vec<T> {
+	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
+		Ok(match read_tag(input)? {
+			Tag::End => {
+				// only allowed if length is 0
+				if i32::nbt_iread(input)? != 0 {
+					return Err(Error::InvalidTag(0));
+				}
+
+				Vec::new()
+			}
+			tag if tag == T::TAG => read_seq(input)?,
+			other => {
+				return Err(Error::WrongTag {
+					field_name: "",
+					expected: T::TAG,
+					found: other,
+				});
+			}
+		})
+	}
+}
+impl<T: InternalNbtRead> InternalNbtRead for HashMap<String, T> {
+	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
+		let mut map = HashMap::new();
+
+		loop {
+			let tag = read_tag(input)?;
+			if tag == Tag::End {
+				break;
+			}
+			if tag != T::TAG {
+				return Err(Error::WrongTag {
+					field_name: "",
+					expected: T::TAG,
+					found: tag,
+				});
+			}
+
+			let key = String::nbt_iread(input)?;
+			let value = T::nbt_iread(input)?;
+
+			match map.entry(key) {
+				Entry::Occupied(entry) => {
+					return Err(Error::KeyCollision(entry.key().clone()));
+				}
+				Entry::Vacant(entry) => {
 					entry.insert(value);
 				}
 			}
