@@ -6,7 +6,7 @@
 )]
 
 mod error;
-// for derive macro
+/// for derive macro
 #[doc(hidden)]
 pub mod internal;
 mod nbtvalue;

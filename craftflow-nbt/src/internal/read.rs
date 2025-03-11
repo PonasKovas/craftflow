@@ -111,11 +111,14 @@ gen_impl_simple!(i8, i16, i32, i64, f32, f64);
 
 impl InternalNbtRead for String {
 	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
-		let size = i16::nbt_iread(input)?;
-
-		if size.is_negative() {
-			return Err(Error::InvalidLength(size as i32));
+		if input.len() < 2 {
+			return Err(Error::NotEnoughData(2 - input.len()));
 		}
+		let mut bytes = [0u8; 2];
+		bytes.copy_from_slice(&input[..2]);
+		advance(input, 2);
+		let size = u16::from_be_bytes(bytes);
+
 		if input.len() < size as usize {
 			return Err(Error::NotEnoughData(size as usize - input.len()));
 		}

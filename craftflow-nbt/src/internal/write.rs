@@ -14,10 +14,10 @@ pub fn write_tag(tag: Tag, output: &mut Vec<u8>) -> usize {
 pub fn write_str(s: &str, output: &mut Vec<u8>) -> usize {
 	let encoded = simd_cesu8::encode(s);
 
-	let written = encoded.len() + (encoded.len() as i16).nbt_iwrite(output);
+	output.extend_from_slice(&(encoded.len() as u16).to_be_bytes());
 	output.extend_from_slice(&encoded);
 
-	written
+	encoded.len() + 2
 }
 
 pub fn write_value(value: &NbtValue, output: &mut Vec<u8>) -> usize {

@@ -1,42 +1,8 @@
 use craftflow_nbt::Nbt;
-use std::{collections::HashMap, error::Error, fmt::Debug};
+use std::{collections::HashMap, fmt::Debug};
 
-fn roundtrip<T: Nbt + Debug + PartialEq>(value: &T) -> Result<(), Box<dyn Error>> {
-	let mut buffer = Vec::new();
-	let l = value.nbt_write(&mut buffer);
-
-	if l != buffer.len() {
-		Err(format!("written {l} != {} buffer len ", buffer.len()))?
-	}
-
-	let mut slice = &buffer[..];
-	let reconstructed: T = match T::nbt_read(&mut slice) {
-		Ok(r) => {
-			if !slice.is_empty() {
-				Err(format!(
-					"buffer not empty:\n{}",
-					hexdump::hexdump_iter(slice)
-						.fold(String::new(), |acc, line| { acc + &*line + "\n" })
-				))?
-			}
-
-			r
-		}
-		Err(e) => Err(format!(
-			"Failed to deserialize {value:?}: {:?}:\n{}",
-			e,
-			hexdump::hexdump_iter(&buffer).fold(String::new(), |acc, line| { acc + &*line + "\n" })
-		))?,
-	};
-
-	if value != &reconstructed {
-		Err(format!(
-			"reconstructed doesnt match\nOriginal: {value:?}\n\nReconstructed: {reconstructed:?}"
-		))?
-	}
-
-	Ok(())
-}
+#[path = "../shared.rs"]
+mod shared;
 
 #[test]
 fn derive_generics() {
@@ -47,7 +13,7 @@ fn derive_generics() {
 		c: i32,
 	}
 
-	if let Err(e) = roundtrip(&Generics {
+	if let Err(e) = shared::roundtrip_test(&Generics {
 		a: format!("first!"),
 		b: vec![1i8, 2, 3],
 		c: 123456789,
@@ -63,7 +29,7 @@ fn nested_lists() {
 		a: Vec<Vec<Vec<f64>>>,
 	}
 
-	if let Err(e) = roundtrip(&NestedLists {
+	if let Err(e) = shared::roundtrip_test(&NestedLists {
 		a: vec![vec![vec![1., 2., 3., 4.], vec![5., 6., 7., 8.]], vec![]],
 	}) {
 		panic!("{e}");
@@ -109,7 +75,7 @@ fn nested_structures() {
 		},
 	};
 
-	if let Err(e) = roundtrip(&v) {
+	if let Err(e) = shared::roundtrip_test(&v) {
 		panic!("{e}");
 	}
 }
