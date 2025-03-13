@@ -11,7 +11,8 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::iter;
 
-fn gen_random_string(rng: &mut StdRng, len_range: usize) -> NbtString {
+#[allow(unused)]
+pub fn gen_random_string(rng: &mut StdRng, len_range: usize) -> NbtString {
 	let length = rng.random_range(0..len_range);
 
 	rng.sample_iter(&Alphanumeric)

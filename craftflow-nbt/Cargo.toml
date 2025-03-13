@@ -27,5 +27,5 @@ serde = ["dep:serde"]
 nightly = ["simd_cesu8/nightly"]
 
 [[bench]]
-name = "roundtrip_dynamic"
+name = "criterion"
 harness = false

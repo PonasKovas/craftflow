@@ -16,7 +16,7 @@ mod tag;
 #[cfg(test)]
 mod tests;
 
-pub use craftflow_nbt_derive::Nbt;
+pub use craftflow_nbt_derive::{Nbt, nbtstr};
 pub use error::{Error, Result};
 pub use nbtstring::{NbtStr, NbtString};
 pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue};

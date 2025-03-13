@@ -2,15 +2,6 @@ use thiserror::Error;
 
 pub(crate) const LIMIT: usize = u16::MAX as usize;
 
-// TEMPORARY. MAKE PROC MACRO
-#[macro_export]
-macro_rules! nbtstr {
-	($s:literal) => {
-		// TODO MAKE IT ACTUALLY CHECK WITH A PROC MACRO
-		unsafe { $crate::NbtStr::new_unchecked($s) }
-	};
-}
-
 #[derive(Error, Debug)]
 #[error("length of {LIMIT} exceeded")]
 pub struct LengthExceeded;
