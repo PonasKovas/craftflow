@@ -1,10 +1,11 @@
 use super::InternalNbtRead;
 use crate::{
-	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
 	Error, Result, Tag,
+	internal::swap_endian::swap_endian,
+	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
 };
 use std::{
-	collections::{hash_map::Entry, HashMap},
+	collections::{HashMap, hash_map::Entry},
 	ptr::copy_nonoverlapping,
 	slice,
 };
@@ -63,20 +64,25 @@ pub fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> {
 				return Err(Error::NotEnoughData(len_bytes - input.len()));
 			}
 
-			unsafe {
+			let slice = unsafe {
+				// SAFETY:
+				// - vec is freshly created so definitely not overlapping with input
+				// - vec is created as Vec<T> so its aligned for T
 				copy_nonoverlapping(input.as_ptr(), vec.as_mut_ptr() as *mut u8, len_bytes);
 				vec.set_len(size as usize);
-
-				// just need to swap endianness now
-
-				// todo might want to do simd here btw
-				let slice = slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut u8, len_bytes);
-				for chunk in slice.chunks_mut(T::StaticSize::USIZE) {
-					#[cfg(target_endian = "little")]
-					chunk.reverse();
+				/// Enforces that the slice has the same lifetime as the vector borrow
+				unsafe fn as_mut_byte_slice<'a, T>(
+					vec: &'a mut Vec<T>,
+					bytes: usize,
+				) -> &'a mut [u8] {
+					slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut u8, bytes)
 				}
-			}
+				as_mut_byte_slice(&mut vec, len_bytes)
+			};
 			advance(input, len_bytes);
+
+			// just need to swap endianness now
+			swap_endian(slice, T::StaticSize::USIZE);
 		}
 	}
 

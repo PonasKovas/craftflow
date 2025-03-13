@@ -9,9 +9,8 @@ license = "MPL-2.0"
 [dependencies]
 craftflow-nbt-derive = { path = "../craftflow-nbt-derive/" }
 thiserror = { workspace = true }
-indexmap = { workspace = true }
 serde = { workspace = true, optional = true }
-simd_cesu8 = { version = "1.0.1", features = ["nightly"] }
+simd_cesu8 = { version = "1.0.1" }
 typenum = "1.18.0"
 generic-array = "1.2.0"
 
@@ -25,7 +24,9 @@ pprof = { version = "0.14", features = ["flamegraph"] }
 debug = true
 
 [features]
+default = ["nightly"]
 serde = ["dep:serde"]
+nightly = ["simd_cesu8/nightly"]
 
 [[bench]]
 name = "roundtrip_dynamic"

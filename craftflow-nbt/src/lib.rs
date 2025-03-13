@@ -4,6 +4,7 @@
 #![doc(
 	html_logo_url = "https://github.com/PonasKovas/craftflow/blob/master/assets/icon.png?raw=true"
 )]
+#![cfg_attr(feature = "nightly", feature(portable_simd))]
 
 mod error;
 /// for derive macro
@@ -15,15 +16,14 @@ mod tag;
 mod tests;
 
 pub use craftflow_nbt_derive::Nbt;
-
 pub use error::{Error, Result};
 pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue};
 pub use tag::Tag;
 
 use internal::{
+	InternalNbtRead, InternalNbtWrite,
 	read::read_tag,
 	write::{write_str, write_tag},
-	InternalNbtRead, InternalNbtWrite,
 };
 
 /// The main trait that allows to write and read NBT data.

@@ -1,16 +1,16 @@
-use std::collections::HashMap;
-
 use crate::Tag;
 use crate::{
-	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray},
 	Result,
+	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray},
 };
 use generic_array::ArrayLength;
+use std::collections::HashMap;
 use typenum::{U1, U2, U4, U8};
 
 pub use typenum::U0;
 
 pub mod read;
+mod swap_endian;
 pub mod write;
 
 pub trait InternalNbt {
