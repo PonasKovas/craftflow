@@ -116,9 +116,20 @@ fn roundtrip_structured(c: &mut Criterion) {
 	group.finish();
 }
 
+fn complex_player(c: &mut Criterion) {
+	let input = include_bytes!("../complex_player.nbt");
+
+	let mut group = c.benchmark_group("complex_player");
+	group.throughput(Throughput::Bytes(input.len() as u64));
+
+	group.bench_function("deserialize", |b| {
+		b.iter_with_large_drop(|| NbtValue::nbt_read(&mut black_box(input)).unwrap())
+	});
+}
+
 criterion_group! {
 	name = benches;
 	config = Criterion::default().with_profiler(perf::FlamegraphProfiler::new(100));
-	targets = roundtrip_dynamic, roundtrip_structured
+	targets = roundtrip_dynamic, roundtrip_structured, complex_player
 }
 criterion_main!(benches);
