@@ -1,11 +1,11 @@
 use crate::{
+	Nbt, NbtStr, NbtString,
 	internal::{
+		InternalNbtRead,
 		read::{read_tag, read_value},
 		write::{write_str, write_tag, write_value},
-		InternalNbtRead,
 	},
 	tag::Tag,
-	Nbt,
 };
 use std::{
 	collections::HashMap,
@@ -13,7 +13,7 @@ use std::{
 };
 
 /// NBT Compound type - essentially a map
-pub type NbtCompound = HashMap<String, NbtValue>;
+pub type NbtCompound = HashMap<NbtString, NbtValue>;
 
 /// Any Nbt value
 #[derive(Debug, Clone, PartialEq)]
@@ -25,7 +25,7 @@ pub enum NbtValue {
 	Float(f32),
 	Double(f64),
 	ByteArray(NbtByteArray),
-	String(String),
+	String(NbtString),
 	List(NbtList),
 	Compound(NbtCompound),
 	IntArray(NbtIntArray),
@@ -60,7 +60,7 @@ impl Nbt for NbtValue {
 
 		written
 	}
-	fn nbt_write_named(&self, name: &str, output: &mut Vec<u8>) -> usize {
+	fn nbt_write_named(&self, name: &NbtStr, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
 		written += write_tag(self.tag(), output);
@@ -74,9 +74,9 @@ impl Nbt for NbtValue {
 
 		read_value(input, tag)
 	}
-	fn nbt_read_named(input: &mut &[u8]) -> crate::Result<(String, Self)> {
+	fn nbt_read_named(input: &mut &[u8]) -> crate::Result<(NbtString, Self)> {
 		let tag = read_tag(input)?;
-		let name = String::nbt_iread(input)?;
+		let name = NbtString::nbt_iread(input)?;
 
 		read_value(input, tag).map(|v| (name, v))
 	}
@@ -92,7 +92,7 @@ pub enum NbtList {
 	Float(Vec<f32>),
 	Double(Vec<f64>),
 	ByteArray(Vec<NbtByteArray>),
-	String(Vec<String>),
+	String(Vec<NbtString>),
 	List(Vec<NbtList>),
 	Compound(Vec<NbtCompound>),
 	IntArray(Vec<NbtIntArray>),
@@ -187,7 +187,7 @@ gen_from_impls!(NbtValue 	: Long 		: i64);
 gen_from_impls!(NbtValue 	: Float 	: f32);
 gen_from_impls!(NbtValue 	: Double 	: f64);
 gen_from_impls!(NbtValue 	: ByteArray : NbtByteArray);
-gen_from_impls!(NbtValue 	: String 	: String);
+gen_from_impls!(NbtValue 	: String 	: NbtString);
 gen_from_impls!(NbtValue 	: List 		: NbtList);
 gen_from_impls!(NbtValue 	: Compound 	: NbtCompound);
 gen_from_impls!(NbtValue 	: IntArray 	: NbtIntArray);
@@ -199,7 +199,7 @@ gen_from_impls!(NbtList 	: Long 		: Vec<i64>);
 gen_from_impls!(NbtList 	: Float 	: Vec<f32>);
 gen_from_impls!(NbtList 	: Double 	: Vec<f64>);
 gen_from_impls!(NbtList 	: ByteArray : Vec<NbtByteArray>);
-gen_from_impls!(NbtList 	: String 	: Vec<String>);
+gen_from_impls!(NbtList 	: String 	: Vec<NbtString>);
 gen_from_impls!(NbtList 	: List 		: Vec<NbtList>);
 gen_from_impls!(NbtList 	: Compound 	: Vec<NbtCompound>);
 gen_from_impls!(NbtList 	: IntArray 	: Vec<NbtIntArray>);
@@ -232,7 +232,7 @@ gen_from_impls_list_bypass!(Long 		: Vec<i64>);
 gen_from_impls_list_bypass!(Float 		: Vec<f32>);
 gen_from_impls_list_bypass!(Double 		: Vec<f64>);
 gen_from_impls_list_bypass!(ByteArray 	: Vec<NbtByteArray>);
-gen_from_impls_list_bypass!(String 		: Vec<String>);
+gen_from_impls_list_bypass!(String 		: Vec<NbtString>);
 gen_from_impls_list_bypass!(List 		: Vec<NbtList>);
 gen_from_impls_list_bypass!(Compound 	: Vec<NbtCompound>);
 gen_from_impls_list_bypass!(IntArray 	: Vec<NbtIntArray>);
@@ -339,7 +339,7 @@ impl NbtValue {
 		}
 	}
 	/// Returns a String, if this NBT is a string.
-	pub fn as_string(&self) -> Option<&String> {
+	pub fn as_string(&self) -> Option<&NbtString> {
 		match self {
 			NbtValue::String(v) => Some(v),
 			_ => None,
@@ -423,7 +423,7 @@ impl NbtValue {
 		}
 	}
 	/// Returns a mutable reference to the inner value, if this NBT is a string.
-	pub fn as_mut_string(&mut self) -> Option<&mut String> {
+	pub fn as_mut_string(&mut self) -> Option<&mut NbtString> {
 		match self {
 			NbtValue::String(v) => Some(v),
 			_ => None,
@@ -519,7 +519,7 @@ impl NbtValue {
 		}
 	}
 	/// Returns a string by value, if this NBT is a string.
-	pub fn into_string(self) -> Option<String> {
+	pub fn into_string(self) -> Option<NbtString> {
 		match self {
 			NbtValue::String(v) => Some(v),
 			_ => None,
@@ -603,7 +603,7 @@ impl NbtValue {
 		}
 	}
 	/// Returns a string reference, if this NBT is a string, panics otherwise.
-	pub fn expect_string(&self) -> &String {
+	pub fn expect_string(&self) -> &NbtString {
 		match self {
 			NbtValue::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
@@ -687,7 +687,7 @@ impl NbtValue {
 		}
 	}
 	/// Returns a string by mutable reference, if this NBT is a string, panics otherwise.
-	pub fn expect_mut_string(&mut self) -> &mut String {
+	pub fn expect_mut_string(&mut self) -> &mut NbtString {
 		match self {
 			NbtValue::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),
@@ -783,7 +783,7 @@ impl NbtValue {
 		}
 	}
 	/// Returns a string by value, if this NBT is a string, panics otherwise.
-	pub fn unwrap_string(self) -> String {
+	pub fn unwrap_string(self) -> NbtString {
 		match self {
 			NbtValue::String(v) => v,
 			_ => panic!("Expected String, found {:?}", self),

@@ -1,6 +1,8 @@
 //! shared boilerplate code between tests and benchmarks
 
-use craftflow_nbt::{Nbt, NbtByteArray, NbtIntArray, NbtList, NbtLongArray, NbtValue, Tag};
+use craftflow_nbt::{
+	Nbt, NbtByteArray, NbtIntArray, NbtList, NbtLongArray, NbtString, NbtValue, Tag,
+};
 use rand::distr::Alphanumeric;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
@@ -9,13 +11,15 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::iter;
 
-fn gen_random_string(rng: &mut StdRng, len_range: usize) -> String {
+fn gen_random_string(rng: &mut StdRng, len_range: usize) -> NbtString {
 	let length = rng.random_range(0..len_range);
 
 	rng.sample_iter(&Alphanumeric)
 		.take(length)
 		.map(|c| c as char)
-		.collect()
+		.collect::<String>()
+		.try_into()
+		.unwrap()
 }
 
 #[allow(unused)]

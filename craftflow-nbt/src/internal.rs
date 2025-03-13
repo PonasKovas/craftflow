@@ -1,8 +1,8 @@
-use crate::Tag;
 use crate::{
-	Result,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray},
+	Result,
 };
+use crate::{NbtString, Tag};
 use std::collections::HashMap;
 
 pub mod read;
@@ -50,7 +50,7 @@ macro_rules! dynamic_nbt {
     )*};
 }
 dynamic_nbt!(
-	String = String,
+	String = NbtString,
 	List = NbtList,
 	ByteArray = NbtByteArray,
 	IntArray = NbtIntArray,
@@ -63,7 +63,7 @@ impl<T: InternalNbt> InternalNbt for Vec<T> {
 
 	const IS_POD: bool = false;
 }
-impl<T: InternalNbt> InternalNbt for HashMap<String, T> {
+impl<T: InternalNbt> InternalNbt for HashMap<NbtString, T> {
 	const TAG: Tag = Tag::Compound;
 
 	const IS_POD: bool = false;

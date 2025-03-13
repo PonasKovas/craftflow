@@ -102,7 +102,7 @@ fn gen_read_impl(fields: &FieldsNamed) -> TokenStream2 {
 				break;
 			}
 
-			let ___key = String::nbt_iread(___input)?;
+			let ___key = ::craftflow_nbt::NbtString::nbt_iread(___input)?;
 
 			#(
 				if #field_names_str == ___key {
@@ -161,7 +161,7 @@ fn gen_write_impl(fields: &FieldsNamed) -> TokenStream2 {
 
 		let inner = quote! {
 			___written += ::craftflow_nbt::internal::write::write_tag(<#field_type as ::craftflow_nbt::internal::InternalNbt>::TAG, ___output);
-			___written += ::craftflow_nbt::internal::write::write_str(#name_str, ___output);
+			___written += ::craftflow_nbt::internal::write::write_str(::craftflow_nbt::nbtstr!(#name_str), ___output);
 			___written += #name.nbt_iwrite(___output);
 		};
 

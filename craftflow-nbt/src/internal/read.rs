@@ -1,7 +1,8 @@
 use super::InternalNbtRead;
 use crate::{
-	Error, Result, Tag,
+	Error, NbtString, Result, Tag,
 	internal::swap_endian::swap_endian,
+	nbtstring,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
 };
 use std::{
@@ -31,7 +32,7 @@ pub fn read_value(input: &mut &[u8], tag: Tag) -> Result<NbtValue> {
 		Tag::Float => NbtValue::Float(f32::nbt_iread(input)?),
 		Tag::Double => NbtValue::Double(f64::nbt_iread(input)?),
 		Tag::ByteArray => NbtValue::ByteArray(NbtByteArray::nbt_iread(input)?),
-		Tag::String => NbtValue::String(String::nbt_iread(input)?),
+		Tag::String => NbtValue::String(NbtString::nbt_iread(input)?),
 		Tag::List => NbtValue::List(NbtList::nbt_iread(input)?),
 		Tag::Compound => NbtValue::Compound(NbtCompound::nbt_iread(input)?),
 		Tag::IntArray => NbtValue::IntArray(NbtIntArray::nbt_iread(input)?),
@@ -117,7 +118,7 @@ macro_rules! gen_impl_simple {
 }
 gen_impl_simple!(i8, i16, i32, i64, f32, f64);
 
-impl InternalNbtRead for String {
+impl InternalNbtRead for NbtString {
 	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
 		if input.len() < 2 {
 			return Err(Error::NotEnoughData(2 - input.len()));
@@ -125,16 +126,19 @@ impl InternalNbtRead for String {
 		let mut bytes = [0u8; 2];
 		bytes.copy_from_slice(&input[..2]);
 		advance(input, 2);
-		let size = u16::from_be_bytes(bytes);
+		let size = u16::from_be_bytes(bytes) as usize;
 
-		if input.len() < size as usize {
-			return Err(Error::NotEnoughData(size as usize - input.len()));
+		if input.len() < size {
+			return Err(Error::NotEnoughData(size - input.len()));
+		}
+		if nbtstring::LIMIT < size {
+			return Err(Error::StringTooBig(size));
 		}
 
-		let decoded = simd_cesu8::decode_strict(&input[..size as usize])?;
-		advance(input, size as usize);
+		let decoded = simd_cesu8::decode_strict(&input[..size])?;
+		advance(input, size);
 
-		Ok(decoded.into_owned())
+		Ok(unsafe { NbtString::new_unchecked(decoded.into_owned()) }) // already checked that it doesnt exceed the limit
 	}
 }
 
@@ -192,7 +196,7 @@ impl InternalNbtRead for NbtCompound {
 				break;
 			}
 
-			let key = String::nbt_iread(input)?;
+			let key = NbtString::nbt_iread(input)?;
 			let value = read_value(input, tag)?;
 
 			match map.entry(key) {
@@ -231,7 +235,7 @@ impl<T: InternalNbtRead> InternalNbtRead for Vec<T> {
 		})
 	}
 }
-impl<T: InternalNbtRead> InternalNbtRead for HashMap<String, T> {
+impl<T: InternalNbtRead> InternalNbtRead for HashMap<NbtString, T> {
 	fn nbt_iread(input: &mut &[u8]) -> Result<Self> {
 		let mut map = HashMap::new();
 
@@ -248,7 +252,7 @@ impl<T: InternalNbtRead> InternalNbtRead for HashMap<String, T> {
 				});
 			}
 
-			let key = String::nbt_iread(input)?;
+			let key = NbtString::nbt_iread(input)?;
 			let value = T::nbt_iread(input)?;
 
 			match map.entry(key) {

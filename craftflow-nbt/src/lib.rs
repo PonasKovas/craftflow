@@ -10,6 +10,7 @@ mod error;
 /// for derive macro
 #[doc(hidden)]
 pub mod internal;
+mod nbtstring;
 mod nbtvalue;
 mod tag;
 #[cfg(test)]
@@ -17,6 +18,7 @@ mod tests;
 
 pub use craftflow_nbt_derive::Nbt;
 pub use error::{Error, Result};
+pub use nbtstring::{NbtStr, NbtString};
 pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue};
 pub use tag::Tag;
 
@@ -29,9 +31,9 @@ use internal::{
 /// The main trait that allows to write and read NBT data.
 pub trait Nbt: Sized {
 	fn nbt_write(&self, output: &mut Vec<u8>) -> usize;
-	fn nbt_write_named(&self, name: &str, output: &mut Vec<u8>) -> usize;
+	fn nbt_write_named(&self, name: &NbtStr, output: &mut Vec<u8>) -> usize;
 	fn nbt_read(input: &mut &[u8]) -> Result<Self>;
-	fn nbt_read_named(input: &mut &[u8]) -> Result<(String, Self)>;
+	fn nbt_read_named(input: &mut &[u8]) -> Result<(NbtString, Self)>;
 }
 
 impl<T: InternalNbtRead + InternalNbtWrite> Nbt for T {
@@ -43,7 +45,7 @@ impl<T: InternalNbtRead + InternalNbtWrite> Nbt for T {
 
 		written
 	}
-	fn nbt_write_named(&self, name: &str, output: &mut Vec<u8>) -> usize {
+	fn nbt_write_named(&self, name: &NbtStr, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
 		written += write_tag(T::TAG, output);
@@ -61,14 +63,14 @@ impl<T: InternalNbtRead + InternalNbtWrite> Nbt for T {
 
 		T::nbt_iread(input)
 	}
-	fn nbt_read_named(input: &mut &[u8]) -> Result<(String, Self)> {
+	fn nbt_read_named(input: &mut &[u8]) -> Result<(NbtString, Self)> {
 		let tag = read_tag(input)?;
 
 		if tag != T::TAG {
 			return Err(Error::UnexpectedTag(tag));
 		}
 
-		let name = String::nbt_iread(input)?;
+		let name = NbtString::nbt_iread(input)?;
 
 		T::nbt_iread(input).map(|v| (name, v))
 	}

@@ -1,6 +1,6 @@
 use super::{InternalNbtWrite, swap_endian::swap_endian};
 use crate::{
-	Tag,
+	NbtStr, NbtString, Tag,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
 };
 use std::{collections::HashMap, ptr::copy_nonoverlapping};
@@ -10,7 +10,7 @@ pub fn write_tag(tag: Tag, output: &mut Vec<u8>) -> usize {
 	1
 }
 
-pub fn write_str(s: &str, output: &mut Vec<u8>) -> usize {
+pub fn write_str(s: &NbtStr, output: &mut Vec<u8>) -> usize {
 	let encoded = simd_cesu8::encode(s);
 
 	output.extend_from_slice(&(encoded.len() as u16).to_be_bytes());
@@ -85,7 +85,7 @@ macro_rules! gen_impl_simple {
 }
 gen_impl_simple!(i8, i16, i32, i64, f32, f64);
 
-impl InternalNbtWrite for String {
+impl InternalNbtWrite for NbtString {
 	fn nbt_iwrite(&self, output: &mut Vec<u8>) -> usize {
 		write_str(self, output)
 	}
@@ -156,7 +156,7 @@ impl<T: InternalNbtWrite> InternalNbtWrite for Vec<T> {
 		written
 	}
 }
-impl<T: InternalNbtWrite> InternalNbtWrite for HashMap<String, T> {
+impl<T: InternalNbtWrite> InternalNbtWrite for HashMap<NbtString, T> {
 	fn nbt_iwrite(&self, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 

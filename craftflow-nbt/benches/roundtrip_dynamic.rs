@@ -1,5 +1,5 @@
 use craftflow_nbt::{Nbt, NbtValue};
-use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 mod perf;
 #[path = "../shared.rs"]
@@ -19,7 +19,7 @@ fn roundtrip(c: &mut Criterion) {
 		group.throughput(Throughput::BytesDecimal(n_bytes as u64));
 
 		group.bench_function(BenchmarkId::new("serialize", n_bytes), |b| {
-            let mut buf = Vec::with_capacity(n_bytes);
+			let mut buf = Vec::with_capacity(n_bytes);
 			b.iter(|| {
 				buf.clear();
 				black_box(&nbt).nbt_write(&mut buf);

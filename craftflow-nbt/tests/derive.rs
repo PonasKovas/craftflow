@@ -1,4 +1,4 @@
-use craftflow_nbt::Nbt;
+use craftflow_nbt::{Nbt, NbtString};
 use std::{collections::HashMap, fmt::Debug};
 
 #[path = "../shared.rs"]
@@ -14,7 +14,7 @@ fn derive_generics() {
 	}
 
 	if let Err(e) = shared::roundtrip_test(&Generics {
-		a: format!("first!"),
+		a: NbtString::from_str("first!").unwrap(),
 		b: vec![1i8, 2, 3],
 		c: 123456789,
 	}) {
@@ -41,12 +41,12 @@ fn nested_structures() {
 	#[derive(Nbt, Debug, PartialEq)]
 	struct Outer {
 		a: Inner,
-		b: HashMap<String, f32>,
+		b: HashMap<NbtString, f32>,
 	}
 	#[derive(Nbt, Debug, PartialEq)]
 	struct Inner {
 		a: Innermost,
-		b: HashMap<String, HashMap<String, Innermost>>,
+		b: HashMap<NbtString, HashMap<NbtString, Innermost>>,
 	}
 	#[derive(Nbt, Debug, PartialEq)]
 	struct Innermost {
@@ -59,10 +59,13 @@ fn nested_structures() {
 			a: Innermost { a: -128, b: 127 },
 			b: {
 				let mut m = HashMap::new();
-				m.insert(format!("YES"), HashMap::new());
-				m.insert(format!("OMG YES"), {
+				m.insert(NbtString::from_str("YES").unwrap(), HashMap::new());
+				m.insert(NbtString::from_str("OMG YES").unwrap(), {
 					let mut m = HashMap::new();
-					m.insert(format!("SO DEEP!!!"), Innermost { a: 1, b: -2 });
+					m.insert(
+						NbtString::from_str("YAYY!").unwrap(),
+						Innermost { a: 1, b: -2 },
+					);
 					m
 				});
 				m
@@ -70,7 +73,10 @@ fn nested_structures() {
 		},
 		b: {
 			let mut m = HashMap::new();
-			m.insert(format!("I HECKING LOVE NBT"), 9999999999999.);
+			m.insert(
+				NbtString::from_str("I HECKING LOVE NBT").unwrap(),
+				9999999999999.,
+			);
 			m
 		},
 	};
@@ -91,7 +97,7 @@ fn derive_optional_fields() {
 
 	#[derive(Nbt, Debug, PartialEq)]
 	struct Inner {
-		a: Option<String>,
+		a: Option<NbtString>,
 		b: Option<f64>,
 	}
 
@@ -109,7 +115,7 @@ fn derive_optional_fields() {
 		a: 123456789,
 		b: Some(123),
 		c: Inner {
-			a: Some(format!("HELLOOOOOO")),
+			a: Some(NbtString::from_str("HELLOOOOOO").unwrap()),
 			b: None,
 		},
 	}) {

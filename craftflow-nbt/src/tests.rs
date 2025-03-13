@@ -1,6 +1,6 @@
 use crate::{
+	Nbt, NbtString,
 	nbtvalue::{NbtByteArray, NbtIntArray, NbtList, NbtLongArray, NbtValue},
-	Nbt,
 };
 use core::f64;
 use std::fmt::Debug;
@@ -31,7 +31,7 @@ fn test_roundtrip() {
 		assert_eq!(value, &reconstructed, "line {line}");
 	}
 
-	test(line!(), &"Hello, world!".to_string());
+	test(line!(), &NbtString::from_str("Hello, world!").unwrap());
 	test(line!(), &3.1456789f32); // this is the actual PI value
 	test(line!(), &f64::INFINITY);
 	test(line!(), &i8::MIN);
@@ -47,82 +47,10 @@ fn test_roundtrip() {
 		&NbtList::String(
 			["hello", "from", "earth"]
 				.into_iter()
-				.map(|s| s.to_owned())
+				.map(|s| s.try_into().unwrap())
 				.collect(),
 		),
 	);
-
-	// #[derive(Serialize, Deserialize, Debug, PartialEq)]
-	// struct SimpleStruct {
-	// 	#[serde(default)]
-	// 	first: Option<usize>,
-	// 	second: f64,
-	// }
-	// test(
-	// 	line!(),
-	// 	&SimpleStruct {
-	// 		first: None,
-	// 		second: 9125123.213,
-	// 	},
-	// );
-	// test(
-	// 	line!(),
-	// 	&SimpleStruct {
-	// 		first: Some(123456789),
-	// 		second: 9125123.213,
-	// 	},
-	// );
-
-	// #[derive(Serialize, Deserialize, Debug, PartialEq)]
-	// struct ComplexStruct {
-	// 	#[serde(default)]
-	// 	first: Option<usize>,
-	// 	#[serde(default)]
-	// 	second: Option<usize>,
-	// 	third: Either,
-	// 	inner: InnerStruct,
-	// }
-	// #[derive(Serialize, Deserialize, Debug, PartialEq)]
-	// struct InnerStruct {
-	// 	first: String,
-	// 	second: Vec<u32>,
-	// 	third: HashMap<String, InnerStruct>,
-	// }
-
-	// test(
-	// 	line!(),
-	// 	&ComplexStruct {
-	// 		first: None,
-	// 		second: Some(567),
-	// 		third: Either::Left(57),
-	// 		inner: InnerStruct {
-	// 			first: format!("banana🍌"),
-	// 			second: vec![0xB00B135, 0xFACE, 0xFEED],
-	// 			third: {
-	// 				let mut map = HashMap::new();
-	// 				map.insert(
-	// 					format!(
-	// 						"why did the scarecrow win an award? because he was outstanding in his field!"
-	// 					),
-	// 					InnerStruct {
-	// 						first: format!("testing... testing... 1, 2, 3... is this thing on?"),
-	// 						second: vec![],
-	// 						third: HashMap::new(),
-	// 					},
-	// 				);
-	// 				map.insert(
-	// 					format!("i like big bytes and i cannot lie!"),
-	// 					InnerStruct {
-	// 						first: format!("this is not a test"),
-	// 						second: vec![5],
-	// 						third: HashMap::new(),
-	// 					},
-	// 				);
-	// 				map
-	// 			},
-	// 		},
-	// 	},
-	// );
 }
 
 #[test]

@@ -1,4 +1,4 @@
-use crate::Tag;
+use crate::{NbtString, Tag};
 use thiserror::Error;
 
 /// The result type used in this crate
@@ -26,7 +26,9 @@ pub enum Error {
 	#[error("invalid length {0}")]
 	InvalidLength(i32),
 	#[error("key collision in compound {0:?}")]
-	KeyCollision(String),
+	KeyCollision(NbtString),
 	#[error("keys not found in compound {0:?}")]
 	MissingKeys(Vec<&'static str>),
+	#[error("string too big: {0} bytes")]
+	StringTooBig(usize),
 }
