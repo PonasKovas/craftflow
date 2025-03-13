@@ -1,10 +1,10 @@
 use super::InternalNbtRead;
 use crate::{
-	Error, Result, Tag,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
+	Error, Result, Tag,
 };
 use std::{
-	collections::{HashMap, hash_map::Entry},
+	collections::{hash_map::Entry, HashMap},
 	ptr::copy_nonoverlapping,
 	slice,
 };

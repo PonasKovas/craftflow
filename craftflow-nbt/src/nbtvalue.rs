@@ -1,11 +1,11 @@
 use crate::{
-	Nbt,
 	internal::{
-		InternalNbtRead,
 		read::{read_tag, read_value},
 		write::{write_str, write_tag, write_value},
+		InternalNbtRead,
 	},
 	tag::Tag,
+	Nbt,
 };
 use std::{
 	collections::HashMap,

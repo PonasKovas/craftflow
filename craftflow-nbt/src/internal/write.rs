@@ -1,7 +1,7 @@
 use super::InternalNbtWrite;
 use crate::{
-	Tag,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
+	Tag,
 };
 use std::{collections::HashMap, ptr::copy_nonoverlapping, slice};
 use typenum::Unsigned;

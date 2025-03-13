@@ -1,6 +1,6 @@
 use crate::{
-	Nbt,
 	nbtvalue::{NbtByteArray, NbtIntArray, NbtList, NbtLongArray, NbtValue},
+	Nbt,
 };
 use core::f64;
 use std::fmt::Debug;

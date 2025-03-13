@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::Tag;
 use crate::{
-	Result,
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray},
+	Result,
 };
 use generic_array::ArrayLength;
 use typenum::{U1, U2, U4, U8};

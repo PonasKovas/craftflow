@@ -21,9 +21,9 @@ pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray
 pub use tag::Tag;
 
 use internal::{
-	InternalNbtRead, InternalNbtWrite,
 	read::read_tag,
 	write::{write_str, write_tag},
+	InternalNbtRead, InternalNbtWrite,
 };
 
 /// The main trait that allows to write and read NBT data.
