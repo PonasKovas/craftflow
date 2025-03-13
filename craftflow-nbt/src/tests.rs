@@ -54,11 +54,18 @@ fn test_roundtrip() {
 }
 
 #[test]
-fn bigtest() {
+fn predefined() {
 	let bytes = include_bytes!("../bigtest.nbt");
 	let mut slice = &bytes[..];
 	let (name, _val) = NbtValue::nbt_read_named(&mut slice).unwrap();
 	assert!(slice.is_empty());
 	assert_eq!(name, "Level");
+
+	let bytes = include_bytes!("../complex_player.nbt");
+	let mut slice = &bytes[..];
+	let (name, _val) = NbtValue::nbt_read_named(&mut slice).unwrap();
+	assert!(slice.is_empty());
+	assert_eq!(name, "");
+
 	// panic!("{:#?}", _val);
 }
