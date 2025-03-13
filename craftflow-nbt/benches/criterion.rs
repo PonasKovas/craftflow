@@ -43,7 +43,7 @@ fn roundtrip_structured(c: &mut Criterion) {
 	}
 	#[derive(Nbt)]
 	struct B {
-		a: NbtString,
+		a: f64,
 		b: f64,
 		c: f64,
 		d: f64,
@@ -55,7 +55,7 @@ fn roundtrip_structured(c: &mut Criterion) {
 	}
 	#[derive(Nbt)]
 	struct C {
-		a: NbtString,
+		a: f64,
 		b: f64,
 		c: f64,
 		d: f64,
@@ -72,7 +72,7 @@ fn roundtrip_structured(c: &mut Criterion) {
 			b: (0..size)
 				.into_iter()
 				.map(|_| B {
-					a: gen_random_string(&mut rng, 512),
+					a: rng.random(),
 					b: rng.random(),
 					c: rng.random(),
 					d: rng.random(),
@@ -81,7 +81,7 @@ fn roundtrip_structured(c: &mut Criterion) {
 					g: rng.random(),
 					h: rng.random(),
 					i: C {
-						a: gen_random_string(&mut rng, 512),
+						a: rng.random(),
 						b: rng.random(),
 						c: rng.random(),
 						d: rng.random(),
@@ -109,7 +109,7 @@ fn roundtrip_structured(c: &mut Criterion) {
 		});
 
 		group.bench_function(BenchmarkId::new("deserialize", n_bytes), |b| {
-			b.iter_with_large_drop(|| NbtValue::nbt_read(&mut black_box(&buffer)).unwrap())
+			b.iter_with_large_drop(|| A::nbt_read(&mut black_box(&buffer)).unwrap())
 		});
 	}
 

@@ -40,7 +40,7 @@ pub fn nbtstr(input: TokenStream) -> TokenStream {
 	.into()
 }
 
-/// Derives the `Nbt` traits for your struct.
+/// Derives the `Nbt` trait for your struct.
 ///
 /// Must have named fields, as the names will be used as keys of the Nbt compound.
 #[proc_macro_error]
