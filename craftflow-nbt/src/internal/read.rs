@@ -9,7 +9,6 @@ use std::{
 	ptr::copy_nonoverlapping,
 	slice,
 };
-use typenum::Unsigned;
 
 pub fn read_tag(input: &mut &[u8]) -> Result<Tag> {
 	if input.len() < 1 {
@@ -43,33 +42,36 @@ pub fn read_value(input: &mut &[u8], tag: Tag) -> Result<NbtValue> {
 }
 
 pub fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> {
-	let size = i32::nbt_iread(input)?;
+	let length = i32::nbt_iread(input)?;
 
-	if size.is_negative() {
-		return Err(Error::InvalidLength(size));
+	if length.is_negative() {
+		return Err(Error::InvalidLength(length));
 	}
 
-	let mut vec: Vec<T> = Vec::with_capacity(size as usize);
+	let mut vec: Vec<T> = Vec::with_capacity(length as usize);
 
 	match T::IS_POD {
 		false => {
-			for _ in 0..size {
+			for _ in 0..length {
 				vec.push(T::nbt_iread(input)?);
 			}
 		}
 		true => {
-			let len_bytes = size as usize * T::StaticSize::USIZE;
+			#[allow(non_snake_case)]
+			let N = size_of::<T>();
 
-			if input.len() < len_bytes {
-				return Err(Error::NotEnoughData(len_bytes - input.len()));
+			let bytes = length as usize * N;
+
+			if input.len() < bytes {
+				return Err(Error::NotEnoughData(bytes - input.len()));
 			}
 
 			let slice = unsafe {
 				// SAFETY:
 				// - vec is freshly created so definitely not overlapping with input
 				// - vec is created as Vec<T> so its aligned for T
-				copy_nonoverlapping(input.as_ptr(), vec.as_mut_ptr() as *mut u8, len_bytes);
-				vec.set_len(size as usize);
+				copy_nonoverlapping(input.as_ptr(), vec.as_mut_ptr() as *mut u8, bytes);
+				vec.set_len(length as usize);
 				/// Enforces that the slice has the same lifetime as the vector borrow
 				unsafe fn as_mut_byte_slice<'a, T>(
 					vec: &'a mut Vec<T>,
@@ -77,12 +79,12 @@ pub fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> {
 				) -> &'a mut [u8] {
 					slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut u8, bytes)
 				}
-				as_mut_byte_slice(&mut vec, len_bytes)
+				as_mut_byte_slice(&mut vec, bytes)
 			};
-			advance(input, len_bytes);
+			advance(input, bytes);
 
 			// just need to swap endianness now
-			swap_endian(slice, T::StaticSize::USIZE);
+			swap_endian(slice, N);
 		}
 	}
 

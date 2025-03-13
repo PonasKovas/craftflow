@@ -4,7 +4,6 @@ use crate::{
 	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
 };
 use std::{collections::HashMap, ptr::copy_nonoverlapping};
-use typenum::Unsigned;
 
 pub fn write_tag(tag: Tag, output: &mut Vec<u8>) -> usize {
 	output.push(tag as u8);
@@ -49,21 +48,24 @@ pub fn write_seq<T: InternalNbtWrite>(seq: &Vec<T>, output: &mut Vec<u8>) -> usi
 			}
 		}
 		true => {
-			let len_bytes = seq.len() * T::StaticSize::USIZE;
+			#[allow(non_snake_case)]
+			let N = size_of::<T>();
 
-			output.reserve(len_bytes);
+			let bytes = seq.len() * N;
+
+			output.reserve(bytes);
 			let start_indice = output.len();
 			unsafe {
 				// SAFETY: output is definitely not overlapping with seq.
 				let output_ptr = output.as_mut_ptr().offset(start_indice as isize);
-				copy_nonoverlapping(seq.as_ptr() as *const u8, output_ptr, len_bytes);
-				output.set_len(start_indice + len_bytes);
+				copy_nonoverlapping(seq.as_ptr() as *const u8, output_ptr, bytes);
+				output.set_len(start_indice + bytes);
 			}
 
 			let slice = &mut output[start_indice..];
-			swap_endian(slice, T::StaticSize::USIZE);
+			swap_endian(slice, N);
 
-			written += len_bytes;
+			written += bytes;
 		}
 	}
 

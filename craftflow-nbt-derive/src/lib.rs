@@ -49,7 +49,6 @@ pub fn derive(input: TokenStream) -> TokenStream {
 		#where_clause {
 			const TAG: ::craftflow_nbt::Tag = ::craftflow_nbt::Tag::Compound;
 			const IS_POD: bool = false;
-			type StaticSize = ::craftflow_nbt::internal::U0;
 		}
 
 		impl #impl_generics ::craftflow_nbt::internal::InternalNbtRead for #ident #type_generics
