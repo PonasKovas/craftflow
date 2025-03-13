@@ -76,7 +76,21 @@ fn gen_read_impl(fields: &FieldsNamed) -> TokenStream2 {
 		.map(|f| f.ident.clone().unwrap())
 		.collect();
 	let field_names_str: Vec<_> = field_vars.iter().map(|f| format!("{f}")).collect();
-	let field_types: Vec<_> = fields.named.iter().map(|f| f.ty.clone()).collect();
+
+	let mut field_types = Vec::new();
+	let mut field_is_required = Vec::new();
+	let mut field_unwrap = Vec::new();
+	for field in &fields.named {
+		let option = get_option_inner(&field.ty);
+
+		field_types.push(option.unwrap_or(&field.ty).clone());
+		field_is_required.push(if option.is_none() {
+			quote! { true }
+		} else {
+			quote! { false }
+		});
+		field_unwrap.push(option.is_none().then(|| quote! { .unwrap() }));
+	}
 
 	quote! {
 		#(
@@ -119,7 +133,7 @@ fn gen_read_impl(fields: &FieldsNamed) -> TokenStream2 {
 		let mut ___not_found_fields = Vec::new();
 
 		#(
-			if #field_vars.is_none() {
+			if #field_is_required && #field_vars.is_none() {
 				___not_found_fields.push(#field_names_str);
 			}
 		)*
@@ -131,32 +145,66 @@ fn gen_read_impl(fields: &FieldsNamed) -> TokenStream2 {
 
 		Ok(Self {
 			#(
-				#field_vars: #field_vars.unwrap(),
+				#field_vars: #field_vars #field_unwrap,
 			)*
 		})
 	}
 }
 
 fn gen_write_impl(fields: &FieldsNamed) -> TokenStream2 {
-	let field_vars: Vec<_> = fields
-		.named
-		.iter()
-		.map(|f| f.ident.clone().unwrap())
-		.collect();
-	let field_names_str: Vec<_> = field_vars.iter().map(|f| format!("{f}")).collect();
-	let field_types: Vec<_> = fields.named.iter().map(|f| f.ty.clone()).collect();
+	let mut field_write = Vec::new();
+	for field in &fields.named {
+		let name = field.ident.as_ref().unwrap();
+		let name_str = format!("{name}");
+
+		let option = get_option_inner(&field.ty);
+		let field_type = option.unwrap_or(&field.ty);
+
+		let inner = quote! {
+			___written += ::craftflow_nbt::internal::write::write_tag(<#field_type as ::craftflow_nbt::internal::InternalNbt>::TAG, ___output);
+			___written += ::craftflow_nbt::internal::write::write_str(#name_str, ___output);
+			___written += #name.nbt_iwrite(___output);
+		};
+
+		field_write.push(if option.is_some() {
+			quote! {
+				if let Some(#name) = &self.#name {
+					#inner
+				}
+			}
+		} else {
+			quote! {
+				let #name = &self.#name;
+				#inner
+			}
+		});
+	}
 
 	quote! {
 		let mut ___written = 0usize;
 
-		#(
-			___written += ::craftflow_nbt::internal::write::write_tag(<#field_types as ::craftflow_nbt::internal::InternalNbt>::TAG, ___output);
-			___written += ::craftflow_nbt::internal::write::write_str(#field_names_str, ___output);
-			___written += self.#field_vars.nbt_iwrite(___output);
-		)*
+		#( #field_write )*
 
 		___written += ::craftflow_nbt::internal::write::write_tag(::craftflow_nbt::Tag::End, ___output);
 
 		___written
 	}
+}
+
+/// Checks if a type is Option<...>, and if so, returns the inner type
+fn get_option_inner(ty: &syn::Type) -> Option<&syn::Type> {
+	if let syn::Type::Path(type_path) = ty {
+		if let Some(segment) = type_path.path.segments.last() {
+			if segment.ident == "Option" {
+				if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
+					if args.args.len() == 1 {
+						if let syn::GenericArgument::Type(inner) = &args.args[0] {
+							return Some(inner);
+						}
+					}
+				}
+			}
+		}
+	}
+	None
 }

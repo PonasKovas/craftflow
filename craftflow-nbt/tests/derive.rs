@@ -79,3 +79,40 @@ fn nested_structures() {
 		panic!("{e}");
 	}
 }
+
+#[test]
+fn derive_optional_fields() {
+	#[derive(Nbt, Debug, PartialEq)]
+	struct Outer {
+		a: i64,
+		b: Option<i8>,
+		c: Inner,
+	}
+
+	#[derive(Nbt, Debug, PartialEq)]
+	struct Inner {
+		a: Option<String>,
+		b: Option<f64>,
+	}
+
+	if let Err(e) = shared::roundtrip_test(&Outer {
+		a: 123456789,
+		b: None,
+		c: Inner {
+			a: None,
+			b: Some(4984231489165.4),
+		},
+	}) {
+		panic!("{e}");
+	}
+	if let Err(e) = shared::roundtrip_test(&Outer {
+		a: 123456789,
+		b: Some(123),
+		c: Inner {
+			a: Some(format!("HELLOOOOOO")),
+			b: None,
+		},
+	}) {
+		panic!("{e}");
+	}
+}
