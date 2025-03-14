@@ -28,7 +28,12 @@ fn roundtrip_dynamic(c: &mut Criterion) {
 		});
 
 		group.bench_function(BenchmarkId::new("deserialize", n_bytes), |b| {
-			b.iter_with_large_drop(|| NbtValue::nbt_read(&mut black_box(&buffer)).unwrap())
+			b.iter_with_large_drop(|| {
+				let mut s = black_box(&buffer[..]);
+				let r = NbtValue::nbt_read(&mut s).unwrap();
+				assert!(s.is_empty());
+				r
+			})
 		});
 	}
 
@@ -109,7 +114,12 @@ fn roundtrip_structured(c: &mut Criterion) {
 		});
 
 		group.bench_function(BenchmarkId::new("deserialize", n_bytes), |b| {
-			b.iter_with_large_drop(|| A::nbt_read(&mut black_box(&buffer)).unwrap())
+			b.iter_with_large_drop(|| {
+				let mut s = black_box(&buffer[..]);
+				let r = A::nbt_read(&mut s).unwrap();
+				assert!(s.is_empty());
+				r
+			})
 		});
 	}
 
@@ -123,7 +133,12 @@ fn complex_player(c: &mut Criterion) {
 	group.throughput(Throughput::Bytes(input.len() as u64));
 
 	group.bench_function("deserialize", |b| {
-		b.iter_with_large_drop(|| NbtValue::nbt_read(&mut black_box(input)).unwrap())
+		b.iter_with_large_drop(|| {
+			let mut s = black_box(&input[..]);
+			let r = NbtValue::nbt_read_named(&mut s).unwrap();
+			assert!(s.is_empty());
+			r
+		})
 	});
 }
 

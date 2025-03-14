@@ -22,7 +22,6 @@ pprof = { version = "0.14", features = ["flamegraph"] }
 debug = true
 
 [features]
-default = ["nightly"]
 serde = ["dep:serde"]
 nightly = ["simd_cesu8/nightly"]
 

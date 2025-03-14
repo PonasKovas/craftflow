@@ -67,5 +67,5 @@ fn predefined() {
 	assert!(slice.is_empty());
 	assert_eq!(name, "");
 
-	// panic!("{:#?}", _val);
+	// panic!("{name:?}\n{:#?}", _val);
 }
