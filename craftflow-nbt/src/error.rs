@@ -23,7 +23,11 @@ pub enum Error {
 		found: Tag,
 	},
 	#[error("unexpected nbt sequence tag: expected {expected}, found {found}")]
-	WrongSeqTag { expected: Tag, found: Tag },
+	WrongSeqTag {
+		field_name: Option<&'static str>,
+		expected: Tag,
+		found: Tag,
+	},
 	#[error("invalid length {0}")]
 	InvalidLength(i32),
 	#[error("key collision in compound {0:?}")]

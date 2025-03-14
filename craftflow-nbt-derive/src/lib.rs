@@ -153,7 +153,19 @@ fn gen_read_impl(fields: &FieldsNamed) -> TokenStream2 {
 						});
 					}
 
-					let ___value = <#field_types as ::craftflow_nbt::internal::InternalNbtRead>::nbt_iread(___input)?;
+					let ___value = match <#field_types as ::craftflow_nbt::internal::InternalNbtRead>::nbt_iread(___input) {
+						Ok(___value) => ___value,
+						// Sequences may encounter a wrong type but they don't know which field they are in, so we catch those
+						// and add this info for better errors
+						Err(::craftflow_nbt::Error::WrongSeqTag{ field_name: None, expected: ___expected, found: ___found }) => {
+							return Err(::craftflow_nbt::Error::WrongSeqTag {
+								field_name: Some(#field_names_str),
+								expected: ___expected,
+								found: ___found,
+							})
+						},
+						Err(___other) => return Err(___other),
+					};
 					#field_vars = Some(___value);
 					continue;
 				}

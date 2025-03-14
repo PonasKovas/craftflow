@@ -227,6 +227,7 @@ impl<T: InternalNbtRead> InternalNbtRead for Vec<T> {
 			tag if tag == T::TAG => read_seq(input)?,
 			other => {
 				return Err(Error::WrongSeqTag {
+					field_name: None,
 					expected: T::TAG,
 					found: other,
 				});
