@@ -1,12 +1,11 @@
 use crate::{NbtString, Tag};
+use std::borrow::Cow;
 use thiserror::Error;
 
 /// The result type used in this crate
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// The error type used in this crate.
-///
-/// Either IO Error or invalid data
 #[derive(Error, Debug)]
 pub enum Error {
 	#[error("not enough bytes (at least {0} more needed)")]
@@ -19,10 +18,12 @@ pub enum Error {
 	UnexpectedTag(Tag),
 	#[error("unexpected nbt tag for {field_name:?}: expected {expected}, found {found}")]
 	WrongTag {
-		field_name: &'static str,
+		field_name: Cow<'static, str>,
 		expected: Tag,
 		found: Tag,
 	},
+	#[error("unexpected nbt sequence tag: expected {expected}, found {found}")]
+	WrongSeqTag { expected: Tag, found: Tag },
 	#[error("invalid length {0}")]
 	InvalidLength(i32),
 	#[error("key collision in compound {0:?}")]

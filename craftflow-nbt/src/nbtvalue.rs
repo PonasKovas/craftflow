@@ -1,9 +1,9 @@
 use crate::{
-	Nbt, NbtStr, NbtString,
+	NbtRead, NbtStr, NbtString, NbtWrite,
 	internal::{
-		InternalNbtRead,
+		InternalNbtRead, InternalNbtWrite,
 		read::{read_tag, read_value},
-		write::{write_str, write_tag, write_value},
+		write::{write_tag, write_value},
 	},
 	tag::Tag,
 };
@@ -51,7 +51,11 @@ impl NbtValue {
 	}
 }
 
-impl Nbt for NbtValue {
+// NBT value implements these directly without implement InternalNbtRead/Write
+// Because its not an NBT primitive, for example you cant have a list of NbtValues
+//
+// This is just the top level user-facing API for dynamic values
+impl NbtWrite for NbtValue {
 	fn nbt_write(&self, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
@@ -64,11 +68,13 @@ impl Nbt for NbtValue {
 		let mut written = 0;
 
 		written += write_tag(self.tag(), output);
-		written += write_str(name, output);
+		written += name.nbt_iwrite(output);
 		written += write_value(self, output);
 
 		written
 	}
+}
+impl NbtRead for NbtValue {
 	fn nbt_read(input: &mut &[u8]) -> crate::Result<Self> {
 		let tag = read_tag(input)?;
 

@@ -370,7 +370,6 @@ dependencies = [
  "craftflow-nbt",
  "serde",
  "serde_json",
- "shallowclone",
  "thiserror",
 ]
 

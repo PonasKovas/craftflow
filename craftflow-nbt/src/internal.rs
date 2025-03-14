@@ -1,8 +1,8 @@
+use crate::{NbtStr, NbtString, Tag};
 use crate::{
-	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray},
 	Result,
+	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray},
 };
-use crate::{NbtString, Tag};
 use std::collections::HashMap;
 
 pub mod read;
@@ -51,6 +51,7 @@ macro_rules! dynamic_nbt {
 }
 dynamic_nbt!(
 	String = NbtString,
+	String = NbtStr,
 	List = NbtList,
 	ByteArray = NbtByteArray,
 	IntArray = NbtIntArray,

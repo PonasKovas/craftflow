@@ -1,7 +1,7 @@
 //! shared boilerplate code between tests and benchmarks
 
 use craftflow_nbt::{
-	Nbt, NbtByteArray, NbtIntArray, NbtList, NbtLongArray, NbtString, NbtValue, Tag,
+	NbtByteArray, NbtIntArray, NbtList, NbtLongArray, NbtRead, NbtString, NbtValue, NbtWrite, Tag,
 };
 use rand::distr::Alphanumeric;
 use rand::rngs::StdRng;
@@ -161,7 +161,9 @@ pub fn gen_random_dyn_nbt(tags_n: usize) -> NbtValue {
 }
 
 #[allow(unused)]
-pub fn roundtrip_test<T: Nbt + Debug + PartialEq>(value: &T) -> Result<(), Box<dyn Error>> {
+pub fn roundtrip_test<T: NbtRead + NbtWrite + Debug + PartialEq>(
+	value: &T,
+) -> Result<(), Box<dyn Error>> {
 	let mut buffer = Vec::new();
 	let l = value.nbt_write(&mut buffer);
 

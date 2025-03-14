@@ -1,4 +1,4 @@
-use craftflow_nbt::{Nbt, NbtString, NbtValue};
+use craftflow_nbt::{Nbt, NbtRead, NbtString, NbtValue, NbtWrite};
 use criterion::{BenchmarkId, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use shared::gen_random_string;

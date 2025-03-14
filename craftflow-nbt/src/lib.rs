@@ -13,8 +13,6 @@ pub mod internal;
 mod nbtstring;
 mod nbtvalue;
 mod tag;
-#[cfg(test)]
-mod tests;
 
 pub use craftflow_nbt_derive::{Nbt, nbtstr};
 pub use error::{Error, Result};
@@ -22,21 +20,21 @@ pub use nbtstring::{NbtStr, NbtString};
 pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue};
 pub use tag::Tag;
 
-use internal::{
-	InternalNbtRead, InternalNbtWrite,
-	read::read_tag,
-	write::{write_str, write_tag},
-};
+use internal::{InternalNbtRead, InternalNbtWrite, read::read_tag, write::write_tag};
 
-/// The main trait that allows to write and read NBT data.
-pub trait Nbt: Sized {
+/// The main trait that allows to write NBT data.
+pub trait NbtWrite {
 	fn nbt_write(&self, output: &mut Vec<u8>) -> usize;
 	fn nbt_write_named(&self, name: &NbtStr, output: &mut Vec<u8>) -> usize;
+}
+
+/// The main trait that allows to read NBT data.
+pub trait NbtRead: Sized {
 	fn nbt_read(input: &mut &[u8]) -> Result<Self>;
 	fn nbt_read_named(input: &mut &[u8]) -> Result<(NbtString, Self)>;
 }
 
-impl<T: InternalNbtRead + InternalNbtWrite> Nbt for T {
+impl<T: InternalNbtWrite> NbtWrite for T {
 	fn nbt_write(&self, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
@@ -49,11 +47,13 @@ impl<T: InternalNbtRead + InternalNbtWrite> Nbt for T {
 		let mut written = 0;
 
 		written += write_tag(T::TAG, output);
-		written += write_str(name, output);
+		written += name.nbt_iwrite(output);
 		written += self.nbt_iwrite(output);
 
 		written
 	}
+}
+impl<T: InternalNbtRead> NbtRead for T {
 	fn nbt_read(input: &mut &[u8]) -> Result<Self> {
 		let tag = read_tag(input)?;
 

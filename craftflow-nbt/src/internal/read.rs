@@ -226,8 +226,7 @@ impl<T: InternalNbtRead> InternalNbtRead for Vec<T> {
 			}
 			tag if tag == T::TAG => read_seq(input)?,
 			other => {
-				return Err(Error::WrongTag {
-					field_name: "",
+				return Err(Error::WrongSeqTag {
 					expected: T::TAG,
 					found: other,
 				});
@@ -244,15 +243,17 @@ impl<T: InternalNbtRead> InternalNbtRead for HashMap<NbtString, T> {
 			if tag == Tag::End {
 				break;
 			}
+
+			let key = NbtString::nbt_iread(input)?;
+
 			if tag != T::TAG {
 				return Err(Error::WrongTag {
-					field_name: "",
+					field_name: key.into(),
 					expected: T::TAG,
 					found: tag,
 				});
 			}
 
-			let key = NbtString::nbt_iread(input)?;
 			let value = T::nbt_iread(input)?;
 
 			match map.entry(key) {

@@ -10,15 +10,6 @@ pub fn write_tag(tag: Tag, output: &mut Vec<u8>) -> usize {
 	1
 }
 
-pub fn write_str(s: &NbtStr, output: &mut Vec<u8>) -> usize {
-	let encoded = simd_cesu8::encode(s);
-
-	output.extend_from_slice(&(encoded.len() as u16).to_be_bytes());
-	output.extend_from_slice(&encoded);
-
-	encoded.len() + 2
-}
-
 pub fn write_value(value: &NbtValue, output: &mut Vec<u8>) -> usize {
 	match value {
 		NbtValue::Byte(v) => v.nbt_iwrite(output),
@@ -85,9 +76,20 @@ macro_rules! gen_impl_simple {
 }
 gen_impl_simple!(i8, i16, i32, i64, f32, f64);
 
+impl InternalNbtWrite for NbtStr {
+	fn nbt_iwrite(&self, output: &mut Vec<u8>) -> usize {
+		let encoded = simd_cesu8::encode(self);
+
+		output.extend_from_slice(&(encoded.len() as u16).to_be_bytes());
+		output.extend_from_slice(&encoded);
+
+		encoded.len() + 2
+	}
+}
+
 impl InternalNbtWrite for NbtString {
 	fn nbt_iwrite(&self, output: &mut Vec<u8>) -> usize {
-		write_str(self, output)
+		(**self).nbt_iwrite(output)
 	}
 }
 impl InternalNbtWrite for NbtByteArray {

@@ -40,7 +40,7 @@ pub fn nbtstr(input: TokenStream) -> TokenStream {
 	.into()
 }
 
-/// Derives the `Nbt` trait for your struct.
+/// Derives the `NbtRead` and `NbtWrite` traits for your struct.
 ///
 /// Must have named fields, as the names will be used as keys of the Nbt compound.
 #[proc_macro_error]
@@ -147,7 +147,7 @@ fn gen_read_impl(fields: &FieldsNamed) -> TokenStream2 {
 					}
 					if <#field_types as ::craftflow_nbt::internal::InternalNbt>::TAG != ___tag {
 						return Err(::craftflow_nbt::Error::WrongTag{
-							field_name: #field_names_str,
+							field_name: #field_names_str.into(),
 							expected: <#field_types as ::craftflow_nbt::internal::InternalNbt>::TAG,
 							found: ___tag,
 						});
@@ -197,7 +197,7 @@ fn gen_write_impl(fields: &FieldsNamed) -> TokenStream2 {
 
 		let inner = quote! {
 			___written += ::craftflow_nbt::internal::write::write_tag(<#field_type as ::craftflow_nbt::internal::InternalNbt>::TAG, ___output);
-			___written += ::craftflow_nbt::internal::write::write_str(::craftflow_nbt::nbtstr!(#name_str), ___output);
+			___written += ::craftflow_nbt::nbtstr!(#name_str).nbt_iwrite(___output);
 			___written += #name.nbt_iwrite(___output);
 		};
 

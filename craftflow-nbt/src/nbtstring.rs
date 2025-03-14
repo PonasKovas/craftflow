@@ -54,6 +54,16 @@ impl std::ops::Deref for NbtStr {
 	}
 }
 
+impl ToOwned for NbtStr {
+	type Owned = NbtString;
+
+	fn to_owned(&self) -> Self::Owned {
+		NbtString {
+			s: (**self).to_owned(),
+		}
+	}
+}
+
 impl NbtString {
 	pub unsafe fn new_unchecked(s: String) -> Self {
 		Self { s }
@@ -191,6 +201,11 @@ impl std::borrow::Borrow<str> for NbtString {
 		self.s.borrow()
 	}
 }
+impl std::borrow::Borrow<NbtStr> for NbtString {
+	fn borrow(&self) -> &NbtStr {
+		&**self
+	}
+}
 
 impl std::fmt::Display for NbtString {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -201,6 +216,11 @@ impl std::fmt::Display for NbtString {
 impl<'a> From<&'a NbtString> for std::borrow::Cow<'a, str> {
 	fn from(value: &'a NbtString) -> Self {
 		std::borrow::Cow::Borrowed(value)
+	}
+}
+impl<'a> From<NbtString> for std::borrow::Cow<'a, str> {
+	fn from(value: NbtString) -> Self {
+		std::borrow::Cow::Owned(value.into_inner())
 	}
 }
 impl From<&NbtString> for NbtString {
