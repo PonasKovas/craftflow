@@ -1,0 +1,7 @@
+versions = [5, 7, 10]
+
+[C2S]
+[C2S.Handshake]
+[C2S.Handshake.Handshake]
+"5" = { defined = true, packet_id = 123 }
+"133" = { reexport = 5 }

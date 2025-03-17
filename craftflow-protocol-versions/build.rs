@@ -1,7 +1,7 @@
 // This build script generates enums for states, packets and versions (3 nested enums)
 // implements the following traits:
-// - MCPReadVersioned/MCPWriteVersioned for version enums
-// - PacketRead/PacketWrite for packet enums
+// - MCPReadVersioned/MCPWriteVersioned for packet enums
+// - PacketRead/PacketWrite for state enums
 // - Conversion traits (IntoStateEnum, IntoPacketEnum, IntoVersionEnum) for all of the enums AND
 //   the packets themselves
 //
@@ -39,7 +39,7 @@ use gen_mcp_packet::gen_mcp_packet_impls;
 use gen_mcp_versioned::gen_mcp_versioned;
 use gen_types_code::gen_types_code;
 use parse_packet_info::{
-	parse_packets, Direction, Generics, PacketName, PacketType, Packets, State, States, Versions,
+	Direction, Generics, PacketName, PacketType, Packets, State, States, Versions, parse_packets,
 };
 
 const DEFAULT_IMPORTS: &str = "use shallowclone::{ShallowClone, MakeOwned};\n";

@@ -1,0 +1,9 @@
+[project]
+name = "generator"
+version = "0.1.0"
+description = "generates new packet definitions from minecraft-data"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "colorama>=0.4.6",
+]

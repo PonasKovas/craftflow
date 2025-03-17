@@ -38,7 +38,6 @@ define_type! {
 pub enum WorldStatus<'a> {
 	V1(Cow<'a, str>),
 	V2 { velocity: f64, jumped: bool },
-	Default,
 }
 
 impl<'a> MCPWrite for WorldStatus<'a> {
@@ -54,10 +53,6 @@ impl<'a> MCPWrite for WorldStatus<'a> {
 				written_bytes += VarInt(1).write(output)?;
 				written_bytes += velocity.write(output)?;
 				written_bytes += jumped.write(output)?;
-			}
-			WorldStatus::Default => {
-				// Any non-variant, in this case we choose 2
-				written_bytes += VarInt(2).write(output)?;
 			}
 		}
 
@@ -79,7 +74,7 @@ impl<'a> MCPRead<'a> for WorldStatus<'a> {
 				let (input, jumped) = bool::read(input)?;
 				Ok((input, Self::V2 { velocity, jumped }))
 			}
-			_ => Ok((input, Self::Default)),
+			_ => panic!(),
 		}
 	}
 }
