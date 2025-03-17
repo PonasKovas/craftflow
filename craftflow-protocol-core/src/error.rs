@@ -8,4 +8,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
 	#[error("not enough bytes (at least {0} more needed)")]
 	NotEnoughData(usize),
+	#[error("VarInt too big")]
+	VarIntTooBig,
+	#[error("VarLong too big")]
+	VarLongTooBig,
 }

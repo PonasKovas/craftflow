@@ -1,13 +1,10 @@
+use super::read_byte;
 use crate::Error;
 use crate::Result;
 use crate::{MCPRead, MCPWrite};
-use byteorder::{ReadBytesExt, WriteBytesExt};
-use shallowclone::MakeOwned;
-use shallowclone::ShallowClone;
-use std::io::Write;
 
 /// A Minecraft Protocol VarInt
-#[derive(ShallowClone, MakeOwned, Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct VarInt(pub i32);
 
 impl VarInt {
@@ -29,20 +26,19 @@ impl VarInt {
 	}
 }
 
-impl<'a> MCPRead<'a> for VarInt {
-	fn read(mut input: &[u8]) -> Result<(&[u8], Self)> {
+impl MCPRead for VarInt {
+	fn mcp_read(input: &mut &[u8]) -> Result<Self> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed
 
 		loop {
 			// VarInts are at most 5 bytes long.
 			if num_read == 5 {
-				return Err(Error::InvalidData(format!("VarInt is too big")));
+				return Err(Error::VarIntTooBig);
 			}
 
 			// Read a byte
-			let byte = input.as_ref().read_u8()?;
-			input = &input[1..];
+			let byte = read_byte(input)?;
 
 			// Extract the 7 lower bits (the data bits) and cast to i32
 			let value = (byte & 0b0111_1111) as i32;
@@ -58,12 +54,12 @@ impl<'a> MCPRead<'a> for VarInt {
 			}
 		}
 
-		Ok((input, Self(result)))
+		Ok(Self(result))
 	}
 }
 
 impl MCPWrite for VarInt {
-	fn write(&self, output: &mut impl Write) -> Result<usize> {
+	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
 		let mut i = 0;
 		let mut value = self.0;
 
@@ -79,7 +75,7 @@ impl MCPWrite for VarInt {
 				temp |= 0b1000_0000;
 			}
 
-			output.write_u8(temp)?;
+			output.push(temp);
 			i += 1;
 
 			// If there is no more data to write, exit the loop
@@ -88,7 +84,7 @@ impl MCPWrite for VarInt {
 			}
 		}
 
-		Ok(i)
+		i
 	}
 }
 
@@ -142,7 +138,7 @@ mod tests {
 	#[test]
 	fn varint_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			let (_, result) = VarInt::read(&mut case.1.to_vec()[..]).unwrap();
+			let result = VarInt::mcp_read(&mut &case.1[..]).unwrap();
 			assert_eq!(result.0, case.0, "{i}");
 		}
 	}
@@ -151,7 +147,7 @@ mod tests {
 	fn varint_write() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let mut buf = Vec::new();
-			let result = VarInt(case.0).write(&mut buf).unwrap();
+			let result = VarInt(case.0).mcp_write(&mut buf);
 			assert_eq!(result, case.1.len(), "{i}");
 			assert_eq!(buf, case.1, "{i}");
 		}

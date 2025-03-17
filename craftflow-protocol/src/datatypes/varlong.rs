@@ -1,4 +1,3 @@
-use super::read_byte;
 use crate::Error;
 use crate::Result;
 use crate::{MCPRead, MCPWrite};
@@ -26,7 +25,7 @@ impl VarLong {
 	}
 }
 
-impl MCPRead for VarLong {
+impl<'a> MCPRead<'a> for VarLong {
 	fn mcp_read(input: &mut &[u8]) -> Result<Self> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i64; // The VarInt being constructed
@@ -38,7 +37,7 @@ impl MCPRead for VarLong {
 			}
 
 			// Read a byte
-			let byte = read_byte(input)?;
+			let byte = u8::mcp_read(input)?;
 
 			// Extract the 7 lower bits (the data bits) and cast to i32
 			let value = (byte & 0b0111_1111) as i64;

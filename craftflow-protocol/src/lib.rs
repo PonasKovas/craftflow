@@ -16,6 +16,6 @@ pub trait MCPWrite {
 }
 
 /// The main trait that allows to read data in the **M**ine**c**raft **P**rotocol.
-pub trait MCPRead: Sized {
-	fn mcp_read(input: &mut &[u8]) -> Result<Self>;
+pub trait MCPRead<'a>: Sized {
+	fn mcp_read(input: &mut &'a [u8]) -> Result<Self>;
 }

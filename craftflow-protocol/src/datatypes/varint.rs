@@ -1,13 +1,12 @@
-use super::read_byte;
 use crate::Error;
 use crate::Result;
 use crate::{MCPRead, MCPWrite};
 
-/// A Minecraft Protocol VarLong
+/// A Minecraft Protocol VarInt
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct VarLong(pub i64);
+pub struct VarInt(pub i32);
 
-impl VarLong {
+impl VarInt {
 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
 	pub fn len(&self) -> usize {
 		let mut value = self.0;
@@ -15,7 +14,7 @@ impl VarLong {
 
 		loop {
 			len += 1;
-			value = ((value as u64) >> 7) as i64;
+			value = ((value as u32) >> 7) as i32;
 
 			if value == 0 {
 				break;
@@ -26,22 +25,22 @@ impl VarLong {
 	}
 }
 
-impl MCPRead for VarLong {
+impl<'a> MCPRead<'a> for VarInt {
 	fn mcp_read(input: &mut &[u8]) -> Result<Self> {
 		let mut num_read = 0; // Count of bytes that have been read
-		let mut result = 0i64; // The VarInt being constructed
+		let mut result = 0i32; // The VarInt being constructed
 
 		loop {
 			// VarInts are at most 5 bytes long.
-			if num_read == 10 {
-				return Err(Error::VarLongTooBig);
+			if num_read == 5 {
+				return Err(Error::VarIntTooBig);
 			}
 
 			// Read a byte
-			let byte = read_byte(input)?;
+			let byte = u8::mcp_read(input)?;
 
 			// Extract the 7 lower bits (the data bits) and cast to i32
-			let value = (byte & 0b0111_1111) as i64;
+			let value = (byte & 0b0111_1111) as i32;
 
 			// Shift the data bits to the correct position and add them to the result
 			result |= value << (7 * num_read);
@@ -58,7 +57,7 @@ impl MCPRead for VarLong {
 	}
 }
 
-impl MCPWrite for VarLong {
+impl MCPWrite for VarInt {
 	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
 		let mut i = 0;
 		let mut value = self.0;
@@ -68,7 +67,7 @@ impl MCPWrite for VarLong {
 			let mut temp = (value & 0b0111_1111) as u8;
 
 			// Shift the value 7 bits to the right.
-			value = ((value as u64) >> 7) as i64;
+			value = ((value as u32) >> 7) as i32;
 
 			// If there is more data to write, set the high bit
 			if value != 0 {
@@ -88,11 +87,40 @@ impl MCPWrite for VarLong {
 	}
 }
 
+impl TryFrom<i32> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
+		Ok(VarInt(value.try_into()?))
+	}
+}
+impl TryInto<i32> for VarInt {
+	type Error = std::convert::Infallible;
+
+	fn try_into(self) -> std::result::Result<i32, Self::Error> {
+		self.0.try_into()
+	}
+}
+impl TryFrom<usize> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_from(value: usize) -> std::result::Result<Self, Self::Error> {
+		Ok(VarInt(value.try_into()?))
+	}
+}
+impl TryInto<usize> for VarInt {
+	type Error = std::num::TryFromIntError;
+
+	fn try_into(self) -> std::result::Result<usize, Self::Error> {
+		self.0.try_into()
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
 
-	const TEST_CASES: &[(i64, &[u8])] = &[
+	const TEST_CASES: &[(i32, &[u8])] = &[
 		(0, &[0x00]),
 		(1, &[0x01]),
 		(2, &[0x02]),
@@ -102,42 +130,32 @@ mod tests {
 		(25565, &[0xDD, 0xC7, 0x01]),
 		(2097151, &[0xFF, 0xFF, 0x7F]),
 		(2147483647, &[0xFF, 0xFF, 0xFF, 0xFF, 0x07]),
-		(
-			9223372036854775807,
-			&[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F],
-		),
-		(
-			-1,
-			&[0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01],
-		),
-		(
-			-9223372036854775808,
-			&[0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x01],
-		),
+		(-1, &[0xFF, 0xFF, 0xFF, 0xFF, 0x0F]),
+		(-2147483648, &[0x80, 0x80, 0x80, 0x80, 0x08]),
 	];
 
 	#[test]
-	fn varlong_read() {
+	fn varint_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			let result = VarLong::mcp_read(&mut &case.1[..]).unwrap();
+			let result = VarInt::mcp_read(&mut &case.1[..]).unwrap();
 			assert_eq!(result.0, case.0, "{i}");
 		}
 	}
 
 	#[test]
-	fn varlong_write() {
+	fn varint_write() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let mut buf = Vec::new();
-			let result = VarLong(case.0).mcp_write(&mut buf);
+			let result = VarInt(case.0).mcp_write(&mut buf);
 			assert_eq!(result, case.1.len(), "{i}");
 			assert_eq!(buf, case.1, "{i}");
 		}
 	}
 
 	#[test]
-	fn varlong_len() {
+	fn varint_len() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			assert_eq!(VarLong(case.0).len(), case.1.len(), "{i}");
+			assert_eq!(VarInt(case.0).len(), case.1.len(), "{i}");
 		}
 	}
 }

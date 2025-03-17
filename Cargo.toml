@@ -4,12 +4,14 @@ members = [
 	"closureslop-macros",
 	"craftflow",
 	"craftflow-macros",
-	"craftflow-nbt", "craftflow-nbt-derive",
-	"craftflow-protocol-abstract",
-	"craftflow-protocol-core",
-	"craftflow-protocol-versions",
-	"example",
-	"modules/*",
+	"craftflow-nbt",
+	"craftflow-nbt-derive",
+	"craftflow-protocol",
+	# "craftflow-protocol-abstract",
+	# "craftflow-protocol-core",
+	# "craftflow-protocol-versions",
+	# "example",
+	# "modules/*",
 ]
 resolver = "2"
 
