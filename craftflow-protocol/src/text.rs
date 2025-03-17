@@ -1,3 +1,5 @@
+//! just keeping this around for now so its easier to find, not sure where to place it yet
+
 use serde::{Deserialize, Serialize};
 use shallowclone::{CoCowSlice, MakeOwned, ShallowClone};
 use std::{
