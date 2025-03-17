@@ -1,5 +1,5 @@
 use crate::{
-	NbtRead, NbtStr, NbtString, NbtWrite,
+	NbtRead, NbtWrite,
 	internal::{
 		InternalNbtRead, InternalNbtWrite,
 		read::{read_tag, read_value},
@@ -7,10 +7,12 @@ use crate::{
 	},
 	tag::Tag,
 };
-use std::{
-	collections::HashMap,
-	ops::{Deref, DerefMut},
-};
+use maxlen::{BStr, BString, encoding::MCesu8};
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
+
+pub type NbtString = BString<{ u16::MAX as usize }, MCesu8>;
+pub type NbtStr = BStr<{ u16::MAX as usize }, MCesu8>;
 
 /// NBT Compound type - essentially a map
 pub type NbtCompound = HashMap<NbtString, NbtValue>;

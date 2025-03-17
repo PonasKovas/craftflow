@@ -330,6 +330,7 @@ dependencies = [
  "craftflow-nbt-derive",
  "criterion",
  "hexdump",
+ "maxlen",
  "pprof",
  "rand 0.9.0",
  "serde",
@@ -923,6 +924,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8263075bb86c5a1b1427b5ae862e8889656f126e9f77c484496e8b47cf5c5558"
 dependencies = [
  "regex-automata 0.1.10",
+]
+
+[[package]]
+name = "maxlen"
+version = "0.1.1"
+dependencies = [
+ "maxlen-macro",
+ "thiserror",
+]
+
+[[package]]
+name = "maxlen-macro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a737c62b152c613fc52b7a2c0a7735dbb0034462d1db147d08b88ab045ccc77"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.92",
 ]
 
 [[package]]

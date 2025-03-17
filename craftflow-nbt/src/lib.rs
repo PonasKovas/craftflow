@@ -7,20 +7,20 @@
 #![cfg_attr(feature = "nightly", feature(portable_simd))]
 
 mod error;
-/// for derive macro
+/// exposed for macros
 #[doc(hidden)]
 pub mod internal;
-mod nbtstring;
 mod nbtvalue;
 mod tag;
 
-pub use craftflow_nbt_derive::{Nbt, nbtstr};
-pub use error::{Error, Result};
-pub use nbtstring::{NbtStr, NbtString};
-pub use nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue};
-pub use tag::Tag;
-
 use internal::{InternalNbtRead, InternalNbtWrite, read::read_tag, write::write_tag};
+
+pub use craftflow_nbt_derive::Nbt;
+pub use error::{Error, Result};
+pub use nbtvalue::{
+	NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtStr, NbtString, NbtValue,
+};
+pub use tag::Tag;
 
 /// The main trait that allows to write NBT data.
 pub trait NbtWrite {

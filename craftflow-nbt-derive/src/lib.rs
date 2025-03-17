@@ -2,43 +2,7 @@ use proc_macro::TokenStream;
 use proc_macro_error::{abort_call_site, proc_macro_error};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, FieldsNamed, GenericParam, LitStr, parse_macro_input};
-
-/// Creates a static `NbtStr`
-///
-/// ```
-/// const S: &'static NbtStr = nbtstr!("hello");
-/// ```
-#[proc_macro_error]
-#[proc_macro]
-pub fn nbtstr(input: TokenStream) -> TokenStream {
-	let input = parse_macro_input!(input as LitStr);
-
-	fn calc_mcesu8_len(s: &str) -> usize {
-		let mut extra = 0;
-		for c in s.chars() {
-			if c == '\u{0}' {
-				extra += 1; // NUL is represented as \xC0 \x80
-			}
-			if c > '\u{FFFF}' {
-				extra += 2; // each 4-byte UTF-8 sequence (BMP > U+FFFF) becomes 6 bytes in CESU-8 (2 extra bytes per character).
-			}
-		}
-
-		s.len() + extra
-	}
-
-	if calc_mcesu8_len(&input.value()) > u16::MAX as usize {
-		abort_call_site!("Length exceeded! Max length {}", u16::MAX);
-	}
-
-	quote! {
-		unsafe {
-			::craftflow_nbt::NbtStr::new_unchecked(#input)
-		}
-	}
-	.into()
-}
+use syn::{Data, DeriveInput, Fields, FieldsNamed, GenericParam, parse_macro_input};
 
 /// Derives the `NbtRead` and `NbtWrite` traits for your struct.
 ///

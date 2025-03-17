@@ -1,9 +1,8 @@
 use super::InternalNbtRead;
 use crate::{
-	Error, NbtString, Result, Tag,
+	Error, NbtByteArray, NbtCompound, NbtIntArray, NbtLongArray, NbtString, Result, Tag,
 	internal::swap_endian::swap_endian,
-	nbtstring,
-	nbtvalue::{NbtByteArray, NbtCompound, NbtIntArray, NbtList, NbtLongArray, NbtValue},
+	nbtvalue::{NbtList, NbtValue},
 };
 use std::{
 	collections::{HashMap, hash_map::Entry},
@@ -131,14 +130,14 @@ impl InternalNbtRead for NbtString {
 		if input.len() < size {
 			return Err(Error::NotEnoughData(size - input.len()));
 		}
-		if nbtstring::LIMIT < size {
+		if (u16::MAX as usize) < size {
 			return Err(Error::StringTooBig(size));
 		}
 
 		let decoded = simd_cesu8::decode_strict(&input[..size])?;
 		advance(input, size);
 
-		Ok(unsafe { NbtString::new_unchecked(decoded.into_owned()) }) // already checked that it doesnt exceed the limit
+		Ok(unsafe { NbtString::from_string_unchecked(decoded.into_owned()) }) // already checked that it doesnt exceed the limit
 	}
 }
 

@@ -11,6 +11,7 @@ craftflow-nbt-derive = { path = "../craftflow-nbt-derive/" }
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
 simd_cesu8 = { version = "1.0.1" }
+maxlen = { path = "../../maxlen/" }
 
 [dev-dependencies]
 hexdump = "0.1.2"
@@ -18,12 +19,12 @@ criterion = "0.5.1"
 rand = "0.9.0"
 pprof = { version = "0.14", features = ["flamegraph"] }
 
-[profile.bench]
-debug = true
-
 [features]
 serde = ["dep:serde"]
 nightly = ["simd_cesu8/nightly"]
+
+[profile.bench]
+debug = true
 
 [[bench]]
 name = "criterion"
