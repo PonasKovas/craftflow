@@ -1,7 +1,9 @@
-versions = [5, 7, 10]
+# AUTOMATICALLY GENERATED FROM PrismarineJS/minecraft-data
+# NOT TO BE EDITED MANUALLY. SEE generator/ INSTEAD
 
-[C2S]
-[C2S.Handshake]
-[C2S.Handshake.Handshake]
-"5" = { defined = true, packet_id = 123 }
-"133" = { reexport = 5 }
+versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 480, 490, 498, 573, 575, 578, 735, 736, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+
+[c2s.handshaking.set_protocol.5]
+# <packet id> = [<versions that use that packet id>]
+0 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+

@@ -6,8 +6,10 @@ from conf import C2S_PACKETS, S2C_PACKETS
 from gen_types import gen_types
 from llm_gen import llm_gen
 
+
 def snake_to_pascal(snake_str: str) -> str:
     return ''.join(word.capitalize() for word in snake_str.split('_'))
+
 
 def get_packet_spec(protocol, direction: str, state: str, packet: str):
     if state not in protocol:
@@ -22,6 +24,7 @@ def get_packet_spec(protocol, direction: str, state: str, packet: str):
 
     return protocol[state][d]["types"][packet]
 
+
 def get_packet_id(protocol, direction: str, state: str, packet: str):
     d = "toServer" if direction == "c2s" else "toClient"
 
@@ -30,6 +33,7 @@ def get_packet_id(protocol, direction: str, state: str, packet: str):
     for id, name in mappings.items():
         if name == packet:
             return int(id, 16)
+
 
 def generate_protocols_direction(all_protocols, direction: str):
     states = C2S_PACKETS if direction == "c2s" else S2C_PACKETS
@@ -54,9 +58,10 @@ def generate_protocols_direction(all_protocols, direction: str):
                 found = False
                 for v_list in identical_versions:
                     # each list must have at least one version
-                    spec2 = get_packet_spec(all_protocols[v_list[0]["version"]], direction, state, packet)
+                    spec2 = get_packet_spec(
+                        all_protocols[v_list[0]["version"]], direction, state, packet)
                     if spec == spec2:
-                        v_list.append({ "version": v, "packet_id": packet_id })
+                        v_list.append({"version": v, "packet_id": packet_id})
                         found = True
                         break
 
@@ -64,7 +69,8 @@ def generate_protocols_direction(all_protocols, direction: str):
                     continue
 
                 # no identical packet found - add a new list
-                identical_versions.append([{ "version": v, "packet_id": packet_id }])
+                identical_versions.append(
+                    [{"version": v, "packet_id": packet_id}])
 
             # now we can generate the groups of identical packets
             for group in identical_versions:
@@ -81,7 +87,8 @@ def generate_protocols_direction(all_protocols, direction: str):
                     # if this is the first version in the group, generate the packet
                     # otherwise just re-export
                     if i == 0:
-                        spec = get_packet_spec(all_protocols[v], direction, state, packet)
+                        spec = get_packet_spec(
+                            all_protocols[v], direction, state, packet)
 
                         name = snake_to_pascal(packet) + f"V{v:05}"
                         print(f"Generating {direction} -> {state} -> {packet} -> {v:05} with an LLM")
