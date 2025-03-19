@@ -8,6 +8,8 @@ pub fn generate(
 	state: &State,
 	all_packets: &HashMap<PacketName, HashMap<Version, HashMap<u32, Vec<u32>>>>,
 ) -> String {
+	let dir_enum = direction.enum_name();
+
 	let enum_name = state.enum_name();
 	let enum_variants = all_packets
 		.keys()
@@ -88,7 +90,11 @@ pub fn generate(
 			}}
 		}}
 
-		
+		impl From<{enum_name}> for crate::{dir_enum} {{
+			fn from(value: {enum_name}) -> Self {{
+				Self::{enum_name}(value)
+			}}
+		}}
 		"#,
 	)
 }

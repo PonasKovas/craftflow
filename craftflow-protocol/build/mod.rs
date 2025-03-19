@@ -1,5 +1,5 @@
 use shared::{out_dir, package_dir};
-use std::{collections::HashMap, env, fs, process::Command};
+use std::{env, fs, process::Command};
 
 mod gen_enum;
 mod generate;
@@ -54,6 +54,8 @@ fn main() {
 
 			direction_code += &format!("pub mod {} {{ {state_code} }}", state.mod_name());
 		}
+		code += &generate::direction_enum(direction, &all_states.keys().collect::<Vec<_>>());
+
 		code += &format!("pub mod {} {{ {direction_code} }}", direction.mod_name());
 	}
 

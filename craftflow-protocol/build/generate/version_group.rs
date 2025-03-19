@@ -16,6 +16,7 @@ pub fn generate(
 	let dir_enum = direction.enum_name();
 	let state_enum = state.enum_name();
 	let packet_enum = packet.enum_name();
+
 	let struct_name = packet.struct_name(version_group);
 
 	let all_supported_versions: String = packet_ids
@@ -80,6 +81,11 @@ pub fn generate(
 		impl From<{struct_name}> for crate::{direction}::{state_enum} {{
 			fn from(value: {struct_name}) -> Self {{
 				Self::{packet_enum}(value.into())
+			}}
+		}}
+		impl From<{struct_name}> for crate::{dir_enum} {{
+			fn from(value: {struct_name}) -> Self {{
+				Self::{state_enum}(crate::{direction}::{state_enum}::{packet_enum}(value.into()))
 			}}
 		}}
 		"#,

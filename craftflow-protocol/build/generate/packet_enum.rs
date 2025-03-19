@@ -12,8 +12,9 @@ pub fn generate(
 	packet: &PacketName,
 	version_groups: &HashMap<Version, HashMap<u32, Vec<u32>>>,
 ) -> String {
-	let dir_enum = direction.mod_name();
+	let dir_enum = direction.enum_name();
 	let state_enum = state.enum_name();
+
 	let enum_name = packet.enum_name();
 	let enum_variants = version_groups
 		.keys()
@@ -96,6 +97,11 @@ pub fn generate(
 		impl From<{enum_name}> for crate::{direction}::{state_enum} {{
 			fn from(value: {enum_name}) -> Self {{
 				Self::{enum_name}(value)
+			}}
+		}}
+		impl From<{enum_name}> for crate::{dir_enum} {{
+			fn from(value: {enum_name}) -> Self {{
+				Self::{state_enum}(value.into())
 			}}
 		}}
 		"#,
