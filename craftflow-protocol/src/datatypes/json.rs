@@ -6,7 +6,7 @@ use std::{
 };
 
 #[derive(Debug, Clone, PartialEq, Hash, PartialOrd, Ord, Eq)]
-pub struct Json<T> {
+pub struct Json<T = serde_json::Value> {
 	pub inner: T,
 }
 

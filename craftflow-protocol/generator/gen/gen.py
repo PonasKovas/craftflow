@@ -3,15 +3,19 @@ from tomlkit import table, inline_table, dumps
 import tomlkit
 import subprocess
 from pathlib import Path
-
+from colorama import init, Fore, Style
 
 from .parse_protocol import get_packet_id, get_packet_spec, has_packet
-from .llm import llm_gen_packet_impl
 
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
 
 
-def gen(toml, protocols: Dict[int, any], packets_impl_path: Path, direction: str, state: str, packet: str):
+def gen(args, toml, protocols: Dict[int, any], packets_impl_path: Path, direction: str, state: str, packet: str):
+    # only load llm module if gen_llm flag passed
+    # because otherwise OpenAI requires an API key
+    if args.gen_llm:
+        from .llm import llm_gen_packet_impl
+
     # find all versions that have an identical packet
     # format:
     # [
@@ -67,6 +71,10 @@ def gen(toml, protocols: Dict[int, any], packets_impl_path: Path, direction: str
         packet_impl_path = packets_impl_path / direction / state / packet
         impl_path = packet_impl_path / f"v{first_version}.rs"
         if not impl_path.exists():
+            if not args.gen_llm:
+                print(Fore.YELLOW + f"Not generating {impl_path} using an LLM. Use --gen_llm flag to generate")
+                continue
+
             packet_impl_path.mkdir(parents=True, exist_ok=True)
 
             spec = get_packet_spec(

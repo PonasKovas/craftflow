@@ -52,14 +52,14 @@ impl<LEN, T, const MAX: usize> From<BVec<T, MAX>> for Array<T, MAX, LEN> {
 impl<'a, T, LEN, const MAX: usize> MCPRead<'a> for Array<T, MAX, LEN>
 where
 	T: MCPRead<'a>,
-	LEN: MCPRead<'a> + TryInto<usize> + Into<i64> + Copy,
+	LEN: MCPRead<'a> + TryInto<usize> + Into<i128> + Copy,
 {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
 		let len = LEN::mcp_read(input)?;
-		let len_i64 = len.into();
+		let len_i128 = len.into();
 		let len: usize = len
 			.try_into()
-			.map_err(|_| Error::InvalidArrayLength(len_i64))?;
+			.map_err(|_| Error::InvalidArrayLength(len_i128))?;
 
 		let mut data = Vec::new();
 		for _ in 0..len {

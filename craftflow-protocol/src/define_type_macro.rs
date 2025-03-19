@@ -1,6 +1,6 @@
 /// Automatically implements MCPRead, MCPWrite traits
 /// Requires that all fields implement MCPRead, MCPWrite
-macro_rules! define_type {
+macro_rules! mcp {
 	(
         $(#[$attr:meta])*
         pub struct $name:ident {

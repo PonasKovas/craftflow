@@ -5,16 +5,21 @@
 # Running this script will generate any packets or versions that are not found already generated in the project
 
 from colorama import init, Fore, Style
-
 from conf import *
 from find_all_versions import find_all_versions
 from load_protocols import load_protocols
 from gen import gen
 from tomlkit import table, inline_table, dumps, document
 import tomlkit
+import argparse
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gen_llm', action='store_true',
+                        help='Generates missing packet implementations using an LLM')
+    args = parser.parse_args()
+
     versions = find_all_versions()
 
     # for debugging purposes
@@ -55,7 +60,7 @@ def main():
             for packet in packets:
                 packet_table = table(True)
                 state_table.add(packet, packet_table)
-                gen(packet_table, protocols, PACKETS_IMPL_PATH,
+                gen(args, packet_table, protocols, PACKETS_IMPL_PATH,
                     direction, state, packet)
 
     # write the packets.toml

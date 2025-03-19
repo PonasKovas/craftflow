@@ -87,20 +87,47 @@ impl MCPWrite for VarInt {
 	}
 }
 
-impl TryFrom<i32> for VarInt {
-	type Error = std::num::TryFromIntError;
-
-	fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
-		Ok(VarInt(value.try_into()?))
+impl From<VarInt> for i128 {
+	fn from(value: VarInt) -> Self {
+		value.0 as i128
 	}
 }
-impl TryInto<i32> for VarInt {
-	type Error = std::convert::Infallible;
-
-	fn try_into(self) -> std::result::Result<i32, Self::Error> {
-		self.0.try_into()
+impl From<VarInt> for i64 {
+	fn from(value: VarInt) -> Self {
+		value.0 as i64
 	}
 }
+impl From<VarInt> for i32 {
+	fn from(value: VarInt) -> Self {
+		value.0 as i32
+	}
+}
+impl From<i32> for VarInt {
+	fn from(value: i32) -> Self {
+		Self(value)
+	}
+}
+impl From<i16> for VarInt {
+	fn from(value: i16) -> Self {
+		Self(value as i32)
+	}
+}
+impl From<u16> for VarInt {
+	fn from(value: u16) -> Self {
+		Self(value as i32)
+	}
+}
+impl From<i8> for VarInt {
+	fn from(value: i8) -> Self {
+		Self(value as i32)
+	}
+}
+impl From<u8> for VarInt {
+	fn from(value: u8) -> Self {
+		Self(value as i32)
+	}
+}
+
 impl TryFrom<usize> for VarInt {
 	type Error = std::num::TryFromIntError;
 
@@ -108,11 +135,11 @@ impl TryFrom<usize> for VarInt {
 		Ok(VarInt(value.try_into()?))
 	}
 }
-impl TryInto<usize> for VarInt {
+impl TryFrom<VarInt> for usize {
 	type Error = std::num::TryFromIntError;
 
-	fn try_into(self) -> std::result::Result<usize, Self::Error> {
-		self.0.try_into()
+	fn try_from(value: VarInt) -> std::result::Result<Self, Self::Error> {
+		value.0.try_into()
 	}
 }
 

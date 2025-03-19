@@ -51,14 +51,14 @@ impl<LEN, const MAX: usize> From<BVec<u8, MAX>> for Buffer<MAX, LEN> {
 
 impl<'a, LEN, const MAX: usize> MCPRead<'a> for Buffer<MAX, LEN>
 where
-	LEN: MCPRead<'a> + TryInto<usize> + Into<i64> + Copy,
+	LEN: MCPRead<'a> + TryInto<usize> + Into<i128> + Copy,
 {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
 		let len = LEN::mcp_read(input)?;
-		let len_i64 = len.into();
+		let len_i128 = len.into();
 		let len: usize = len
 			.try_into()
-			.map_err(|_| Error::InvalidArrayLength(len_i64))?;
+			.map_err(|_| Error::InvalidArrayLength(len_i128))?;
 
 		if input.len() < len {
 			return Err(Error::NotEnoughData(len - input.len()));

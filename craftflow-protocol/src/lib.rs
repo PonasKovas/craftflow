@@ -7,6 +7,7 @@
 
 pub mod datatypes;
 mod error;
+mod generator;
 
 pub use error::{Error, Result};
 
@@ -50,5 +51,3 @@ pub trait IntoDirectionEnum {
 
 	fn into_state_enum(self) -> Self::Direction;
 }
-
-include! {"define_type_macro.rs"}
