@@ -1,18 +1,20 @@
 import json
 from openai import OpenAI
+from pathlib import Path
 
 openai_client = OpenAI()
 MODEL = "gpt-4o"
 
 
 def llm_gen_packet_impl(packet: str, version: int, spec) -> str:
-    with open('prompt.py', 'r') as file:
+    p = Path(__file__).parent
+    with open(p / "prompt.py", 'r') as file:
         prompt = file.read()
 
     example_name = "EntityInformationV18"
-    with open('example_spec.json', 'r') as file:
+    with open(p / 'example_spec.json', 'r') as file:
         example_spec = json.dumps(json.load(file), separators=(',', ':'))
-    with open('example_code.rs', 'r') as file:
+    with open(p / 'example_code.rs', 'r') as file:
         example_code = file.read()
 
     packet_name = f"{snake_to_pascal_case(packet)}V{version}"
@@ -41,7 +43,7 @@ def llm_gen_packet_impl(packet: str, version: int, spec) -> str:
     commented_spec = "\n".join(
         "// " + line for line in spec_pretty.splitlines())
 
-    return name, f"""{commented_spec}
+    return f"""{commented_spec}
 
 
     {code}
