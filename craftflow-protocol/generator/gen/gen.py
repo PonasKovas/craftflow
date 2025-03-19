@@ -84,3 +84,5 @@ def gen(args, toml, protocols: Dict[int, any], packets_impl_path: Path, directio
             with open(impl_path, "w") as f:
                 f.write(code)
             subprocess.run(f"rustfmt --edition 2024 {impl_path}", shell=True, check=True)
+
+            print(Fore.MAGENTA + f"Generated {impl_path} using an LLM.")

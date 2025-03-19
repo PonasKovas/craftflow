@@ -22,6 +22,7 @@ tokio = { version = "1.40.0", features = ["full"] }
 tracing = "0.1.40"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+toml = "0.8.20"
 aes = "0.8.4"
 cfb8 = "0.8.1"
 flate2 = "1.0.33"

@@ -26,4 +26,12 @@ pub enum Error {
 	InvalidNbt(#[from] craftflow_nbt::Error),
 	#[error("invalid enum tag {tag} in {enum_name}")]
 	InvalidEnumTag { tag: i64, enum_name: &'static str },
+	#[error("wrong packet id {found}, expected {expected}")]
+	WrongPacketId { found: u32, expected: u32 },
+	#[error("unwknown packet id {id}, state {state}")]
+	UnknownPacketId {
+		id: u32,
+		protocol_version: u32,
+		state: &'static str,
+	},
 }

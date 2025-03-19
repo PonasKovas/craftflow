@@ -9,3 +9,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 maxlen = { path = "../../maxlen/" }
+
+[build-dependencies]
+toml = { workspace = true }
+serde = { workspace = true }
