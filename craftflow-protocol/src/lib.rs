@@ -7,8 +7,10 @@
 
 pub mod datatypes;
 mod error;
+mod packet_eat;
 
 pub use error::{Error, Result};
+pub use packet_eat::PacketEat;
 
 /// Trait for writing a packet
 pub trait PacketWrite {

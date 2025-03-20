@@ -22,7 +22,7 @@ pub fn generate(
 			}
 		})
 		.collect::<Vec<_>>();
-	let enum_code = gen_enum(&enum_name, &enum_variants);
+	let enum_code = gen_enum(&enum_name, &enum_variants, true);
 
 	let all_supported_versions = all_packets
 		.values()

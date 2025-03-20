@@ -5,7 +5,7 @@ pub struct Variant {
 	pub value: String,
 }
 
-pub fn gen_enum(name: &str, variants: &[Variant]) -> String {
+pub fn gen_enum(name: &str, variants: &[Variant], default_derives: bool) -> String {
 	let mut variants_code = String::new();
 
 	for variant in variants {
@@ -18,10 +18,15 @@ pub fn gen_enum(name: &str, variants: &[Variant]) -> String {
 
 	format!(
 		r#"
-	{DEFAULT_ENUM_DERIVES}
+	{derives}
 	pub enum {name} {{
         {variants_code}
     }}
-	"#
+	"#,
+		derives = if default_derives {
+			DEFAULT_ENUM_DERIVES
+		} else {
+			""
+		}
 	)
 }

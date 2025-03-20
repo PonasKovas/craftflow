@@ -22,8 +22,6 @@ fn main() {
 	// Generate packets and their enums
 	code += &generate::packets(&pkts_toml);
 
-	code += &generate::packet_builders(&pkts_toml);
-
 	// disabled_versions!() macro
 	code += &generate::disabled_versions_macro(&pkts_toml);
 

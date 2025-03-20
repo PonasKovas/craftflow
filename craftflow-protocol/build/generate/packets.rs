@@ -1,6 +1,7 @@
 use crate::{PACKETS_DIR, packets_toml::PacketsToml, shared::package_dir};
 
 mod direction_enum;
+mod packet_builder;
 mod packet_enum;
 mod state_enum;
 mod version_group;
@@ -37,6 +38,9 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 					);
 				}
 				state_code += &packet_enum::generate(direction, state, packet, all_version_groups);
+
+				state_code +=
+					&packet_builder::generate(direction, state, packet, all_version_groups);
 
 				state_code += &format!("pub mod {} {{ {packet_code} }}", packet.mod_name());
 			}

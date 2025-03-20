@@ -16,7 +16,7 @@ pub fn generate(direction: Direction, all_states: &[&State]) -> String {
 			}
 		})
 		.collect::<Vec<_>>();
-	let enum_code = gen_enum(&enum_name, &enum_variants);
+	let enum_code = gen_enum(&enum_name, &enum_variants, true);
 
 	let write_match_arms: String = all_states
 		.iter()

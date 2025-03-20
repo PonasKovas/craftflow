@@ -26,13 +26,15 @@ pub fn generate(
 				value: pkt_path,
 			}
 		})
-		// add an extra dochidden variant to encourage users to use the macro to match disabled versions
+		// add an extra dochidden variant to encourage users to use the disabled_versions!() macro
+		// (also it stops the unreachable pattern warning, since the pattern will always match this variant)
+		// (and the macro cant add an attribute to disable the warning otherwise, bcs of how macros work)
 		.chain([Variant {
 			name: "#[allow(non_camel_case_types)] #[doc(hidden)] _hidden".to_string(),
 			value: "".to_string(),
 		}])
 		.collect::<Vec<_>>();
-	let enum_code = gen_enum(&enum_name, &enum_variants);
+	let enum_code = gen_enum(&enum_name, &enum_variants, true);
 
 	let all_supported_versions = version_groups
 		.values()
