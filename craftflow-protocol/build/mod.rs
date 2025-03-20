@@ -22,7 +22,10 @@ fn main() {
 	// Generate packets and their enums
 	code += &generate::packets(&pkts_toml);
 
-	// Generate
+	code += &generate::packet_builders(&pkts_toml);
+
+	// disabled_versions!() macro
+	code += &generate::disabled_versions_macro(&pkts_toml);
 
 	// also include the prompt example test to be compiled the same way a normal packet impl would be to make sure
 	// its not outdated or anything - we dont want to confuse the LLM for no reason.

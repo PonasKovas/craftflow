@@ -26,13 +26,17 @@ pub fn generate(
 				value: pkt_path,
 			}
 		})
+		// add an extra dochidden variant to encourage users to use the macro to match disabled versions
+		.chain([Variant {
+			name: "#[allow(non_camel_case_types)] #[doc(hidden)] _hidden".to_string(),
+			value: "".to_string(),
+		}])
 		.collect::<Vec<_>>();
 	let enum_code = gen_enum(&enum_name, &enum_variants);
 
 	let all_supported_versions = version_groups
 		.values()
-		.map(|pkt_ids| pkt_ids.values().flatten())
-		.flatten()
+		.flat_map(|pkt_ids| pkt_ids.values().flatten())
 		.map(ToString::to_string)
 		.collect::<Vec<_>>();
 	let all_supported_versions_list: String = all_supported_versions.join(", ");
@@ -75,6 +79,7 @@ pub fn generate(
 			fn packet_write(&self, output: &mut Vec<u8>, protocol_version: u32) -> usize {{
 				match self {{
 					{write_match_arms}
+					Self::_hidden(..) => unreachable!(),
 				}}
 			}}
 		}}

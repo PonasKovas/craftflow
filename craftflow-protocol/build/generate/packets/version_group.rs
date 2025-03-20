@@ -22,8 +22,7 @@ pub fn generate(
 
 	let all_supported_versions: String = packet_ids
 		.iter()
-		.map(|(_, versions)| versions)
-		.flatten()
+		.flat_map(|(_, versions)| versions)
 		.map(ToString::to_string)
 		.collect::<Vec<_>>()
 		.join(", ");

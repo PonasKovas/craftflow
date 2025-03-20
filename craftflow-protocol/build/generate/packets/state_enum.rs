@@ -26,9 +26,7 @@ pub fn generate(
 
 	let all_supported_versions = all_packets
 		.values()
-		.map(|version_groups| version_groups.values().map(|pkt_ids| pkt_ids.values()))
-		.flatten()
-		.flatten()
+		.flat_map(|version_groups| version_groups.values().flat_map(|pkt_ids| pkt_ids.values()))
 		.flatten()
 		.map(ToString::to_string)
 		.collect::<Vec<_>>();
