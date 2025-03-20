@@ -1,14 +1,11 @@
 use crate::{
-	DEFAULT_IMPORTS_FOR_IMPLS,
 	gen_enum::{Variant, gen_enum},
-	packets_toml::{Direction, PacketName, State, Version},
+	packets_toml::{PacketName, Version},
 	shared::versions_pattern,
 };
 use std::collections::HashMap;
 
 pub fn generate(
-	direction: Direction,
-	state: &State,
 	packet: &PacketName,
 	version_groups: &HashMap<Version, HashMap<u32, Vec<u32>>>,
 ) -> String {

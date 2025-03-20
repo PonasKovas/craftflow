@@ -11,8 +11,8 @@ const PROMPT_CODE_EXAMPLE_PATH: &str = "generator/gen/example_code.rs";
 const PACKETS_DIR: &str = "packets/";
 const GENERATED_CODE_PATH: &str = "generated.rs";
 const DEFAULT_ENUM_DERIVES: &str = "#[derive(Debug, PartialEq, Clone)]";
-const DEFAULT_IMPORTS_FOR_IMPLS: &str = "use crate::datatypes::*;
-use crate::{Error, MCPRead, MCPWrite, Result};";
+const DEFAULT_IMPORTS_FOR_IMPLS: &str = "#[allow(unused_imports)] use crate::datatypes::*;
+#[allow(unused_imports)] use crate::{Error, MCPRead, MCPWrite, Result};";
 
 fn main() {
 	let pkts_toml = packets_toml::load();

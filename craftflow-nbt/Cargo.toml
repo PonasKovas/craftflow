@@ -23,9 +23,6 @@ pprof = { version = "0.14", features = ["flamegraph"] }
 serde = ["dep:serde"]
 nightly = ["simd_cesu8/nightly"]
 
-[profile.bench]
-debug = true
-
 [[bench]]
 name = "criterion"
 harness = false
