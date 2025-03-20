@@ -29,13 +29,14 @@ pub fn generate(
 		.collect::<Vec<_>>();
 	let enum_code = gen_enum(&enum_name, &enum_variants);
 
-	let all_supported_versions: String = version_groups
+	let all_supported_versions = version_groups
 		.values()
 		.map(|pkt_ids| pkt_ids.values().flatten())
 		.flatten()
 		.map(ToString::to_string)
-		.collect::<Vec<_>>()
-		.join(", ");
+		.collect::<Vec<_>>();
+	let all_supported_versions_list: String = all_supported_versions.join(", ");
+	let all_supported_versions_pattern: String = all_supported_versions.join("|");
 
 	let write_match_arms: String = version_groups
 		.keys()
@@ -49,9 +50,6 @@ pub fn generate(
 	let read_match_arms: String = version_groups
 		.iter()
 		.map(|(&group_id, packet_ids)| {
-			let all_group_versions =
-				versions_pattern(&packet_ids.values().flatten().copied().collect::<Vec<_>>());
-
 			let inner_arms: String = packet_ids
 				.iter()
 				.map(|(&packet_id, versions)| {
@@ -64,10 +62,7 @@ pub fn generate(
 				})
 				.collect();
 
-			format!(r#"{all_group_versions} => match (packet_id, protocol_version) {{
-				{inner_arms}
-				(other, _) => return Err(Error::UnknownPacketId{{ id: other, protocol_version, state: "{direction}->{state}->{packet}" }}),
-			}},"#)
+			inner_arms
 		})
 		.collect();
 
@@ -84,10 +79,13 @@ pub fn generate(
 		}}
 		impl<'a> crate::PacketRead<'a> for {enum_name} {{
 			fn packet_read(input: &mut &'a [u8], protocol_version: u32) -> Result<Self> {{
+				if !matches!(protocol_version, {all_supported_versions_pattern}) {{
+					panic!("{enum_name} cannot be read in {{protocol_version}} protocol version. Supported versions: {all_supported_versions_list}");
+				}}
 				let packet_id = <crate::datatypes::VarInt as crate::MCPRead>::mcp_read(input)?.0 as u32;
-				let packet = match protocol_version {{
+				let packet = match (packet_id, protocol_version) {{
 					{read_match_arms}
-					other => panic!("{enum_name} cannot be read in {{other}} protocol version. Supported versions: {all_supported_versions}"),
+					(_, other) => return Err(Error::UnknownPacketId{{ id: other, protocol_version, state: "{direction}->{state}->{packet}" }}),
 				}};
 
 				Ok(packet)
