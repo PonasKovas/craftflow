@@ -89,6 +89,8 @@ def main():
         with open(CARGO_TOML_PATH, "w") as f:
             f.writelines(cargo_toml_lines)
 
+        print(Fore.MAGENTA + "Cargo.toml features generated!")
+
     print(Fore.GREEN + Style.BRIGHT + "Done")
 
 

@@ -18,6 +18,7 @@ pub fn generate(
 	let packet_enum = packet.enum_name();
 
 	let struct_name = packet.struct_name(version_group);
+	let variant_name = version_group.variant_name();
 
 	let all_supported_versions: String = packet_ids
 		.iter()
@@ -75,7 +76,7 @@ pub fn generate(
 
 		impl From<{struct_name}> for crate::{direction}::{state}::{packet_enum} {{
 			fn from(value: {struct_name}) -> Self {{
-				Self::{struct_name}(value)
+				Self::{variant_name}(value)
 			}}
 		}}
 		impl From<{struct_name}> for crate::{direction}::{state_enum} {{

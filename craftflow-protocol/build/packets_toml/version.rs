@@ -7,6 +7,9 @@ impl Version {
 	pub fn mod_name(&self) -> String {
 		format!("v{}", self.0)
 	}
+	pub fn variant_name(&self) -> String {
+		format!("V{}", self.0)
+	}
 }
 
 impl Display for Version {
