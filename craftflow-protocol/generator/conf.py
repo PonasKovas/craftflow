@@ -1,6 +1,9 @@
 from pathlib import Path
 
 PACKETS_TOML_PATH = Path("../packets.toml")
+CARGO_TOML_PATH = Path("../Cargo.toml")
+CARGO_TOML_START_MARKER = "# START AUTO FEATURES SECTOR #"
+CARGO_TOML_END_MARKER = "# END AUTO FEATURES SECTOR #"
 PACKETS_IMPL_PATH = Path("../packets/")
 CACHE_DIR = Path(".cache/")
 REPOSITORY = "https://github.com/PrismarineJS/minecraft-data.git"

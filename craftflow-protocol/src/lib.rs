@@ -30,7 +30,7 @@ trait MCPRead<'a>: Sized {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self>;
 }
 
-// this macro is used internally to define structures
+// this macro is used in the generated code to define structures
 include! {"mcp_macro.rs"}
 
 // The generated code by build.rs

@@ -67,6 +67,28 @@ def main():
     with open(PACKETS_TOML_PATH, "w") as f:
         f.write(dumps(packets_toml))
 
+    # also add a feature for each supported version to the Cargo.toml
+    with open(CARGO_TOML_PATH, "r") as f:
+        cargo_toml_lines = f.readlines()
+
+    marker_start_pos = None
+    marker_end_pos = None
+    for i, line in enumerate(cargo_toml_lines):
+        if CARGO_TOML_START_MARKER in line and marker_start_pos is None:
+            marker_start_pos = i
+        elif CARGO_TOML_END_MARKER in line and marker_end_pos is None:
+            marker_end_pos = i
+
+    if marker_start_pos is None or marker_end_pos is None:
+        print(Fore.RED + Style.BRIGHT +
+              "Cargo.toml markers for autogenerating features not found!")
+    else:
+        cargo_toml_lines[marker_start_pos+1:marker_end_pos] = [f"no-v{v} = []\n" for v in versions.keys()]
+
+        # Write back the modified TOML
+        with open(CARGO_TOML_PATH, "w") as f:
+            f.writelines(cargo_toml_lines)
+
     print(Fore.GREEN + Style.BRIGHT + "Done")
 
 
