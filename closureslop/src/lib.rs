@@ -3,10 +3,49 @@
 //! This library provides a simple, type-safe, and asynchronous callback system, allowing you
 //! to create events, register multiple handlers for them and trigger them.
 //!
-//! # Usage example
+//! # Usage
+//!
+//! ## Using attribute macros (convenient)
 //!
 //! ```
-//! use closureslop::{Event, Reactor, init, reg, callback, add_callback};
+//! # use closureslop::{Event, Reactor, init, reg, callback};
+//! # use std::ops::ControlFlow;
+//!
+//! struct MyEvent;
+//! impl Event for MyEvent {
+//! 	type Args<'a> = String;
+//! 	type Return = u32;
+//! }
+//!
+//! // "Collects" the #[callback] macros
+//! init!(ctx: &'static str);
+//!
+//! #[callback(event: MyEvent)]
+//! async fn my_callback(ctx: &&'static str, args: &mut String) -> ControlFlow<u32> {
+//! 	println!("Callback called with context: {} and args: {}", ctx, args);
+//! 	args.push_str(" world!");
+//! 	ControlFlow::Continue(())
+//! }
+//!
+//! # #[pollster::main]
+//! async fn main() {
+//! 	let mut reactor: Reactor<&'static str> = Reactor::new();
+//! 	// register all collected callbacks (by init! and #[callback]) to this reactor instance
+//! 	reg!(to: reactor);
+//!
+//! 	let ctx = "this will be available read-only to all callbacks in this reactor";
+//! 	let mut args = String::from("hello");
+//!
+//! 	let result = reactor.trigger::<MyEvent>(&ctx, &mut args).await;
+//! 	assert_eq!(result, ControlFlow::Continue(()));
+//! 	assert_eq!(args, "hello world!");
+//! }
+//! ```
+//!
+//! ## Manually
+//!
+//! ```
+//! use closureslop::{Event, Reactor, add_callback};
 //! use std::ops::ControlFlow;
 //! use smallbox::SmallBox;
 //!
@@ -16,31 +55,22 @@
 //! 	type Return = u32;
 //! }
 //!
-//! init!(ctx: &'static str);
-//!
-//! #[callback(event: MyEvent)]
-//! async fn my_callback(ctx: &&'static str, args: &mut String) -> ControlFlow<u32> {
-//! 	println!("Callback called with context: {} and args: {}", ctx, args);
-//! 	args.push_str("hello world!");
-//! 	ControlFlow::Continue(())
-//! }
-//!
 //! # #[pollster::main]
 //! async fn main() {
 //! 	let mut reactor: Reactor<&'static str> = Reactor::new();
-//! 	reg!(to: reactor);
 //!
 //! 	add_callback!(reactor, MyEvent => "another_callback" => |ctx, arg| SmallBox::new(async move {
-//! 		println!("This callback will always run after `my_callback`");
+//! 		println!("manually added callback, not as convenient but more powerful");
+//!			args.push_str(" world!");
 //! 		ControlFlow::Break(7)
-//! 	}), after: "closureslop:my_callback");
+//! 	}));
 //!
 //! 	let ctx = "this will be available read-only to all callbacks in this reactor";
-//! 	let mut args = String::from("hello, ");
+//! 	let mut args = String::from("hello");
 //!
 //! 	let result = reactor.trigger::<MyEvent>(&ctx, &mut args).await;
 //! 	assert_eq!(result, ControlFlow::Break(7));
-//! 	assert_eq!(args, "hello, hello world!");
+//! 	assert_eq!(args, "hello world!");
 //! }
 //! ```
 

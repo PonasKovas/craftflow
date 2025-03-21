@@ -2,13 +2,11 @@
 members = [
 	"closureslop",
 	"closureslop-macros",
-	# "craftflow",
-	# "craftflow-macros",
+	"craftflow",
+	"craftflow-macros",
 	"craftflow-nbt",
 	"craftflow-nbt-derive",
 	"craftflow-protocol",
-	# "craftflow-protocol-abstract",
-	# "craftflow-protocol-versions",
 	# "example",
 	# "modules/*",
 ]
