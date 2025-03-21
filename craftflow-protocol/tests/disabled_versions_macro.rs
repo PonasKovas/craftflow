@@ -8,7 +8,7 @@ fn disabled_features_macro() {
 	let builder = SetProtocolBuilder::new(769);
 
 	let built = match builder {
-		SetProtocolBuilder::V5(p) => p.feed(SetProtocolV5 {
+		SetProtocolBuilder::V5(p) => p(SetProtocolV5 {
 			protocol_version: 769,
 			server_host: format!("127.0.0.1"),
 			server_port: 25565,

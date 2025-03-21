@@ -54,15 +54,18 @@ macro_rules! mcp {
 
 macro_rules! _mcp_field_type {
     (VarInt) => { i32 };
+    (VarLong) => { i64 };
     ($other:ty) => { $other };
 }
 
 macro_rules! _mcp_read_field {
     ($input:expr, VarInt) => {{ let varint = VarInt::mcp_read($input)?; varint.0 }};
+    ($input:expr, VarLong) => {{ let varlong = VarLong::mcp_read($input)?; varlong.0 }};
     ($input:expr, $other:ty) => { <$other as MCPRead>::mcp_read($input)? };
 }
 
 macro_rules! _mcp_write_field {
     ($output:expr, $field:expr, VarInt) => { VarInt($field).mcp_write($output) };
+    ($output:expr, $field:expr, VarLong) => { VarLong($field).mcp_write($output) };
     ($output:expr, $field:expr, $other:ty) => { <$other as MCPWrite>::mcp_write(&$field, $output) };
 }

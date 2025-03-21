@@ -16,7 +16,8 @@ pub fn generate(
 		.map(|&v| {
 			let name = v.variant_name();
 			let version = packet.struct_name(v);
-			let value = format!("crate::PacketEat<{packet}::{v}::{version}, {packet_enum_name}>");
+			// let value = format!("crate::PacketEat<{packet}::{v}::{version}, {packet_enum_name}>");
+			let value = format!("fn({packet}::{v}::{version}) -> {packet_enum_name}");
 
 			Variant { name, value }
 		})
@@ -32,7 +33,7 @@ pub fn generate(
 
 	let version_match_arms: String = version_groups
 		.iter()
-		.map(|(group_id, packet_ids)| {
+		.map(|(&group_id, packet_ids)| {
 			let pattern = versions_pattern(
 				packet_ids
 					.values()
@@ -42,8 +43,16 @@ pub fn generate(
 					.as_slice(),
 			);
 			let variant = group_id.variant_name();
+			let version_struct = packet.struct_name(group_id);
 
-			format!("{pattern} => Self::{variant}(crate::PacketEat::new()),")
+			format!(
+				"{pattern} => Self::{variant}({{
+				fn _packet_eater(p: {packet}::{group_id}::{version_struct}) -> {packet_enum_name} {{
+					p.into()
+				}}
+				_packet_eater
+			}}),"
+			)
 		})
 		.collect();
 
