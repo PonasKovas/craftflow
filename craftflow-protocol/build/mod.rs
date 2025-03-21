@@ -15,6 +15,9 @@ const DEFAULT_IMPORTS_FOR_IMPLS: &str = "#[allow(unused_imports)] use crate::dat
 #[allow(unused_imports)] use crate::{Error, MCPRead, MCPWrite, Result};";
 
 fn main() {
+	println!("cargo:rerun-if-changed=packets.toml");
+	println!("cargo:rerun-if-changed=packets/");
+
 	let pkts_toml = packets_toml::load();
 
 	let mut code = String::new();

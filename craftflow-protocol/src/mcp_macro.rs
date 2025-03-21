@@ -6,7 +6,12 @@ macro_rules! mcp {
         pub struct $name:ident {
             $(
                 $(#[$field_attr:meta])*
-                pub $field_name:ident: $field_type:ty
+                // because of macro hygiene slop we cant just match a `ty` here because then we cant replace VarInts with i32s etc
+                // so we have to do this hack
+                // basically shitty pretend `ty`
+                //
+                // pub $field_name:ident: $field_type:ty
+                pub $field_name:ident: $field_type:ident $(<$($field_type_generics:tt),*>)?
             ),* $(,)?
         }
     ) => {
@@ -14,14 +19,14 @@ macro_rules! mcp {
         pub struct $name {
             $(
             $(#[$field_attr])*
-            pub $field_name: $field_type,
+            pub $field_name: _mcp_field_type!($field_type $(<$($field_type_generics,)*>)?),
             )*
         }
 
         impl<'read> MCPRead<'read> for $name {
         	fn mcp_read(input: &mut &'read [u8]) -> Result<Self> {
                 $(
-                    let $field_name = MCPRead::mcp_read(input)?;
+                    let $field_name = _mcp_read_field!(input, $field_type $(<$($field_type_generics,)*>)?);
                 )*
 
         		Ok(Self {
@@ -38,11 +43,26 @@ macro_rules! mcp {
                 let mut written_bytes = 0;
 
                 $(
-                    written_bytes += self.$field_name.mcp_write(output);
+                    written_bytes += _mcp_write_field!(output, self.$field_name, $field_type $(<$($field_type_generics,)*>)?);
                 )*
 
                 written_bytes
             }
         }
     };
+}
+
+macro_rules! _mcp_field_type {
+    (VarInt) => { i32 };
+    ($other:ty) => { $other };
+}
+
+macro_rules! _mcp_read_field {
+    ($input:expr, VarInt) => {{ let varint = VarInt::mcp_read($input)?; varint.0 }};
+    ($input:expr, $other:ty) => { <$other as MCPRead>::mcp_read($input)? };
+}
+
+macro_rules! _mcp_write_field {
+    ($output:expr, $field:expr, VarInt) => { VarInt($field).mcp_write($output) };
+    ($output:expr, $field:expr, $other:ty) => { <$other as MCPWrite>::mcp_write(&$field, $output) };
 }
