@@ -11,7 +11,7 @@ craftflow-nbt-derive = { path = "../craftflow-nbt-derive/" }
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
 simd_cesu8 = { version = "1.0.1" }
-maxlen = { path = "../../maxlen/" }
+maxlen =  { workspace = true }
 
 [dev-dependencies]
 hexdump = "0.1.2"

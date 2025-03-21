@@ -586,6 +586,8 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "maxlen"
 version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a8b4a065b19741b83ce770d552df7f1ca9ad095c65f2929a340f3be2240afc"
 dependencies = [
  "maxlen-macro",
  "thiserror",

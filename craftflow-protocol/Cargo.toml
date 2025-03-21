@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 craftflow-nbt = { path = "../craftflow-nbt" }
 thiserror = { workspace = true }
-maxlen = { path = "../../maxlen/" }
+maxlen = { workspace = true }
 
 [build-dependencies]
 toml = { workspace = true }
