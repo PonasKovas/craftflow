@@ -3,6 +3,7 @@ pub mod legacy;
 mod packet_reader;
 mod packet_writer;
 
+use craftflow_protocol::S2C;
 use std::{
 	fmt::Display,
 	net::IpAddr,
@@ -19,7 +20,7 @@ pub struct ConnectionInterface {
 	id: u64,
 	ip: IpAddr,
 	protocol_version: u32,
-	packet_sender: Sender<S2C<'static>>,
+	packet_sender: Sender<S2C>,
 
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
 	compression: Arc<OnceLock<usize>>,
@@ -29,26 +30,20 @@ pub struct ConnectionInterface {
 	writer_state: Arc<RwLock<State>>,
 }
 
+/// Contains all the possible states of a connection
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub enum State {
+	Handshake,
+	Status,
+	Login,
+	Configuration,
+	Play,
+}
+
 impl ConnectionInterface {
-	/// Send an abstract packet to this client.
-	pub async fn send(&self, packet: impl Into<AbS2C<'static>>) {
-		if self
-			.abstract_packet_sender
-			.send(packet.into())
-			.await
-			.is_err()
-		{
-			error!("tried to send concrete packet but client writer task dead");
-		}
-	}
-	/// Send a concrete packet to this client.
-	pub async fn send_concrete(&self, packet: impl IntoStateEnum<Direction = S2C<'static>>) {
-		if self
-			.concrete_packet_sender
-			.send(packet.into_state_enum())
-			.await
-			.is_err()
-		{
+	/// Send a packet to this client.
+	pub async fn send(&self, packet: impl Into<S2C>) {
+		if self.packet_sender.send(packet.into()).await.is_err() {
 			error!("tried to send abstract packet but client writer task dead");
 		}
 	}

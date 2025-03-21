@@ -8,20 +8,13 @@ pub struct VarLong(pub i64);
 
 impl VarLong {
 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
-	pub fn len(&self) -> usize {
-		let mut value = self.0;
-		let mut len = 0;
-
-		loop {
-			len += 1;
-			value = ((value as u64) >> 7) as i64;
-
-			if value == 0 {
-				break;
-			}
+	pub fn num_bytes(&self) -> usize {
+		let value = self.0 as u64;
+		if value == 0 {
+			return 1;
 		}
-
-		len
+		let bits_needed = 64 - value.leading_zeros();
+		((bits_needed + 6) / 7) as usize
 	}
 }
 
@@ -136,7 +129,7 @@ mod tests {
 	#[test]
 	fn varlong_len() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			assert_eq!(VarLong(case.0).len(), case.1.len(), "{i}");
+			assert_eq!(VarLong(case.0).num_bytes(), case.1.len(), "{i}");
 		}
 	}
 }

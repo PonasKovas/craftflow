@@ -8,20 +8,13 @@ pub struct VarInt(pub i32);
 
 impl VarInt {
 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
-	pub fn len(&self) -> usize {
-		let mut value = self.0;
-		let mut len = 0;
-
-		loop {
-			len += 1;
-			value = ((value as u32) >> 7) as i32;
-
-			if value == 0 {
-				break;
-			}
+	pub fn num_bytes(&self) -> usize {
+		let value = self.0 as u32;
+		if value == 0 {
+			return 1;
 		}
-
-		len
+		let bits_needed = 32 - value.leading_zeros();
+		((bits_needed + 6) / 7) as usize
 	}
 }
 
@@ -36,15 +29,9 @@ impl<'a> MCPRead<'a> for VarInt {
 				return Err(Error::VarIntTooBig);
 			}
 
-			// Read a byte
 			let byte = u8::mcp_read(input)?;
-
-			// Extract the 7 lower bits (the data bits) and cast to i32
 			let value = (byte & 0b0111_1111) as i32;
-
-			// Shift the data bits to the correct position and add them to the result
 			result |= value << (7 * num_read);
-
 			num_read += 1;
 
 			// If the high bit is not set, this was the last byte in the VarInt
@@ -182,7 +169,7 @@ mod tests {
 	#[test]
 	fn varint_len() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			assert_eq!(VarInt(case.0).len(), case.1.len(), "{i}");
+			assert_eq!(VarInt(case.0).num_bytes(), case.1.len(), "{i}");
 		}
 	}
 }

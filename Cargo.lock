@@ -290,6 +290,7 @@ dependencies = [
  "futures",
  "shallowclone",
  "smallbox",
+ "thiserror",
  "tokio",
  "tracing",
 ]

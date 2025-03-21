@@ -1,13 +1,13 @@
-use aes::cipher::{generic_array::GenericArray, BlockDecryptMut};
-use anyhow::{bail, Context};
-use craftflow_protocol_abstract::State;
-use craftflow_protocol_core::{datatypes::VarInt, MCPRead};
-use craftflow_protocol_versions::{
-	c2s::{Configuration, Handshaking, Login, Status},
-	IntoStateEnum, PacketRead, C2S,
+use super::State;
+use aes::cipher::{BlockDecryptMut, generic_array::GenericArray};
+use anyhow::bail;
+use craftflow_protocol::{
+	C2S, PacketRead,
+	c2s::{Handshaking, Login, Status},
 };
 use flate2::write::ZlibDecoder;
 use std::io::Write;
+use thiserror::Error;
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
 
 const MAX_PACKET_SIZE: usize = 2usize.pow(21);
@@ -23,6 +23,14 @@ pub(crate) struct PacketReader {
 	pub(crate) decompression_buffer: Vec<u8>,
 	// If Some, this number of bytes will be removed from the buffer when starting to read a new packet
 	last_packet_len: Option<usize>,
+}
+
+#[derive(Error, Debug)]
+enum ReadVarIntError {
+	#[error("{0}")]
+	IO(#[from] std::io::Error),
+	#[error("invalid varint")]
+	Invalid,
 }
 
 impl PacketReader {
@@ -41,7 +49,7 @@ impl PacketReader {
 		protocol_version: u32,
 		compression: Option<usize>,
 		decryptor: &mut Option<Decryptor>,
-	) -> anyhow::Result<Option<C2S<'a>>> {
+	) -> anyhow::Result<Option<C2S>> {
 		if let Some(last_packet_len) = self.last_packet_len.take() {
 			// remove the packet bytes from the buffer
 			self.buffer.drain(..last_packet_len);
@@ -53,28 +61,22 @@ impl PacketReader {
 			Err(e) => {
 				// if we get an error while reading the length, it might be that the connection was just closed
 				// and in that case we don't want to print any errors, if it was closed cleanly on a packet boundary
-				match e {
-					craftflow_protocol_core::Error::IOError(ref error) => {
-						// make sure there are no unparsed bytes left in the buffer too,
-						// which would mean that the conn didnt close on a packet boundary
-						if error.kind() == std::io::ErrorKind::UnexpectedEof
-							&& self.buffer.is_empty()
-						{
-							// yep looks like the connection was closed
-							// so just return None, signaling that the connection was cleanly closed
-							return Ok(None);
-						}
-
-						Err(e)
+				if let ReadVarIntError::IO(error) = e {
+					// make sure there are no unparsed bytes left in the buffer too,
+					// which would mean that the conn didnt close on a packet boundary
+					if error.kind() == std::io::ErrorKind::UnexpectedEof && self.buffer.is_empty() {
+						// yep looks like the connection was closed
+						// so just return None, signaling that the connection was cleanly closed
+						return Ok(None);
 					}
-					other => Err(other),
 				}
-				.context("reading packet length")?
+
+				Err(e)?
 			}
 		};
 
-		let mut packet_start = packet_len.len();
-		let packet_len = packet_len.0 as usize;
+		let mut packet_start = varint_num_bytes(packet_len);
+		let packet_len = packet_len as usize;
 
 		let total_packet_len = packet_len + packet_start; // the length of the packet including the length prefix
 
@@ -90,9 +92,8 @@ impl PacketReader {
 			Some(threshold) => {
 				// read the uncompressed data length
 				let length = self.read_varint_at_pos(packet_start, decryptor).await?;
-				packet_start += length.len();
+				packet_start += varint_num_bytes(length);
 
-				let length = length.0;
 				if length >= threshold as i32 {
 					Some(length as usize)
 				} else if length == 0 {
@@ -104,10 +105,10 @@ impl PacketReader {
 		};
 
 		// now get the actual packet byte slice without the length prefixes
-		let mut packet_bytes: &mut [u8] = loop {
+		let mut packet_bytes: &[u8] = loop {
 			// check if we have enough bytes
 			if self.buffer.len() >= total_packet_len {
-				break &mut self.buffer[packet_start..total_packet_len];
+				break &self.buffer[packet_start..total_packet_len];
 			}
 
 			// otherwise read more
@@ -130,35 +131,35 @@ impl PacketReader {
 				);
 			}
 
-			packet_bytes = &mut self.decompression_buffer[..];
+			packet_bytes = &self.decompression_buffer[..];
 		}
 
 		// Parse the packet
-		let (remaining, packet) = match state {
+		let packet = match state {
 			State::Handshake => {
-				let (input, packet) = Handshaking::read_packet(packet_bytes, protocol_version)?;
-				(input, packet.into_state_enum())
+				let packet = Handshaking::packet_read(&mut packet_bytes, protocol_version)?;
+				packet.into()
 			}
 			State::Status => {
-				let (input, packet) = Status::read_packet(packet_bytes, protocol_version)?;
-				(input, packet.into_state_enum())
+				let packet = Status::packet_read(&mut packet_bytes, protocol_version)?;
+				packet.into()
 			}
 			State::Login => {
-				let (input, packet) = Login::read_packet(packet_bytes, protocol_version)?;
-				(input, packet.into_state_enum())
+				let packet = Login::packet_read(&mut packet_bytes, protocol_version)?;
+				packet.into()
 			}
-			State::Configuration => {
-				let (input, packet) = Configuration::read_packet(packet_bytes, protocol_version)?;
-				(input, packet.into_state_enum())
-			}
+			State::Configuration => todo!(), //{
+			// 	let packet = Configuration::packet_read(&mut packet_bytes, protocol_version)?;
+			// 	packet.into()
+			// }
 			State::Play => todo!(),
 		};
 
 		// simple sanity test of parsing the packet, all the bytes should have been used to parse it
-		if remaining.len() != 0 {
+		if packet_bytes.len() != 0 {
 			bail!(
 				"Parsed packet and got {} remaining bytes left",
-				remaining.len()
+				packet_bytes.len()
 			);
 		}
 
@@ -172,23 +173,33 @@ impl PacketReader {
 		&mut self,
 		pos: usize,
 		decryptor: &mut Option<Decryptor>,
-	) -> craftflow_protocol_core::Result<VarInt> {
-		loop {
-			match VarInt::read(&mut self.buffer[pos..]) {
-				Ok((_input, varint)) => break Ok(varint),
-				Err(e) => {
-					// if its not an IO error that means the data is invalid
-					// IO error = not enough bytes need to read more
-					// Keep in mind this is reading from an in-memory buffer, not the stream
-					if !e.is_io_error() {
-						return Err(e);
-					}
+	) -> Result<i32, ReadVarIntError> {
+		let mut num_read = 0; // Count of bytes that have been read
+		let mut result = 0i32; // The VarInt being constructed
 
-					// Read more bytes
-					self.read(decryptor).await?;
-				}
+		loop {
+			if pos + num_read >= self.buffer.len() {
+				// Read more bytes
+				self.read(decryptor).await?;
+				continue;
+			}
+
+			let byte = self.buffer[pos + num_read];
+			let value = (byte & 0b0111_1111) as i32;
+			result |= value << (7 * num_read);
+			num_read += 1;
+
+			// If the high bit is not set, this was the last byte in the VarInt
+			if (byte & 0b1000_0000) == 0 {
+				break;
+			}
+			// VarInts are at most 5 bytes long.
+			if num_read >= 5 {
+				return Err(ReadVarIntError::Invalid);
 			}
 		}
+
+		Ok(result)
 	}
 	/// Reads more data into the buffer
 	/// returns how many bytes were read
@@ -212,4 +223,13 @@ impl PacketReader {
 
 		Ok(n)
 	}
+}
+
+fn varint_num_bytes(varint: i32) -> usize {
+	let value = varint as u32;
+	if value == 0 {
+		return 1;
+	}
+	let bits_needed = 32 - value.leading_zeros();
+	((bits_needed + 6) / 7) as usize
 }
