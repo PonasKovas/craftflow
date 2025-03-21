@@ -1,6 +1,7 @@
 use crate::{PACKETS_TOML, shared::package_dir};
+use indexmap::IndexMap;
 use serde::Deserialize;
-use std::{collections::HashMap, fs::read_to_string};
+use std::fs::read_to_string;
 
 mod direction;
 mod packet_name;
@@ -12,7 +13,7 @@ pub use packet_name::PacketName;
 pub use state::State;
 pub use version::Version;
 
-type Map<T> = HashMap<String, T>;
+type Map<T> = IndexMap<String, T>;
 
 /// Actual TOML structure since toml doesnt allow integers as map keys
 #[derive(Deserialize, Debug, PartialEq, Clone)]
@@ -30,9 +31,9 @@ pub struct PacketsToml {
 	/// All supported protocol versions
 	pub versions: Vec<u32>,
 	/// direction -> state -> packet -> group version : 	packet id -> versions
-	pub packets: HashMap<
+	pub packets: IndexMap<
 		Direction,
-		HashMap<State, HashMap<PacketName, HashMap<Version, HashMap<u32, Vec<u32>>>>>,
+		IndexMap<State, IndexMap<PacketName, IndexMap<Version, IndexMap<u32, Vec<u32>>>>>,
 	>,
 }
 

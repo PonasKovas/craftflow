@@ -21,8 +21,6 @@ pub enum Error {
 	#[error("array too long ({length}), limit is {max}")]
 	ArrayTooLong { length: usize, max: usize },
 	#[error("{0}")]
-	InvalidJson(#[from] serde_json::Error),
-	#[error("{0}")]
 	InvalidNbt(#[from] craftflow_nbt::Error),
 	#[error("invalid enum tag {tag} in {enum_name}")]
 	InvalidEnumTag { tag: i64, enum_name: &'static str },

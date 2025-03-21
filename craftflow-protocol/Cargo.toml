@@ -5,14 +5,13 @@ edition = "2024"
 
 [dependencies]
 craftflow-nbt = { path = "../craftflow-nbt" }
-serde = { workspace = true }
-serde_json = { workspace = true }
 thiserror = { workspace = true }
 maxlen = { path = "../../maxlen/" }
 
 [build-dependencies]
 toml = { workspace = true }
 serde = { workspace = true }
+indexmap = { workspace = true }
 
 [features]
 

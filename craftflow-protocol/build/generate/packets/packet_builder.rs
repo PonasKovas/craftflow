@@ -3,11 +3,11 @@ use crate::{
 	packets_toml::{PacketName, Version},
 	shared::versions_pattern,
 };
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 pub fn generate(
 	packet: &PacketName,
-	version_groups: &HashMap<Version, HashMap<u32, Vec<u32>>>,
+	version_groups: &IndexMap<Version, IndexMap<u32, Vec<u32>>>,
 ) -> String {
 	let packet_enum_name = packet.enum_name();
 	let enum_name = format!("{}Builder", packet.enum_name());

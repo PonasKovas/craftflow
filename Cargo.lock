@@ -255,9 +255,9 @@ name = "craftflow-protocol"
 version = "0.1.0"
 dependencies = [
  "craftflow-nbt",
+ "indexmap",
  "maxlen",
  "serde",
- "serde_json",
  "thiserror",
  "toml",
 ]
@@ -472,6 +472,7 @@ checksum = "62f822373a4fe84d4bb149bf54e584a7f4abec90e072ed49cda0edea5b95471f"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
 ]
 
 [[package]]

@@ -3,14 +3,14 @@ use crate::{
 	packets_toml::{Direction, PacketName, State, Version},
 	shared::versions_pattern,
 };
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 pub fn generate(
 	direction: Direction,
 	state: &State,
 	packet: &PacketName,
 	version_group: Version,
-	packet_ids: &HashMap<u32, Vec<u32>>,
+	packet_ids: &IndexMap<u32, Vec<u32>>,
 	impl_path: &str,
 ) -> String {
 	let dir_enum = direction.enum_name();
