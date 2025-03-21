@@ -1,7 +1,7 @@
 use crate::{
 	DEFAULT_IMPORTS_FOR_IMPLS,
 	packets_toml::{Direction, PacketName, State, Version},
-	shared::versions_pattern,
+	shared::{closureslop_event_impl, versions_pattern},
 };
 use indexmap::IndexMap;
 
@@ -44,6 +44,8 @@ pub fn generate(
 			format!("{pattern} => {id},")
 		})
 		.collect();
+
+	let closureslop_event_impl = closureslop_event_impl(&struct_name);
 
 	format!(
 		r#"{DEFAULT_IMPORTS_FOR_IMPLS}
@@ -88,6 +90,8 @@ pub fn generate(
 				Self::{state_enum}(crate::{direction}::{state_enum}::{packet_enum}(value.into()))
 			}}
 		}}
+
+		{closureslop_event_impl}
 		"#,
 	)
 }

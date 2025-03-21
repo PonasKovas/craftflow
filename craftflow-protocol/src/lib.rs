@@ -7,7 +7,6 @@
 
 pub mod datatypes;
 mod error;
-
 pub use error::{Error, Result};
 
 /// Trait for writing a packet

@@ -332,6 +332,7 @@ dependencies = [
 name = "craftflow-protocol"
 version = "0.1.0"
 dependencies = [
+ "closureslop",
  "craftflow-nbt",
  "indexmap",
  "maxlen",

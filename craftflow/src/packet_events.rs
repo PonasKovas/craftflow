@@ -1,12 +1,8 @@
 //! Implementation of `Event` for all packets
-//!  - [`C2S`] packet events will be emitted after a concrete packet is received from the client
-//!  - [`AbC2S`] packet events will be emitted after an abstract packet is received from the client
-//!  - [`S2C`] packet events will be emitted before a concrete packet is sent to the client
-//!  - [`AbS2C`] packet events will be emitted before an abstract packet is sent to the client
-//!  - [`Post<S2C>`] events will be emitted AFTER a concrete packet is sent to the client
-//!  - [`Post<AbS2C>`] events will be emitted AFTER an abstract packet is sent to the client
+//!  - [`C2S`] packet events will be emitted after a packet is received from the client
+//!  - [`S2C`] packet events will be emitted before a packet is sent to the client
+//!  - [`Post<S2C>`] events will be emitted AFTER a packet is sent to the client
 //!  - [`Post<C2S>`] events will be emitted after the respective [`C2S`] event is over, if it wasn't stopped
-//!  - [`Post<AbC2S>`] events will be emitted after the respective [`AbC2S`] event is over, if it wasn't stopped
 
 // BEWARE!
 // nuclear code below!!
@@ -16,18 +12,12 @@
 // 500+ hours of debugging
 // 9 mental breakdowns
 // 1 existential crisis
-// 5 weeks of sleepless nights
-// 30 liters of coffee (and counting)
-// 200 ml of tears
-// 6 liters of sweat
 
 // This is the slop file that uses macro slop to generate trait slop and pattern matching slop
 // for the purpose of the `Event` slop
 
 use crate::CraftFlow;
 use closureslop::Event;
-use craftflow_protocol_abstract::{AbC2S, AbS2C};
-use craftflow_protocol_versions::{IntoStateEnum, C2S, S2C};
 use is_type::Is;
 use tracing::trace;
 
@@ -40,18 +30,6 @@ impl<E: Event> Event for Post<E> {
 	type Args<'a> = <E as Event>::Args<'a>;
 	type Return = <E as Event>::Return;
 }
-
-// this is a private trait that helps the macro slop
-// the macros implement it for the packet types and the `Event` is the respective packet event
-trait PacketToEventPointer {
-	type Event: Event;
-}
-
-// The following macros generate a unit struct for each packet and implements Event for it
-// and also implements PacketToEventPointer for the packet, pointing to the generated unit struct
-craftflow_protocol_versions::__gen_events_for_packets__! {Event, PacketToEventPointer }
-craftflow_protocol_abstract::__gen_events_for_packets_s2c! { Event, PacketToEventPointer }
-craftflow_protocol_abstract::__gen_events_for_packets_c2s! { Event, PacketToEventPointer }
 
 // Helper functions that trigger a packet event
 // returns true if the event was not stopped

@@ -33,3 +33,20 @@ pub fn versions_pattern(versions: &[u32]) -> String {
 		.collect::<Vec<_>>()
 		.join("|")
 }
+
+pub fn closureslop_event_impl(name: &str) -> String {
+	std::env::var("CARGO_FEATURE_CLOSURESLOP_EVENTS")
+		.is_ok()
+		.then(|| {
+			format!(
+				"impl closureslop::Event for {name} {{
+				/// The connection ID and the packet
+				///
+				/// Obviously, don't try to change the connection ID, as it will propagate to other handlers
+			    type Args<'a> = (u64, Self);
+                type Return = ();
+			}}"
+			)
+		})
+		.unwrap_or_else(String::new)
+}

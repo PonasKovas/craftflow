@@ -3,8 +3,6 @@ pub mod legacy;
 mod packet_reader;
 mod packet_writer;
 
-use craftflow_protocol_abstract::{AbS2C, State};
-use craftflow_protocol_versions::{IntoStateEnum, S2C};
 use std::{
 	fmt::Display,
 	net::IpAddr,
@@ -21,8 +19,7 @@ pub struct ConnectionInterface {
 	id: u64,
 	ip: IpAddr,
 	protocol_version: u32,
-	concrete_packet_sender: Sender<S2C<'static>>,
-	abstract_packet_sender: Sender<AbS2C<'static>>,
+	packet_sender: Sender<S2C<'static>>,
 
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
 	compression: Arc<OnceLock<usize>>,

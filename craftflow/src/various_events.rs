@@ -1,7 +1,5 @@
-use std::net::IpAddr;
-
 use closureslop::Event;
-use craftflow_protocol_core::common_structures::Text;
+use std::net::IpAddr;
 
 /// This event is triggered when a new connection is established.
 ///
@@ -33,5 +31,5 @@ impl Event for UnsupportedClientVersion {
 	type Args<'a> = (IpAddr, u32);
 	/// The error message to send to the client
 	/// If no handler returns, a default message will be used
-	type Return = Text<'static>;
+	type Return = String;
 }
