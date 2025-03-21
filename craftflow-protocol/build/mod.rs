@@ -22,6 +22,8 @@ fn main() {
 
 	let mut code = String::new();
 
+	code += &generate::supported_versions_list(&pkts_toml);
+
 	// Generate packets and their enums
 	code += &generate::packets(&pkts_toml);
 

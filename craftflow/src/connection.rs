@@ -1,3 +1,4 @@
+mod common;
 mod connection_task;
 pub mod legacy;
 mod packet_reader;

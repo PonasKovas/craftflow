@@ -2,24 +2,14 @@ mod reader;
 mod writer;
 
 use super::{
-	legacy::{detect_legacy_ping, write_legacy_response, LegacyPing},
+	ConnectionInterface, State,
+	legacy::{LegacyPing, detect_legacy_ping, write_legacy_response},
 	packet_reader::PacketReader,
 	packet_writer::PacketWriter,
-	ConnectionInterface,
 };
-use crate::{
-	packet_events::{trigger_c2s_abstract, trigger_c2s_concrete},
-	various_events::UnsupportedClientVersion,
-	CraftFlow,
-};
-use anyhow::{bail, Context};
-use craftflow_protocol_abstract::{
-	c2s::{handshake::NextState, AbHandshake},
-	s2c::AbDisconnect,
-	AbC2S, AbPacketNew, AbPacketWrite, State,
-};
-use craftflow_protocol_core::text;
-use craftflow_protocol_versions::{MAX_VERSION, MIN_VERSION};
+use crate::{CraftFlow, various_events::UnsupportedClientVersion};
+use anyhow::{Context, bail};
+use craftflow_protocol::SUPPORTED_VERSIONS;
 use reader::reader_task;
 use shallowclone::MakeOwned;
 use std::{
@@ -79,13 +69,12 @@ pub(crate) async fn handle_new_conn(
 
 	let handshake = match timeout(
 		Duration::from_secs(5),
-		packet_reader.read_packet(State::Handshake, MIN_VERSION, None, &mut None),
+		packet_reader.read_packet(State::Handshake, SUPPORTED_VERSIONS[0], None, &mut None),
 	)
 	.await
 	{
 		Ok(r) => match r.context("reading handshake packet")? {
-			// normally we dont make packets owned, but here we have to because of how the event triggers are spaced out
-			Some(p) => p.make_owned(),
+			Some(p) => p,
 			None => {
 				bail!("connection closed before handshake was received");
 			}

@@ -1,11 +1,11 @@
-use aes::cipher::{generic_array::GenericArray, BlockEncryptMut};
+use aes::cipher::{BlockEncryptMut, generic_array::GenericArray};
 use anyhow::bail;
-use craftflow_protocol_abstract::State;
-use craftflow_protocol_core::{datatypes::VarInt, MCPWrite};
-use craftflow_protocol_versions::{PacketWrite, S2C};
+use craftflow_protocol::{PacketWrite, S2C};
 use flate2::write::ZlibEncoder;
 use std::io::Write;
 use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf};
+
+use super::{State, common::varint_num_bytes};
 
 // 0 is no compression, 9 - take as long as you'd like
 const COMPRESSION_LEVEL: u32 = 6;
@@ -35,7 +35,7 @@ impl PacketWriter {
 		protocol_version: u32,
 		compression: Option<usize>,
 		encryptor: &mut Option<Encryptor>,
-		packet: &S2C<'_>,
+		packet: &S2C,
 	) -> anyhow::Result<()> {
 		match packet {
 			S2C::Status(p) if state == State::Status => {
@@ -46,10 +46,10 @@ impl PacketWriter {
 				self.write_unchecked(protocol_version, compression, encryptor, p)
 					.await?;
 			}
-			S2C::Configuration(p) if state == State::Configuration => {
-				self.write_unchecked(protocol_version, compression, encryptor, p)
-					.await?;
-			}
+			// S2C::Configuration(p) if state == State::Configuration => {
+			// 	self.write_unchecked(protocol_version, compression, encryptor, p)
+			// 		.await?;
+			// }
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",
@@ -83,7 +83,7 @@ impl PacketWriter {
 		let mut packet_start = MAX_PREFIX;
 
 		// Write the packet to the buffer
-		let uncompressed_len = packet.write_packet(buffer, protocol_version)?;
+		let uncompressed_len = packet.packet_write(buffer, protocol_version);
 
 		// compress the packet if compression is enabled
 		'compression: {
@@ -131,6 +131,29 @@ impl PacketWriter {
 }
 
 fn prepend_to_buffer(buffer: &mut Vec<u8>, cursor: &mut usize, value: i32) {
-	*cursor -= VarInt(value).len();
-	VarInt(value).write(&mut &mut buffer[*cursor..]).unwrap();
+	*cursor -= varint_num_bytes(value);
+	write_varint(value, &mut buffer[*cursor..]);
+}
+
+fn write_varint(mut varint: i32, output: &mut [u8]) {
+	let mut i = 0;
+
+	loop {
+		// Take the 7 lower bits of the value
+		let mut temp = (varint & 0b0111_1111) as u8;
+		varint = ((varint as u32) >> 7) as i32;
+
+		// If there is more data to write, set the high bit
+		if varint != 0 {
+			temp |= 0b1000_0000;
+		}
+
+		output[i] = temp;
+		i += 1;
+
+		// If there is no more data to write, exit the loop
+		if varint == 0 {
+			break;
+		}
+	}
 }
