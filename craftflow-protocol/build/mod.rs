@@ -28,6 +28,11 @@ fn main() {
 	// disabled_versions!() macro
 	code += &generate::disabled_versions_macro(&pkts_toml);
 
+	if env::var("CARGO_FEATURE_CLOSURESLOP_EVENTS").is_ok() {
+		// also generate the enum_go_brrr! macro
+		code += &generate::destructure_macro(&pkts_toml);
+	}
+
 	// also include the prompt example test to be compiled the same way a normal packet impl would be to make sure
 	// its not outdated or anything - we dont want to confuse the LLM for no reason.
 	let prompt_code_example_path = package_dir().join(PROMPT_CODE_EXAMPLE_PATH);

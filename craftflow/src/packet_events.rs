@@ -16,10 +16,12 @@
 // This is the slop file that uses macro slop to generate trait slop and pattern matching slop
 // for the purpose of the `Event` slop
 
+// actually nvm. these comments are from the era when i tried to do packets with lifetimes.
+// i trashed that idea now but im gonna keep these comments as a warning.
+
 use crate::CraftFlow;
 use closureslop::Event;
-use is_type::Is;
-use tracing::trace;
+use craftflow_protocol::{C2S, S2C};
 
 /// `Post<Packet>` events are emitted after their respective packet events,
 /// and in the case of outgoing packets - after the packet is sent
@@ -27,106 +29,67 @@ pub struct Post<E> {
 	pub packet: E,
 }
 impl<E: Event> Event for Post<E> {
-	type Args<'a> = <E as Event>::Args<'a>;
-	type Return = <E as Event>::Return;
+	type Args<'a> = E::Args<'a>;
+	type Return = E::Return;
 }
 
 // Helper functions that trigger a packet event
 // returns true if the event was not stopped
 async fn helper<'a, P>(craftflow: &CraftFlow, conn_id: u64, packet: P) -> (bool, P)
 where
-	P: PacketToEventPointer,
-	<P as PacketToEventPointer>::Event: Event,
-	for<'b> <<P as PacketToEventPointer>::Event as Event>::Args<'b>: Send,
-	// no idea why we cant just specify that P::Event: Event<Args<'a> = (u64, P)>
-	// but this works...
-	(u64, P): Is<Type = <<P as PacketToEventPointer>::Event as Event>::Args<'a>>,
-	<<P as PacketToEventPointer>::Event as Event>::Args<'a>: Is<Type = (u64, P)>,
+	P: Event<Args<'a> = (u64, P)>,
 {
-	trace!(
-		"{} event",
-		std::any::type_name::<<P as PacketToEventPointer>::Event>()
-	);
-	let mut args = (conn_id, packet).into_val();
+	let mut args = (conn_id, packet);
 
 	if craftflow
 		.reactor
-		.trigger::<<P as PacketToEventPointer>::Event>(craftflow, &mut args)
+		.trigger::<P>(craftflow, &mut args)
 		.await
 		.is_break()
 	{
-		return (false, args.into_val().1);
+		return (false, args.1);
 	}
-	(true, args.into_val().1)
+
+	(true, args.1)
 }
 async fn helper_post<'a, P>(craftflow: &CraftFlow, conn_id: u64, packet: P) -> (bool, P)
 where
-	P: PacketToEventPointer,
-	Post<<P as PacketToEventPointer>::Event>: Event,
-	for<'b> <Post<<P as PacketToEventPointer>::Event> as Event>::Args<'b>: Send,
-	// no idea why we cant just specify that P::Event: Event<Args<'a> = (u64, P)>
-	// but this works...
-	(u64, P): Is<Type = <Post<<P as PacketToEventPointer>::Event> as Event>::Args<'a>>,
-	<Post<<P as PacketToEventPointer>::Event> as Event>::Args<'a>: Is<Type = (u64, P)>,
+	P: Event<Args<'a> = (u64, P)>,
 {
-	trace!(
-		"{} post event",
-		std::any::type_name::<<P as PacketToEventPointer>::Event>()
-	);
-	let mut args = (conn_id, packet).into_val();
+	let mut args = (conn_id, packet);
+
 	if craftflow
 		.reactor
-		.trigger::<Post<<P as PacketToEventPointer>::Event>>(craftflow, &mut args)
+		.trigger::<Post<P>>(craftflow, &mut args)
 		.await
 		.is_break()
 	{
-		return (false, args.into_val().1);
+		return (false, args.1);
 	}
-	(true, args.into_val().1)
+
+	(true, args.1)
 }
 
 // More slop below
 
-pub(super) async fn trigger_c2s_concrete<'a>(
+pub(super) async fn trigger_c2s(
 	post: bool,
 	craftflow: &CraftFlow,
 	conn_id: u64,
-	packet: C2S<'a>,
-) -> (bool, C2S<'a>) {
-	craftflow_protocol_versions::__destructure_packet_enum__!(direction=C2S, packet -> inner {
-		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
-		(cont, pkt.into_state_enum())
-	})
-}
-pub(super) async fn trigger_s2c_concrete<'a, 'b>(
-	post: bool,
-	craftflow: &'a CraftFlow,
-	conn_id: u64,
-	packet: S2C<'b>,
-) -> (bool, S2C<'b>) {
-	craftflow_protocol_versions::__destructure_packet_enum__!(direction=S2C, packet -> inner {
-		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
-		(cont, pkt.into_state_enum())
-	})
-}
-pub(super) async fn trigger_c2s_abstract<'a, 'b>(
-	post: bool,
-	craftflow: &'a CraftFlow,
-	conn_id: u64,
-	packet: AbC2S<'b>,
-) -> (bool, AbC2S<'b>) {
-	craftflow_protocol_abstract::__destructure_c2s__!(packet -> inner {
+	packet: C2S,
+) -> (bool, C2S) {
+	craftflow_protocol::enum_go_brr!((c2s->version), packet -> inner {
 		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
 	})
 }
-pub(super) async fn trigger_s2c_abstract<'a, 'b>(
+pub(super) async fn trigger_s2c(
 	post: bool,
-	craftflow: &'a CraftFlow,
+	craftflow: &CraftFlow,
 	conn_id: u64,
-	packet: AbS2C<'b>,
-) -> (bool, AbS2C<'b>) {
-	craftflow_protocol_abstract::__destructure_s2c__!(packet -> inner {
+	packet: S2C,
+) -> (bool, S2C) {
+	craftflow_protocol::enum_go_brr!((s2c->version), packet -> inner {
 		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
 	})

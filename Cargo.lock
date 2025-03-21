@@ -288,7 +288,6 @@ dependencies = [
  "craftflow-protocol",
  "flate2",
  "futures",
- "is_type",
  "shallowclone",
  "smallbox",
  "tokio",
@@ -719,12 +718,6 @@ dependencies = [
  "libc",
  "windows-sys",
 ]
-
-[[package]]
-name = "is_type"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fee7cda167bfafe6eb1c70926de545028f3169c9a8bcfa6db9d53f67aab2f3ec"
 
 [[package]]
 name = "itertools"
