@@ -9,7 +9,6 @@ use flate2::write::ZlibDecoder;
 use std::{io::Write, sync::OnceLock};
 use thiserror::Error;
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
-use tracing::trace;
 
 const MAX_PACKET_SIZE: usize = 2usize.pow(21);
 const DEFAULT_BUFFER_SIZE: usize = 4 * 1024;
