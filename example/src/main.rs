@@ -1,5 +1,6 @@
 use craftflow::{CraftFlow, add_callback};
 use craftflow_protocol::c2s::login::LoginStart;
+use login::Login;
 use simple_ping::SimplePing;
 use smallbox::SmallBox;
 use text::text;
@@ -32,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
 		std::ops::ControlFlow::Continue(())
 	}));
 
-	// Login::default().register(&mut craftflow);
+	Login::default().register(&mut craftflow);
 
 	info!("Starting CraftFlow");
 

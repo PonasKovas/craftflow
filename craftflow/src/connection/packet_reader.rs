@@ -6,9 +6,10 @@ use craftflow_protocol::{
 	c2s::{Handshaking, Login, Status},
 };
 use flate2::write::ZlibDecoder;
-use std::io::Write;
+use std::{io::Write, sync::OnceLock};
 use thiserror::Error;
 use tokio::{io::AsyncReadExt, net::tcp::OwnedReadHalf};
+use tracing::trace;
 
 const MAX_PACKET_SIZE: usize = 2usize.pow(21);
 const DEFAULT_BUFFER_SIZE: usize = 4 * 1024;
@@ -47,7 +48,7 @@ impl PacketReader {
 		&'a mut self,
 		state: State,
 		protocol_version: u32,
-		compression: Option<usize>,
+		compression: Option<&OnceLock<usize>>,
 		decryptor: &mut Option<Decryptor>,
 	) -> anyhow::Result<Option<C2S>> {
 		if let Some(last_packet_len) = self.last_packet_len.take() {
@@ -57,7 +58,7 @@ impl PacketReader {
 
 		// wait for the length of the next packet
 		let packet_len = match self.read_varint_at_pos(0, decryptor).await {
-			Ok(l) => l,
+			Ok(l) => l as usize,
 			// if we get an error while reading the length, it might be that the connection was just closed
 			// and in that case we don't want to print any errors, if it was closed cleanly on a packet boundary
 			Err(ReadVarIntError::IO(error)) => {
@@ -73,8 +74,7 @@ impl PacketReader {
 			Err(e) => Err(e)?,
 		};
 
-		let mut packet_start = varint_num_bytes(packet_len);
-		let packet_len = packet_len as usize;
+		let mut packet_start = varint_num_bytes(packet_len as i32);
 
 		let total_packet_len = packet_len + packet_start; // the length of the packet including the length prefix
 
@@ -85,9 +85,9 @@ impl PacketReader {
 		// if compression is enabled, read the uncompressed data length
 		// this will be set to Some(uncompressed_len) if the packet is compressed
 		// (threshold was reached)
-		let decompressed_len = match compression {
+		let decompressed_len = match compression.map(|c| c.get()).flatten() {
 			None => None,
-			Some(threshold) => {
+			Some(&threshold) => {
 				// read the uncompressed data length
 				let length = self.read_varint_at_pos(packet_start, decryptor).await?;
 				packet_start += varint_num_bytes(length);

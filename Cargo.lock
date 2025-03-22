@@ -532,6 +532,7 @@ dependencies = [
  "anyhow",
  "craftflow",
  "craftflow-protocol",
+ "login",
  "simple-ping",
  "smallbox",
  "text",

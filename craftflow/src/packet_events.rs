@@ -22,6 +22,7 @@
 use crate::CraftFlow;
 use closureslop::Event;
 use craftflow_protocol::{C2S, S2C};
+use tracing::trace;
 
 /// `Post<Packet>` events are emitted after their respective packet events,
 /// and in the case of outgoing packets - after the packet is sent
@@ -78,6 +79,10 @@ pub(super) async fn trigger_c2s(
 	conn_id: u64,
 	packet: C2S,
 ) -> (bool, C2S) {
+	if !post {
+		trace!("<- RECV {packet:?}");
+	}
+
 	let (cont, pkt) = craftflow_protocol::enum_go_brr!((c2s->version), packet -> inner {
 		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
@@ -98,6 +103,10 @@ pub(super) async fn trigger_s2c(
 	conn_id: u64,
 	packet: S2C,
 ) -> (bool, S2C) {
+	if !post {
+		trace!("-> SENT {packet:?}");
+	}
+
 	let (cont, pkt) = craftflow_protocol::enum_go_brr!((s2c->version), packet -> inner {
 		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())

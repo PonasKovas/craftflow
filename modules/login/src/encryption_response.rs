@@ -1,22 +1,57 @@
 use crate::{Login, VERIFY_TOKEN};
-use craftflow::packet_events::C2SAbLoginEncryptionEvent;
 use craftflow::CraftFlow;
-use craftflow_protocol_abstract::{c2s::AbLoginEncryption, s2c::AbLoginSuccess};
+use craftflow_protocol::{
+	c2s::login::{EncryptionBegin, encryption_begin::v759::Crypto},
+	disabled_versions,
+	maxlen::BVec,
+	s2c::login::{
+		SuccessBuilder,
+		success::{v5::SuccessV5, v735::SuccessV735, v759::SuccessV759, v766::SuccessV766},
+	},
+};
 use rsa::Pkcs1v15Encrypt;
 use std::ops::ControlFlow;
 use tracing::error;
 
-#[craftflow::callback(event: C2SAbLoginEncryptionEvent)]
+#[craftflow::callback(event: EncryptionBegin)]
 pub async fn encryption_response(
 	cf: &CraftFlow,
-	&mut (conn_id, ref mut request): &mut (u64, AbLoginEncryption<'_>),
+	&mut (conn_id, ref mut request): &mut (u64, EncryptionBegin),
 ) -> ControlFlow<()> {
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
+		let shared_secret;
+		let verify_token;
+
+		match request {
+			disabled_versions!(c2s::login::EncryptionBegin) => unreachable!(),
+			EncryptionBegin::V5(p) => {
+				shared_secret = &p.shared_secret;
+				verify_token = Some(&p.verify_token);
+			}
+			EncryptionBegin::V47(p) => {
+				shared_secret = &p.shared_secret;
+				verify_token = Some(&p.verify_token);
+			}
+			EncryptionBegin::V759(p) => {
+				shared_secret = &p.shared_secret;
+				match &p.crypto {
+					Crypto::WithVerifyToken { verify_token: t } => {
+						verify_token = Some(t);
+					}
+					Crypto::WithoutVerifyToken {
+						salt,
+						message_signature,
+					} => {
+						// TODO idk what to even do with this shit??
+						verify_token = None;
+					}
+				}
+			}
+		}
+
 		match (
-			rsa_key.decrypt(Pkcs1v15Encrypt, &request.shared_secret),
-			request
-				.verify_token
-				.as_ref()
+			rsa_key.decrypt(Pkcs1v15Encrypt, shared_secret),
+			verify_token
 				.map(|t| rsa_key.decrypt(Pkcs1v15Encrypt, &t))
 				.transpose(),
 		) {
@@ -64,20 +99,41 @@ pub async fn encryption_response(
 						return ControlFlow::Break(());
 					}
 				};
+				let uuid = uuid.unwrap_or(0);
 
 				// And finish the login process
-				cf.get(conn_id)
-					.send(AbLoginSuccess {
-						uuid: uuid.unwrap_or(0),
-						username: username.into(),
-						properties: Vec::new(),
+				let version = cf.get(conn_id).protocol_version();
+				let response = match SuccessBuilder::new(version) {
+					disabled_versions!(s2c::login::SuccessBuilder) => unreachable!(),
+					SuccessBuilder::V5(p) => p(SuccessV5 {
+						uuid: format!(
+							"{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
+							(uuid >> (4 * 24)) & 0xffff_ffff,
+							(uuid >> (4 * 20)) & 0xffff,
+							(uuid >> (4 * 16)) & 0xffff,
+							(uuid >> (4 * 12)) & 0xffff,
+							uuid & 0xffff_ffff_ffff
+						),
+						username,
+					}),
+					SuccessBuilder::V735(p) => p(SuccessV735 { uuid, username }),
+					SuccessBuilder::V759(p) => p(SuccessV759 {
+						uuid,
+						username,
+						properties: BVec::new(),
+					}),
+					SuccessBuilder::V766(p) => p(SuccessV766 {
+						uuid,
+						username,
+						properties: BVec::new(),
 						strict_error_handling: false,
-					})
-					.await;
+					}),
+				};
+				cf.get(conn_id).send(response).await;
 			}
 			_ => {
 				// couldnt decrypt the shared secret or verify token
-				error!("{} sent bad encryption response", cf.get(conn_id));
+				error!("{} sent bad encryption response :(", cf.get(conn_id));
 				cf.disconnect(conn_id).await;
 			}
 		}

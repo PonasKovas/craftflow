@@ -1,15 +1,15 @@
 use crate::Login;
-use craftflow::packet_events::{Post, S2CAbLoginCompressEvent};
 use craftflow::CraftFlow;
-use craftflow_protocol_abstract::s2c::AbLoginCompress;
+use craftflow::packet_events::Post;
+use craftflow_protocol::s2c::login::Compress;
 use std::ops::ControlFlow;
 
-#[craftflow::callback(event: Post<S2CAbLoginCompressEvent>)]
+#[craftflow::callback(event: Post<Compress>)]
 pub async fn set_compression(
 	cf: &CraftFlow,
-	&mut (conn_id, ref mut _request): &mut (u64, AbLoginCompress),
+	&mut (conn_id, ref mut _request): &mut (u64, Compress),
 ) -> ControlFlow<()> {
-	if let &Some(threshold) = &cf.modules.get::<Login>().compression_threshold {
+	if let Some(threshold) = cf.modules.get::<Login>().compression_threshold {
 		// Enable compression on our end
 		cf.get(conn_id).set_compression_threshold(threshold);
 	}

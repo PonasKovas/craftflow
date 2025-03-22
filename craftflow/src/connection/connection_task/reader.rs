@@ -28,12 +28,7 @@ pub(super) async fn reader_task(
 
 		let state = *conn.reader_state.read().unwrap();
 		let packet = reader
-			.read_packet(
-				state,
-				conn.version,
-				conn.compression.get().copied(),
-				&mut decryptor,
-			)
+			.read_packet(state, conn.version, Some(&conn.compression), &mut decryptor)
 			.await
 			.with_context(|| format!("reading packet (state {:?})", state))?;
 
