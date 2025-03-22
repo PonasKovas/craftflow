@@ -102,10 +102,10 @@ pub async fn status(
 	};
 
 	cf.build_packet(conn_id, |b| match b {
-		disabled_versions!(s2c::status::ServerInfoBuilder) => unreachable!(),
 		ServerInfoBuilder::V5(p) => p(ServerInfoV5 {
 			response: serde_json::to_string(&status_info).expect("this cant fail bro"),
 		}),
+		disabled_versions!(s2c::status::ServerInfoBuilder) => unreachable!(),
 	})
 	.await;
 

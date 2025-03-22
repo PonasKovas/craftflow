@@ -23,7 +23,6 @@ pub async fn login_start(
 	let mut uuid = None;
 
 	match request {
-		disabled_versions!(c2s::login::LoginStart) => unreachable!(),
 		LoginStart::V5(p) => {
 			username = &p.username;
 		}
@@ -42,6 +41,7 @@ pub async fn login_start(
 			username = &p.username;
 			uuid = Some(p.player_uuid);
 		}
+		disabled_versions!(c2s::login::LoginStart) => unreachable!(),
 	}
 
 	cf.modules
@@ -72,7 +72,6 @@ pub async fn login_start(
 		let verify_token = VERIFY_TOKEN.as_bytes().try_into().unwrap();
 
 		cf.build_packet(conn_id, |b| match b {
-			disabled_versions!(s2c::login::EncryptionBeginBuilder) => unreachable!(),
 			EncryptionBeginBuilder::V5(p) => p(EncryptionBeginV5 {
 				server_id,
 				public_key,
@@ -89,6 +88,7 @@ pub async fn login_start(
 				verify_token,
 				should_authenticate: true,
 			}),
+			disabled_versions!(s2c::login::EncryptionBeginBuilder) => unreachable!(),
 		})
 		.await;
 	}

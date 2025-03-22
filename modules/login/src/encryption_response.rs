@@ -23,7 +23,6 @@ pub async fn encryption_response(
 		let verify_token;
 
 		match request {
-			disabled_versions!(c2s::login::EncryptionBegin) => unreachable!(),
 			EncryptionBegin::V5(p) => {
 				shared_secret = &p.shared_secret;
 				verify_token = Some(&p.verify_token);
@@ -47,6 +46,7 @@ pub async fn encryption_response(
 					}
 				}
 			}
+			disabled_versions!(c2s::login::EncryptionBegin) => unreachable!(),
 		}
 
 		match (

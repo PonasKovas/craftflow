@@ -12,13 +12,13 @@ pub async fn ping(
 	&mut (conn_id, ref mut request): &mut (u64, Ping),
 ) -> ControlFlow<()> {
 	let time = match request {
-		disabled_versions!(c2s::status::Ping) => unreachable!(),
 		Ping::V5(ping) => ping.time,
+		disabled_versions!(c2s::status::Ping) => unreachable!(),
 	};
 
 	cf.build_packet(conn_id, |b| match b {
-		disabled_versions!(s2c::status::PingBuilder) => unreachable!(),
 		PingBuilder::V5(p) => p(PingV5 { time }),
+		disabled_versions!(s2c::status::PingBuilder) => unreachable!(),
 	})
 	.await;
 
