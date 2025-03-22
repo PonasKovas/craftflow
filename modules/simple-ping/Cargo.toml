@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 craftflow = { path = "../../craftflow/" }
-craftflow-protocol-abstract = { path = "../../craftflow-protocol-abstract/" }
-craftflow-protocol-core = { path = "../../craftflow-protocol-core/" }
+craftflow-protocol = { path = "../../craftflow-protocol/" }
 base64 = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
-smallbox = { workspace = true }
+text = { path = "../text/" }

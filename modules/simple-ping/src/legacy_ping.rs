@@ -1,10 +1,10 @@
 use crate::SimplePing;
 use craftflow::{
-	connection::legacy::{LegacyPing, LegacyPingResponse},
 	CraftFlow,
+	connection::legacy::{LegacyPing, LegacyPingResponse},
 };
-use craftflow_protocol_core::common_structures::{text::TextContent, Text};
 use std::{net::IpAddr, ops::ControlFlow};
+use text::{Text, TextContent};
 
 #[craftflow::callback(event: LegacyPing)]
 pub async fn legacy_ping(

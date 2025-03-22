@@ -8,7 +8,7 @@ members = [
 	"craftflow-nbt-derive",
 	"craftflow-protocol",
 	# "example",
-	# "modules/*",
+	"modules/*",
 ]
 resolver = "2"
 

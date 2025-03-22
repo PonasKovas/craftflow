@@ -203,11 +203,11 @@ pub(crate) async fn handle_new_conn(
 	match result {
 		Ok(Ok(_)) => {} // ended peacefully 😊
 		Ok(Err(e)) => {
-			error!("connection task error: {e:?}");
+			error!("connection task error: {e}");
 		}
 		Err(e) => {
 			// panicked... wow.. cringe
-			error!("connection task panicked: {e:?}");
+			error!("connection task panicked: {e}");
 		}
 	}
 

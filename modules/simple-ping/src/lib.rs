@@ -10,8 +10,7 @@ mod ping;
 mod status;
 
 use craftflow::CraftFlow;
-use craftflow_protocol_core::{common_structures::Text, text};
-use std::borrow::Cow;
+use text::{Text, text};
 
 craftflow::init!(ctx: CraftFlow);
 
@@ -19,7 +18,7 @@ craftflow::init!(ctx: CraftFlow);
 /// Responds to the ping packet with a simple fixed message, shows the true online player count.
 pub struct SimplePing {
 	server_description: Text<'static>,
-	favicon: Option<Cow<'static, [u8]>>,
+	favicon: Option<Vec<u8>>,
 }
 
 impl SimplePing {
@@ -39,7 +38,7 @@ impl SimplePing {
 	}
 	/// Sets the favicon for the server.
 	/// The favicon should be the raw PNG image (exactly 64x64 pixels).
-	pub fn set_favicon(mut self, favicon: Option<Cow<'static, [u8]>>) -> Self {
+	pub fn set_favicon(mut self, favicon: Option<Vec<u8>>) -> Self {
 		self.favicon = favicon;
 		self
 	}
