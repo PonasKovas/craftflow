@@ -16,7 +16,8 @@ pub mod packet_events;
 pub mod various_events;
 
 use closureslop::Reactor;
-use connection::{handle_new_conn, ConnectionInterface};
+use connection::{ConnectionInterface, handle_new_conn};
+use craftflow_protocol::PacketBuilder;
 use modules::Modules;
 use std::{
 	collections::HashMap,
@@ -80,6 +81,12 @@ impl CraftFlow {
 	/// Accesses the connection handle of the given connection ID
 	pub fn get(&self, conn_id: u64) -> Arc<ConnectionInterface> {
 		Arc::clone(&self.connections.read().unwrap().connections[&conn_id])
+	}
+	/// Creates a packet builder for a given connection
+	pub fn build_packet<B: PacketBuilder>(&self, conn_id: u64) -> B {
+		let version = self.connections.read().unwrap().connections[&conn_id].protocol_version();
+
+		B::new(version)
 	}
 	/// Disconnects the client with the given connection ID
 	/// No-op if the client is already disconnected, panic if the client ID was never connected

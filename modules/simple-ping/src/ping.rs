@@ -2,7 +2,7 @@ use craftflow::CraftFlow;
 use craftflow_protocol::{
 	c2s::status::Ping,
 	disabled_versions,
-	s2c::{self, status::PingBuilder},
+	s2c::status::{PingBuilder, ping::v5::PingV5},
 };
 use std::ops::ControlFlow;
 
@@ -16,11 +16,10 @@ pub async fn ping(
 		Ping::V5(ping) => ping.time,
 	};
 
-	let response = match PingBuilder::new(cf.connections()[&conn_id].protocol_version()) {
+	let response = match cf.build_packet(conn_id) {
 		disabled_versions!(s2c::status::PingBuilder) => unreachable!(),
-		PingBuilder::V5(p) => p(s2c::status::ping::v5::PingV5 { time }),
+		PingBuilder::V5(p) => p(PingV5 { time }),
 	};
-
 	cf.get(conn_id).send(response).await;
 
 	ControlFlow::Continue(())

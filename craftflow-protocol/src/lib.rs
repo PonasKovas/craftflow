@@ -12,14 +12,21 @@ pub use craftflow_nbt;
 pub use error::{Error, Result};
 pub use maxlen;
 
-/// Trait for writing a packet
+/// Trait for writing a packet.
 pub trait PacketWrite {
 	fn packet_write(&self, output: &mut Vec<u8>, protocol_version: u32) -> usize;
 }
 
-/// Trait for reading a packet
+/// Trait for reading a packet.
 pub trait PacketRead<'a>: Sized {
 	fn packet_read(input: &mut &'a [u8], protocol_version: u32) -> Result<Self>;
+}
+
+/// Trait for packet builders.
+pub trait PacketBuilder {
+	type Packet;
+
+	fn new(protocol_version: u32) -> Self;
 }
 
 // this macro is used in the generated code to define structures

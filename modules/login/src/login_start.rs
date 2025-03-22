@@ -51,11 +51,9 @@ pub async fn login_start(
 		.unwrap()
 		.insert(conn_id, (username.clone(), uuid));
 
-	let version = cf.get(conn_id).protocol_version();
-
 	if let &Some(threshold) = &cf.modules.get::<Login>().compression_threshold {
 		// Send the packet to enable compression
-		let packet = match CompressBuilder::new(version) {
+		let packet = match cf.build_packet(conn_id) {
 			disabled_versions!(s2c::login::CompressBuilder) => unreachable!(),
 			CompressBuilder::V47(p) => p(CompressV47 {
 				threshold: threshold as i32,
@@ -73,7 +71,7 @@ pub async fn login_start(
 				.expect("public key somehow too long?");
 		let verify_token = VERIFY_TOKEN.as_bytes().try_into().unwrap();
 
-		let packet = match EncryptionBeginBuilder::new(version) {
+		let packet = match cf.build_packet(conn_id) {
 			disabled_versions!(s2c::login::EncryptionBeginBuilder) => unreachable!(),
 			EncryptionBeginBuilder::V5(p) => p(EncryptionBeginV5 {
 				server_id,

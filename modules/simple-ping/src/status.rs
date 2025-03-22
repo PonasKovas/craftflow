@@ -101,7 +101,7 @@ pub async fn status(
 		enforces_secure_chat: true,
 	};
 
-	let response = match ServerInfoBuilder::new(version) {
+	let response = match cf.build_packet(conn_id) {
 		disabled_versions!(s2c::status::ServerInfoBuilder) => unreachable!(),
 		ServerInfoBuilder::V5(p) => p(ServerInfoV5 {
 			response: serde_json::to_string(&status_info).expect("this cant fail bro"),

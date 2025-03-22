@@ -102,8 +102,7 @@ pub async fn encryption_response(
 				let uuid = uuid.unwrap_or(0);
 
 				// And finish the login process
-				let version = cf.get(conn_id).protocol_version();
-				let response = match SuccessBuilder::new(version) {
+				let response = match cf.build_packet(conn_id) {
 					disabled_versions!(s2c::login::SuccessBuilder) => unreachable!(),
 					SuccessBuilder::V5(p) => p(SuccessV5 {
 						uuid: format!(
