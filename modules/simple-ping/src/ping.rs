@@ -16,11 +16,11 @@ pub async fn ping(
 		Ping::V5(ping) => ping.time,
 	};
 
-	let response = match cf.build_packet(conn_id) {
+	cf.build_packet(conn_id, |b| match b {
 		disabled_versions!(s2c::status::PingBuilder) => unreachable!(),
 		PingBuilder::V5(p) => p(PingV5 { time }),
-	};
-	cf.get(conn_id).send(response).await;
+	})
+	.await;
 
 	ControlFlow::Continue(())
 }

@@ -102,7 +102,7 @@ pub async fn encryption_response(
 				let uuid = uuid.unwrap_or(0);
 
 				// And finish the login process
-				let response = match cf.build_packet(conn_id) {
+				cf.build_packet(conn_id, |b| match b {
 					disabled_versions!(s2c::login::SuccessBuilder) => unreachable!(),
 					SuccessBuilder::V5(p) => p(SuccessV5 {
 						uuid: format!(
@@ -127,8 +127,8 @@ pub async fn encryption_response(
 						properties: BVec::new(),
 						strict_error_handling: false,
 					}),
-				};
-				cf.get(conn_id).send(response).await;
+				})
+				.await;
 			}
 			_ => {
 				// couldnt decrypt the shared secret or verify token

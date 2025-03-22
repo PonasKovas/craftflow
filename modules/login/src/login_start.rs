@@ -53,13 +53,13 @@ pub async fn login_start(
 
 	if let &Some(threshold) = &cf.modules.get::<Login>().compression_threshold {
 		// Send the packet to enable compression
-		let packet = match cf.build_packet(conn_id) {
+		cf.build_packet(conn_id, |b| match b {
 			disabled_versions!(s2c::login::CompressBuilder) => unreachable!(),
 			CompressBuilder::V47(p) => p(CompressV47 {
 				threshold: threshold as i32,
 			}),
-		};
-		cf.get(conn_id).send(packet).await;
+		})
+		.await;
 	}
 
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
@@ -71,7 +71,7 @@ pub async fn login_start(
 				.expect("public key somehow too long?");
 		let verify_token = VERIFY_TOKEN.as_bytes().try_into().unwrap();
 
-		let packet = match cf.build_packet(conn_id) {
+		cf.build_packet(conn_id, |b| match b {
 			disabled_versions!(s2c::login::EncryptionBeginBuilder) => unreachable!(),
 			EncryptionBeginBuilder::V5(p) => p(EncryptionBeginV5 {
 				server_id,
@@ -89,8 +89,8 @@ pub async fn login_start(
 				verify_token,
 				should_authenticate: true,
 			}),
-		};
-		cf.get(conn_id).send(packet).await;
+		})
+		.await;
 	}
 
 	ControlFlow::Continue(())

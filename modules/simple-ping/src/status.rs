@@ -101,13 +101,13 @@ pub async fn status(
 		enforces_secure_chat: true,
 	};
 
-	let response = match cf.build_packet(conn_id) {
+	cf.build_packet(conn_id, |b| match b {
 		disabled_versions!(s2c::status::ServerInfoBuilder) => unreachable!(),
 		ServerInfoBuilder::V5(p) => p(ServerInfoV5 {
 			response: serde_json::to_string(&status_info).expect("this cant fail bro"),
 		}),
-	};
-	cf.get(conn_id).send(response).await;
+	})
+	.await;
 
 	ControlFlow::Continue(())
 }

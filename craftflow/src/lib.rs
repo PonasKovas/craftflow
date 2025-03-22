@@ -17,7 +17,7 @@ pub mod various_events;
 
 use closureslop::Reactor;
 use connection::{ConnectionInterface, handle_new_conn};
-use craftflow_protocol::PacketBuilder;
+use craftflow_protocol::{PacketBuilder, S2C};
 use modules::Modules;
 use std::{
 	collections::HashMap,
@@ -82,11 +82,17 @@ impl CraftFlow {
 	pub fn get(&self, conn_id: u64) -> Arc<ConnectionInterface> {
 		Arc::clone(&self.connections.read().unwrap().connections[&conn_id])
 	}
-	/// Creates a packet builder for a given connection
-	pub fn build_packet<B: PacketBuilder>(&self, conn_id: u64) -> B {
-		let version = self.connections.read().unwrap().connections[&conn_id].protocol_version();
+	/// Convenience function for building and sending a packet to a connection
+	pub async fn build_packet<B: PacketBuilder>(&self, conn_id: u64, f: impl FnOnce(B) -> B::Packet)
+	where
+		B::Packet: Into<S2C>,
+	{
+		let conn = self.get(conn_id);
 
-		B::new(version)
+		let builder = B::new(conn.protocol_version());
+		let packet = f(builder);
+
+		conn.send(packet).await;
 	}
 	/// Disconnects the client with the given connection ID
 	/// No-op if the client is already disconnected, panic if the client ID was never connected
@@ -120,7 +126,7 @@ impl Connections {
 	/// Panics if this ID was never connected
 	fn is_connected(&self, conn_id: u64) -> bool {
 		if self.next_conn_id <= conn_id {
-			panic!("attempt to disconnect client with ID {conn_id} that was never connected");
+			panic!("attempt to check client with ID {conn_id} that was never connected");
 		}
 
 		self.connections.contains_key(&conn_id)
