@@ -1,8 +1,8 @@
-use craftflow::{add_callback, packet_events::C2SAbLoginStartEvent, CraftFlow};
-use craftflow_protocol_core::text;
-use login::Login;
+use craftflow::{CraftFlow, add_callback};
+use craftflow_protocol::c2s::login::LoginStart;
 use simple_ping::SimplePing;
 use smallbox::SmallBox;
+use text::text;
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;
 
@@ -27,12 +27,12 @@ async fn main() -> anyhow::Result<()> {
 		))
 		.register(&mut craftflow);
 
-	add_callback!(craftflow.reactor, C2SAbLoginStartEvent => "printer" => |_ctx, (conn_id, packet)| SmallBox::new(async move {
+	add_callback!(craftflow.reactor, LoginStart => "printer" => |_ctx, (conn_id, packet)| SmallBox::new(async move {
 		println!("{} {:?}", conn_id, packet);
 		std::ops::ControlFlow::Continue(())
 	}));
 
-	Login::default().register(&mut craftflow);
+	// Login::default().register(&mut craftflow);
 
 	info!("Starting CraftFlow");
 
