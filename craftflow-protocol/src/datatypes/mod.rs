@@ -17,7 +17,7 @@ pub use array::Array;
 pub use buffer::Buffer;
 pub use nbt::{NamedNbt, Nbt};
 pub use rest_buffer::RestBuffer;
-pub use varint::VarInt;
+pub use varint::{OptVarInt, VarInt};
 pub use varlong::VarLong;
 
 /// Marks a Minecraft Protocol datatype format

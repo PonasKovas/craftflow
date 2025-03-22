@@ -6,17 +6,8 @@ use super::{MCP, MCPRead, MCPWrite};
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct VarInt;
 
-// impl VarInt {
-// 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
-// 	pub fn num_bytes(data: i32) -> usize {
-// 		let value = data as u32;
-// 		if value == 0 {
-// 			return 1;
-// 		}
-// 		let bits_needed = 32 - value.leading_zeros();
-// 		((bits_needed + 6) / 7) as usize
-// 	}
-// }
+#[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
+pub struct OptVarInt;
 
 impl MCP for VarInt {
 	type Data = i32;
@@ -74,6 +65,29 @@ impl MCPWrite for VarInt {
 		}
 
 		i
+	}
+}
+
+impl MCP for OptVarInt {
+	type Data = Option<i32>;
+}
+
+impl<'a> MCPRead<'a> for OptVarInt {
+	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
+		let varint = VarInt::mcp_read(input)?;
+
+		Ok(if varint == 0 { None } else { Some(varint - 1) })
+	}
+}
+
+impl MCPWrite for OptVarInt {
+	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize {
+		let v = match data {
+			Some(v) => v + 1,
+			None => 0,
+		};
+
+		VarInt::mcp_write(&v, output)
 	}
 }
 

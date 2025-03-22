@@ -24,7 +24,6 @@ You only get one chance to submit the correct code. If you make a mistake, you w
 Triple check before submitting!
 
 Quick cheatsheet:
-- `optvarint` and `varint` are the same thing.
 - Array<T, const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT, LEN = VarInt> is Array of T, MAX elements, length serialized as LEN type.
 No need to specify MAX or LEN if default is ok. If different LEN needed, specify MAX to be DEFAULT_ARRAY_LEN_LIMIT.
 - Buffer<const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT, LEN = VarInt> - is an array of bytes. Similar to Array, MAX is max number of bytes,

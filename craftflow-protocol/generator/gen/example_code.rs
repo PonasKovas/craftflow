@@ -2,7 +2,7 @@ mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct EntityInformationV18 {
 		pub entity_id: i32,
-		pub entity_type: VarInt,
+		pub entity_type: OptVarInt,
 		pub entity_num: VarLong,
 		pub blob: Buffer<DEFAULT_ARRAY_LEN_LIMIT, u64>,
 		pub entity_uuid: u128,
