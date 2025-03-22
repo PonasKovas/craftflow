@@ -103,7 +103,6 @@ pub async fn encryption_response(
 
 				// And finish the login process
 				cf.build_packet(conn_id, |b| match b {
-					disabled_versions!(s2c::login::SuccessBuilder) => unreachable!(),
 					SuccessBuilder::V5(p) => p(SuccessV5 {
 						uuid: format!(
 							"{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
@@ -127,6 +126,7 @@ pub async fn encryption_response(
 						properties: BVec::new(),
 						strict_error_handling: false,
 					}),
+					disabled_versions!(s2c::login::SuccessBuilder) => unreachable!(),
 				})
 				.await;
 			}
