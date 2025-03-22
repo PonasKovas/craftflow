@@ -7,7 +7,6 @@ edition = "2021"
 craftflow-macros = { path = "../craftflow-macros" }
 craftflow-protocol = { path = "../craftflow-protocol", features = ["closureslop-events"] }
 closureslop = { path = "../closureslop" }
-shallowclone = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }

@@ -58,21 +58,19 @@ impl PacketReader {
 		// wait for the length of the next packet
 		let packet_len = match self.read_varint_at_pos(0, decryptor).await {
 			Ok(l) => l,
-			Err(e) => {
-				// if we get an error while reading the length, it might be that the connection was just closed
-				// and in that case we don't want to print any errors, if it was closed cleanly on a packet boundary
-				if let ReadVarIntError::IO(error) = e {
-					// make sure there are no unparsed bytes left in the buffer too,
-					// which would mean that the conn didnt close on a packet boundary
-					if error.kind() == std::io::ErrorKind::UnexpectedEof && self.buffer.is_empty() {
-						// yep looks like the connection was closed
-						// so just return None, signaling that the connection was cleanly closed
-						return Ok(None);
-					}
+			// if we get an error while reading the length, it might be that the connection was just closed
+			// and in that case we don't want to print any errors, if it was closed cleanly on a packet boundary
+			Err(ReadVarIntError::IO(error)) => {
+				// make sure there are no unparsed bytes left in the buffer too,
+				// which would mean that the conn didnt close on a packet boundary
+				if error.kind() == std::io::ErrorKind::UnexpectedEof && self.buffer.is_empty() {
+					// yep looks like the connection was closed
+					// so just return None, signaling that the connection was cleanly closed
+					return Ok(None);
 				}
-
-				Err(e)?
+				Err(error)?
 			}
+			Err(e) => Err(e)?,
 		};
 
 		let mut packet_start = varint_num_bytes(packet_len);

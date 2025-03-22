@@ -59,7 +59,7 @@
 //! async fn main() {
 //! 	let mut reactor: Reactor<&'static str> = Reactor::new();
 //!
-//! 	add_callback!(reactor, MyEvent => "another_callback" => |ctx, arg| SmallBox::new(async move {
+//! 	add_callback!(reactor, MyEvent => "another_callback" => |ctx, args| SmallBox::new(async move {
 //! 		println!("manually added callback, not as convenient but more powerful");
 //!			args.push_str(" world!");
 //! 		ControlFlow::Break(7)

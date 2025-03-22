@@ -7,11 +7,15 @@ use super::{
 	packet_reader::PacketReader,
 	packet_writer::PacketWriter,
 };
-use crate::{CraftFlow, various_events::UnsupportedClientVersion};
+use crate::{CraftFlow, packet_events::trigger_c2s, various_events::UnsupportedClientVersion};
 use anyhow::{Context, bail};
-use craftflow_protocol::SUPPORTED_VERSIONS;
+use craftflow_protocol::{
+	C2S, SUPPORTED_VERSIONS,
+	c2s::{Handshaking, handshaking::SetProtocol},
+	disabled_versions,
+	s2c::login::{self, disconnect::v5::DisconnectV5},
+};
 use reader::reader_task;
-use shallowclone::MakeOwned;
 use std::{
 	net::SocketAddr,
 	ops::ControlFlow,
@@ -22,8 +26,7 @@ use tokio::{net::TcpStream, select, spawn, sync::mpsc, time::timeout};
 use tracing::error;
 use writer::writer_task;
 
-const CONCRETE_PACKET_CHANNEL_SIZE: usize = 16;
-const ABSTRACT_PACKET_CHANNEL_SIZE: usize = 16;
+const PACKET_CHANNEL_SIZE: usize = 16;
 
 #[derive(Clone, Debug)]
 struct ConnectionInfo {
@@ -82,48 +85,41 @@ pub(crate) async fn handle_new_conn(
 		Err(_) => bail!("timed out trying to read handshake"),
 	};
 
-	// normally we dont make packets owned, but here we have to because of how the event triggers are spaced out
-	let handshake_ab = AbHandshake::construct(&handshake)?
-		.assume_done()
-		.make_owned();
-
-	let next_state = match handshake_ab.next_state {
-		NextState::Status => State::Status,
-		NextState::Login | NextState::Transfer => State::Login,
+	let C2S::Handshaking(Handshaking::SetProtocol(SetProtocol::V5(set_protocol))) = handshake
+	else {
+		unreachable!("there is only one packet in the handshaking state");
 	};
 
+	let next_state = match set_protocol.next_state {
+		1 => State::Status,
+		2 | 3 => State::Login, // 2 - login, 3 - transfer
+		_ => bail!("invalid next_state"),
+	};
+	let version = set_protocol.protocol_version as u32;
+
 	// unless the next state is status, we need to check that the client protocol version is supported
-	if handshake_ab.next_state != NextState::Status {
-		if !(MIN_VERSION..=MAX_VERSION).contains(&handshake_ab.protocol_version) {
+	if next_state != State::Status {
+		if !SUPPORTED_VERSIONS.contains(&version) {
 			let message = match craftflow
 				.reactor
-				.trigger::<UnsupportedClientVersion>(
-					&craftflow,
-					&mut (socket_addr.ip(), handshake_ab.protocol_version),
-				)
+				.trigger::<UnsupportedClientVersion>(&craftflow, &mut (socket_addr.ip(), version))
 				.await
 			{
 				ControlFlow::Continue(_) => {
 					// default response
-					text!("Your version is not supported.", color = "white", bold)
+					"Your version is not supported.".to_string()
 				}
 				ControlFlow::Break(message) => message,
 			};
 
-			let abs_pkt = AbDisconnect { message };
-			let concrete_pkt = abs_pkt
-				.convert(handshake_ab.protocol_version, State::Login)?
-				.assume_success()
-				.next()
-				.unwrap();
+			let disconnect = match login::DisconnectBuilder::new(version) {
+				login::DisconnectBuilder::V5(p) => p(DisconnectV5 { reason: message }),
+				disabled_versions!(s2c::login::DisconnectBuilder) => unreachable!(),
+			}
+			.into();
+
 			packet_writer
-				.send(
-					next_state,
-					handshake_ab.protocol_version,
-					None,
-					&mut None,
-					&concrete_pkt,
-				)
+				.send(next_state, version, None, &mut None, &disconnect)
 				.await?;
 
 			return Ok(()); // close the connection
@@ -131,10 +127,7 @@ pub(crate) async fn handle_new_conn(
 	}
 
 	// All is good, can add to the client list now and spawn the tasks for reading/writing to it
-	let (concrete_packet_sender_in, concrete_packet_sender_out) =
-		mpsc::channel(CONCRETE_PACKET_CHANNEL_SIZE);
-	let (abstract_packet_sender_in, abstract_packet_sender_out) =
-		mpsc::channel(ABSTRACT_PACKET_CHANNEL_SIZE);
+	let (packet_sender_in, packet_sender_out) = mpsc::channel(PACKET_CHANNEL_SIZE);
 	let reader_state = Arc::new(RwLock::new(next_state));
 	let writer_state = Arc::new(RwLock::new(next_state));
 	let compression = Arc::new(OnceLock::new());
@@ -150,9 +143,8 @@ pub(crate) async fn handle_new_conn(
 			Arc::new(ConnectionInterface {
 				id,
 				ip: socket_addr.ip(),
-				protocol_version: handshake_ab.protocol_version,
-				concrete_packet_sender: concrete_packet_sender_in,
-				abstract_packet_sender: abstract_packet_sender_in,
+				protocol_version: version,
+				packet_sender: packet_sender_in,
 				encryption_secret: Arc::clone(&encryption_secret),
 				compression: Arc::clone(&compression),
 				writer_state: Arc::clone(&writer_state),
@@ -164,7 +156,7 @@ pub(crate) async fn handle_new_conn(
 
 	let conn_info = ConnectionInfo {
 		id,
-		version: handshake_ab.protocol_version,
+		version,
 		compression,
 		encryption_secret,
 		reader_state,
@@ -180,8 +172,7 @@ pub(crate) async fn handle_new_conn(
 		writer_task(
 			craftflow_clone2,
 			packet_writer,
-			concrete_packet_sender_out,
-			abstract_packet_sender_out,
+			packet_sender_out,
 			conn_info,
 		)
 		.await
@@ -190,24 +181,10 @@ pub(crate) async fn handle_new_conn(
 	// now that the tasks are up and running and everything is ready
 	// just emit the handshake events for consistency with all other packets
 
-	let handshake_ab: AbC2S = handshake_ab.into();
-	'events: {
-		let (cont, handshake) = trigger_c2s_concrete(false, &craftflow, id, handshake).await;
-		if !cont {
-			break 'events;
-		}
-		let (cont, handshake_ab) = trigger_c2s_abstract(false, &craftflow, id, handshake_ab).await;
-		if !cont {
-			break 'events;
-		}
-		let (cont, _handshake_ab) = trigger_c2s_abstract(true, &craftflow, id, handshake_ab).await;
-		if !cont {
-			break 'events;
-		}
-		let (cont, _handshake) = trigger_c2s_concrete(true, &craftflow, id, handshake).await;
-		if !cont {
-			break 'events;
-		}
+	let handshake = set_protocol.into();
+	let (cont, handshake) = trigger_c2s(false, &craftflow, id, handshake).await;
+	if cont {
+		trigger_c2s(true, &craftflow, id, handshake).await;
 	}
 
 	// and now just wait for the tasks to finish for any reason and clean up

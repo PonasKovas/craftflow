@@ -78,10 +78,19 @@ pub(super) async fn trigger_c2s(
 	conn_id: u64,
 	packet: C2S,
 ) -> (bool, C2S) {
-	craftflow_protocol::enum_go_brr!((c2s->version), packet -> inner {
+	let (cont, pkt) = craftflow_protocol::enum_go_brr!((c2s->version), packet -> inner {
 		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
-	})
+	});
+
+	if cont {
+		craftflow_protocol::enum_go_brr!((c2s->packet), pkt -> inner {
+			let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
+			(cont, pkt.into())
+		})
+	} else {
+		(cont, pkt)
+	}
 }
 pub(super) async fn trigger_s2c(
 	post: bool,
@@ -89,8 +98,17 @@ pub(super) async fn trigger_s2c(
 	conn_id: u64,
 	packet: S2C,
 ) -> (bool, S2C) {
-	craftflow_protocol::enum_go_brr!((s2c->version), packet -> inner {
+	let (cont, pkt) = craftflow_protocol::enum_go_brr!((s2c->version), packet -> inner {
 		let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
 		(cont, pkt.into())
-	})
+	});
+
+	if cont {
+		craftflow_protocol::enum_go_brr!((s2c->packet), pkt -> inner {
+			let (cont, pkt) = if !post { helper(craftflow, conn_id, inner).await } else { helper_post(craftflow, conn_id, inner).await };
+			(cont, pkt.into())
+		})
+	} else {
+		(cont, pkt)
+	}
 }
