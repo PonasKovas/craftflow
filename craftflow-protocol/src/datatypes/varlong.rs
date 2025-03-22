@@ -1,15 +1,15 @@
-use crate::Error;
-use crate::Result;
-use crate::{MCPRead, MCPWrite};
+use crate::{Error, Result};
+
+use super::{MCP, MCPRead, MCPWrite};
 
 /// A Minecraft Protocol VarLong
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct VarLong(pub i64);
+pub struct VarLong;
 
 impl VarLong {
 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
-	pub fn num_bytes(&self) -> usize {
-		let value = self.0 as u64;
+	pub fn num_bytes(data: i64) -> usize {
+		let value = data as u64;
 		if value == 0 {
 			return 1;
 		}
@@ -18,8 +18,11 @@ impl VarLong {
 	}
 }
 
+impl MCP for VarLong {
+	type Data = i64;
+}
 impl<'a> MCPRead<'a> for VarLong {
-	fn mcp_read(input: &mut &[u8]) -> Result<Self> {
+	fn mcp_read(input: &mut &[u8]) -> Result<i64> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i64; // The VarInt being constructed
 
@@ -46,14 +49,14 @@ impl<'a> MCPRead<'a> for VarLong {
 			}
 		}
 
-		Ok(Self(result))
+		Ok(result)
 	}
 }
 
 impl MCPWrite for VarLong {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
+	fn mcp_write(data: &i64, output: &mut Vec<u8>) -> usize {
 		let mut i = 0;
-		let mut value = self.0;
+		let mut value = *data;
 
 		loop {
 			// Take the 7 lower bits of the value
@@ -112,7 +115,7 @@ mod tests {
 	fn varlong_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let result = VarLong::mcp_read(&mut &case.1[..]).unwrap();
-			assert_eq!(result.0, case.0, "{i}");
+			assert_eq!(result, case.0, "{i}");
 		}
 	}
 
@@ -120,7 +123,7 @@ mod tests {
 	fn varlong_write() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let mut buf = Vec::new();
-			let result = VarLong(case.0).mcp_write(&mut buf);
+			let result = VarLong::mcp_write(&case.0, &mut buf);
 			assert_eq!(result, case.1.len(), "{i}");
 			assert_eq!(buf, case.1, "{i}");
 		}
@@ -129,7 +132,7 @@ mod tests {
 	#[test]
 	fn varlong_len() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			assert_eq!(VarLong(case.0).num_bytes(), case.1.len(), "{i}");
+			assert_eq!(VarLong::num_bytes(case.0), case.1.len(), "{i}");
 		}
 	}
 }

@@ -57,13 +57,12 @@ pub fn generate(
 					{write_match_arms}
 					other => panic!("{struct_name} cannot be written in {{other}} protocol version. Supported versions: {all_supported_versions}"),
 				}};
-				crate::MCPWrite::mcp_write(&crate::datatypes::VarInt(id), output) +
-				crate::MCPWrite::mcp_write(self, output)
+				VarInt::mcp_write(&id, output) + Self::mcp_write(self, output)
 			}}
 		}}
 		impl<'a> crate::PacketRead<'a> for {struct_name} {{
 			fn packet_read(input: &mut &'a [u8], protocol_version: u32) -> Result<Self> {{
-				let packet_id = <crate::datatypes::VarInt as crate::MCPRead>::mcp_read(input)?.0 as u32;
+				let packet_id = VarInt::mcp_read(input)? as u32;
 				let expected_packet_id = match protocol_version {{
 					{read_match_arms}
 					other => panic!("{struct_name} cannot be read in {{other}} protocol version. Supported versions: {all_supported_versions}"),
@@ -71,7 +70,7 @@ pub fn generate(
 				if packet_id != expected_packet_id {{
 					return Err(Error::WrongPacketId {{ found: packet_id, expected: expected_packet_id }});
 				}}
-				crate::MCPRead::mcp_read(input)
+				Self::mcp_read(input)
 			}}
 		}}
 

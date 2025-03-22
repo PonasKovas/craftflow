@@ -1,14 +1,17 @@
-use super::advance;
-use crate::{MCPRead, MCPWrite, Result};
+use super::{MCP, MCPRead, MCPWrite, advance};
+use crate::Result;
 
+impl MCP for bool {
+	type Data = Self;
+}
 impl<'a> MCPRead<'a> for bool {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
 		Ok(u8::mcp_read(input)? != 0)
 	}
 }
 impl MCPWrite for bool {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
-		output.push(*self as u8);
+	fn mcp_write(data: &Self, output: &mut Vec<u8>) -> usize {
+		output.push(*data as u8);
 		1
 	}
 }
@@ -17,6 +20,9 @@ macro_rules! impl_int {
 	($($name:ty),+ $(,)?) => {$(
 		const _: () = {
 			const SIZE: usize = std::mem::size_of::<$name>();
+			impl MCP for $name {
+				type Data = Self;
+			}
 			impl<'a> MCPRead<'a> for $name {
 				fn mcp_read(input: &mut &'a[u8]) -> Result<Self> {
 					if input.len() < SIZE {
@@ -30,8 +36,8 @@ macro_rules! impl_int {
 				}
 			}
 			impl MCPWrite for $name {
-				fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
-					output.extend_from_slice(&self.to_be_bytes()[..]);
+				fn mcp_write(data: &Self, output: &mut Vec<u8>) -> usize {
+					output.extend_from_slice(&data.to_be_bytes()[..]);
 
 					SIZE
 				}

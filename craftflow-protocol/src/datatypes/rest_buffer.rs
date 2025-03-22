@@ -1,47 +1,28 @@
-use crate::{MCPRead, MCPWrite, Result};
-use std::ops::{Deref, DerefMut};
+use super::{MCP, MCPRead, MCPWrite};
+use crate::{Error, Result, limits::DEFAULT_ARRAY_LEN_LIMIT};
+use maxlen::BVec;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct RestBuffer {
-	pub data: Vec<u8>,
-}
+pub struct RestBuffer<const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT>;
 
-impl RestBuffer {
-	pub fn new() -> Self {
-		Self { data: Vec::new() }
-	}
-	pub fn from_vec(v: Vec<u8>) -> Self {
-		Self { data: v }
-	}
+impl<const MAX: usize> MCP for RestBuffer<MAX> {
+	type Data = BVec<u8, MAX>;
 }
-impl From<Vec<u8>> for RestBuffer {
-	fn from(t: Vec<u8>) -> Self {
-		Self { data: t }
-	}
-}
-impl Deref for RestBuffer {
-	type Target = Vec<u8>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.data
-	}
-}
-impl DerefMut for RestBuffer {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.data
-	}
-}
-
 impl<'a> MCPRead<'a> for RestBuffer {
-	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
-		Ok(Self::from(input.to_owned()))
+	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
+		let bvec = BVec::from_vec(input.to_owned()).map_err(|e| Error::ArrayTooLong {
+			length: e.length,
+			max: e.maximum,
+		})?;
+
+		Ok(bvec)
 	}
 }
 
 impl MCPWrite for RestBuffer {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
-		output.extend_from_slice(self);
+	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize {
+		output.extend_from_slice(data);
 
-		self.len()
+		data.len()
 	}
 }

@@ -1,10 +1,14 @@
 //! Prefixes the inner type with a boolean, indicating whether the value is present or not.
 
+use super::{MCP, MCPRead, MCPWrite};
 use crate::Result;
-use crate::{MCPRead, MCPWrite};
+
+impl<T: MCP> MCP for Option<T> {
+	type Data = Option<T::Data>;
+}
 
 impl<'a, T: MCPRead<'a>> MCPRead<'a> for Option<T> {
-	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
+	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
 		let present = bool::mcp_read(input)?;
 
 		if present {
@@ -17,16 +21,16 @@ impl<'a, T: MCPRead<'a>> MCPRead<'a> for Option<T> {
 }
 
 impl<T: MCPWrite> MCPWrite for Option<T> {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
+	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
-		match self {
+		match data {
 			Some(value) => {
-				written += true.mcp_write(output);
-				written += value.mcp_write(output);
+				written += bool::mcp_write(&true, output);
+				written += T::mcp_write(value, output);
 			}
 			None => {
-				written += false.mcp_write(output);
+				written += bool::mcp_write(&false, output);
 			}
 		}
 

@@ -1,15 +1,15 @@
-use crate::Error;
-use crate::Result;
-use crate::{MCPRead, MCPWrite};
+use crate::{Error, Result};
+
+use super::{MCP, MCPRead, MCPWrite};
 
 /// A Minecraft Protocol VarInt
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
-pub struct VarInt(pub i32);
+pub struct VarInt;
 
 impl VarInt {
 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
-	pub fn num_bytes(&self) -> usize {
-		let value = self.0 as u32;
+	pub fn num_bytes(data: i32) -> usize {
+		let value = data as u32;
 		if value == 0 {
 			return 1;
 		}
@@ -18,8 +18,11 @@ impl VarInt {
 	}
 }
 
+impl MCP for VarInt {
+	type Data = i32;
+}
 impl<'a> MCPRead<'a> for VarInt {
-	fn mcp_read(input: &mut &[u8]) -> Result<Self> {
+	fn mcp_read(input: &mut &[u8]) -> Result<i32> {
 		let mut num_read = 0; // Count of bytes that have been read
 		let mut result = 0i32; // The VarInt being constructed
 
@@ -40,14 +43,14 @@ impl<'a> MCPRead<'a> for VarInt {
 			}
 		}
 
-		Ok(Self(result))
+		Ok(result)
 	}
 }
 
 impl MCPWrite for VarInt {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
+	fn mcp_write(data: &i32, output: &mut Vec<u8>) -> usize {
 		let mut i = 0;
-		let mut value = self.0;
+		let mut value = *data;
 
 		loop {
 			// Take the 7 lower bits of the value
@@ -74,62 +77,6 @@ impl MCPWrite for VarInt {
 	}
 }
 
-impl From<VarInt> for i128 {
-	fn from(value: VarInt) -> Self {
-		value.0 as i128
-	}
-}
-impl From<VarInt> for i64 {
-	fn from(value: VarInt) -> Self {
-		value.0 as i64
-	}
-}
-impl From<VarInt> for i32 {
-	fn from(value: VarInt) -> Self {
-		value.0 as i32
-	}
-}
-impl From<i32> for VarInt {
-	fn from(value: i32) -> Self {
-		Self(value)
-	}
-}
-impl From<i16> for VarInt {
-	fn from(value: i16) -> Self {
-		Self(value as i32)
-	}
-}
-impl From<u16> for VarInt {
-	fn from(value: u16) -> Self {
-		Self(value as i32)
-	}
-}
-impl From<i8> for VarInt {
-	fn from(value: i8) -> Self {
-		Self(value as i32)
-	}
-}
-impl From<u8> for VarInt {
-	fn from(value: u8) -> Self {
-		Self(value as i32)
-	}
-}
-
-impl TryFrom<usize> for VarInt {
-	type Error = std::num::TryFromIntError;
-
-	fn try_from(value: usize) -> std::result::Result<Self, Self::Error> {
-		Ok(VarInt(value.try_into()?))
-	}
-}
-impl TryFrom<VarInt> for usize {
-	type Error = std::num::TryFromIntError;
-
-	fn try_from(value: VarInt) -> std::result::Result<Self, Self::Error> {
-		value.0.try_into()
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -152,7 +99,7 @@ mod tests {
 	fn varint_read() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let result = VarInt::mcp_read(&mut &case.1[..]).unwrap();
-			assert_eq!(result.0, case.0, "{i}");
+			assert_eq!(result, case.0, "{i}");
 		}
 	}
 
@@ -160,7 +107,7 @@ mod tests {
 	fn varint_write() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
 			let mut buf = Vec::new();
-			let result = VarInt(case.0).mcp_write(&mut buf);
+			let result = VarInt::mcp_write(&case.0, &mut buf);
 			assert_eq!(result, case.1.len(), "{i}");
 			assert_eq!(buf, case.1, "{i}");
 		}
@@ -169,7 +116,7 @@ mod tests {
 	#[test]
 	fn varint_len() {
 		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			assert_eq!(VarInt(case.0).num_bytes(), case.1.len(), "{i}");
+			assert_eq!(VarInt::num_bytes(case.0), case.1.len(), "{i}");
 		}
 	}
 }

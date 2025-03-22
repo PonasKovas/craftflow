@@ -1,6 +1,8 @@
 //! Common datatypes found all throughout the network protocol.
 //!
 
+use crate::{Error, Result};
+
 mod array;
 mod buffer;
 mod nbt;
@@ -18,6 +20,22 @@ pub use rest_buffer::RestBuffer;
 pub use varint::VarInt;
 pub use varlong::VarLong;
 
+/// Marks a Minecraft Protocol datatype format
+pub trait MCP {
+	/// The actual data
+	type Data;
+}
+
+/// Defines how to write the MCP data
+pub trait MCPWrite: MCP {
+	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize;
+}
+
+/// Defines how to read the MCP data
+pub trait MCPRead<'a>: MCP + Sized {
+	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data>;
+}
+
 // Helper functions for implementations:
 ////////////////////////////////////////
 
@@ -26,4 +44,13 @@ fn advance<'a>(s: &mut &'a [u8], n: usize) -> &'a [u8] {
 	let (l, r) = std::mem::take(s).split_at(n);
 	*s = r;
 	l
+}
+
+/// 👹
+fn peek(input: &&[u8]) -> Result<u8> {
+	if input.len() < 1 {
+		return Err(Error::NotEnoughData(1));
+	}
+
+	Ok(input[0])
 }

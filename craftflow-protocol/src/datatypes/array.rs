@@ -1,60 +1,25 @@
-use super::VarInt;
-use crate::{Error, MCPRead, MCPWrite, Result};
+use super::{MCP, MCPRead, MCPWrite, VarInt};
+use crate::{Error, Result, limits::DEFAULT_ARRAY_LEN_LIMIT};
 use maxlen::BVec;
-use std::{
-	any::type_name,
-	fmt::Debug,
-	marker::PhantomData,
-	ops::{Deref, DerefMut},
-};
-
-// all arrays that dont specify an explicit limit will have this length limit. might tweak this later.
-const DEFAULT_LIMIT: usize = 1024 * 1024;
+use std::{any::type_name, fmt::Debug, marker::PhantomData};
 
 /// A generic sequence of elements of type `T`, length prefixed as type `LEN` (in the MCP format) and `MAX` maximum elements allowed.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Array<T, const MAX: usize = DEFAULT_LIMIT, LEN = VarInt> {
-	pub inner: BVec<T, MAX>,
-	_phantom: PhantomData<LEN>,
+pub struct Array<T, const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT, LEN = VarInt> {
+	_phantom: PhantomData<fn(T, LEN) -> (T, LEN)>,
 }
 
-impl<LEN, T: Default, const MAX: usize> Array<T, MAX, LEN> {
-	pub fn new() -> Self {
-		Self {
-			inner: BVec::new(),
-			_phantom: PhantomData,
-		}
-	}
-}
-
-impl<LEN, T, const MAX: usize> Deref for Array<T, MAX, LEN> {
-	type Target = BVec<T, MAX>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.inner
-	}
-}
-impl<LEN, T, const MAX: usize> DerefMut for Array<T, MAX, LEN> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.inner
-	}
-}
-
-impl<LEN, T, const MAX: usize> From<BVec<T, MAX>> for Array<T, MAX, LEN> {
-	fn from(value: BVec<T, MAX>) -> Self {
-		Self {
-			inner: value,
-			_phantom: PhantomData,
-		}
-	}
+impl<T: MCP, LEN, const MAX: usize> MCP for Array<T, MAX, LEN> {
+	type Data = BVec<T::Data, MAX>;
 }
 
 impl<'a, T, LEN, const MAX: usize> MCPRead<'a> for Array<T, MAX, LEN>
 where
 	T: MCPRead<'a>,
-	LEN: MCPRead<'a> + TryInto<usize> + Into<i128> + Copy,
+	LEN: MCPRead<'a>,
+	LEN::Data: TryInto<usize> + Into<i128> + Copy,
 {
-	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
+	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
 		let len = LEN::mcp_read(input)?;
 		let len_i128 = len.into();
 		let len: usize = len
@@ -71,29 +36,29 @@ where
 			max: e.maximum,
 		})?;
 
-		Ok(bvec.into())
+		Ok(bvec)
 	}
 }
-impl<T, LEN, const MAX: usize> MCPWrite for Array<T, MAX, LEN>
+impl<T, LEN, const MAX: usize, LENDATA> MCPWrite for Array<T, MAX, LEN>
 where
-	usize: TryInto<LEN>,
+	usize: TryInto<LENDATA>,
 	T: MCPWrite,
-	LEN: MCPWrite,
+	LEN: MCPWrite<Data = LENDATA>,
 {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
+	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize {
 		let mut written = 0;
 
-		let len: LEN = self.len().try_into().unwrap_or_else(|_| {
+		let len: LENDATA = data.len().try_into().unwrap_or_else(|_| {
 			panic!(
 				"Array length {} could not be converted to {}",
-				self.len(),
-				type_name::<LEN>()
+				data.len(),
+				type_name::<LENDATA>()
 			)
 		});
 
-		written += len.mcp_write(output);
-		for element in self.iter() {
-			written += element.mcp_write(output);
+		written += LEN::mcp_write(&len, output);
+		for element in data.iter() {
+			written += T::mcp_write(element, output);
 		}
 
 		written

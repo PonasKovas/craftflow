@@ -58,7 +58,7 @@ pub fn generate(
 
 					format!(
 						"({packet_id}, {versions_pattern}) => Self::{packet_enum}({state}::{packet_enum}::{packet_variant}(
-							<{state}::{packet}::{group_id}::{packet_struct} as crate::MCPRead>::mcp_read(input)?
+							<{state}::{packet}::{group_id}::{packet_struct}>::mcp_read(input)?
 						)),"
 					)
 				}).collect::<String>()
@@ -80,7 +80,7 @@ pub fn generate(
 				if !matches!(protocol_version, {all_supported_versions_pattern}) {{
 					panic!("{enum_name} cannot be read in {{protocol_version}} protocol version. Supported versions: {all_supported_versions_list}");
 				}}
-				let packet_id = <crate::datatypes::VarInt as crate::MCPRead>::mcp_read(input)?.0 as u32;
+				let packet_id = VarInt::mcp_read(input)? as u32;
 				let packet = match (packet_id, protocol_version) {{
 					{read_match_arms}
 					(other, _) => return Err(Error::UnknownPacketId{{ id: other, protocol_version, state: "{direction}->{state}" }}),

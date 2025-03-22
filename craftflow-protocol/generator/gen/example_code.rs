@@ -4,14 +4,14 @@ mcp! {
 		pub entity_id: i32,
 		pub entity_type: VarInt,
 		pub entity_num: VarLong,
-		pub blob: Buffer<1_000_000, u64>,
+		pub blob: Buffer<DEFAULT_ARRAY_LEN_LIMIT, u64>,
 		pub entity_uuid: u128,
 		pub is_player: Option<String>,
 		pub position: Position,
 		pub information: Information,
 		pub associated_data: NamedNbt,
 		pub block_nbt: Nbt,
-		pub history: Array<VarInt, 1_000_000, VarInt>,
+		pub history: Array<VarInt, DEFAULT_ARRAY_LEN_LIMIT, VarInt>,
 		pub crypto: Crypto,
 	}
 }
@@ -28,7 +28,7 @@ mcp! {
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct Information {
-		pub inventory: Array<u8, 1_000_000, VarInt>,
+		pub inventory: Array<u8, DEFAULT_ARRAY_LEN_LIMIT, VarInt>,
 		pub priority: f32,
 		pub world_status: WorldStatus,
 		pub plugin_data: RestBuffer,
@@ -37,23 +37,29 @@ mcp! {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum WorldStatus {
-	V1(String),
-	V2 { velocity: f64, jumped: bool },
+	V1(<String as MCP>::Data),
+	V2 {
+		velocity: <f64 as MCP>::Data,
+		jumped: <bool as MCP>::Data,
+	},
 }
 
+impl MCP for WorldStatus {
+	type Data = Self;
+}
 impl MCPWrite for WorldStatus {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
+	fn mcp_write(data: &Self, output: &mut Vec<u8>) -> usize {
 		let mut written_bytes = 0;
 
-		match self {
+		match data {
 			WorldStatus::V1(s) => {
-				written_bytes += VarInt(0).mcp_write(output);
-				written_bytes += s.mcp_write(output);
+				written_bytes += VarInt::mcp_write(&0, output);
+				written_bytes += String::mcp_write(s, output);
 			}
 			WorldStatus::V2 { velocity, jumped } => {
-				written_bytes += VarInt(1).mcp_write(output);
-				written_bytes += velocity.mcp_write(output);
-				written_bytes += jumped.mcp_write(output);
+				written_bytes += VarInt::mcp_write(&1, output);
+				written_bytes += f64::mcp_write(velocity, output);
+				written_bytes += bool::mcp_write(jumped, output);
 			}
 		}
 
@@ -65,7 +71,7 @@ impl<'a> MCPRead<'a> for WorldStatus {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self> {
 		let variant = VarInt::mcp_read(input)?;
 
-		match variant.0 {
+		match variant {
 			0 => {
 				let s = String::mcp_read(input)?;
 				Ok(Self::V1(s))
@@ -86,30 +92,33 @@ impl<'a> MCPRead<'a> for WorldStatus {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Crypto {
 	WithVerifyToken {
-		verify_token: Buffer,
+		verify_token: <Buffer as MCP>::Data,
 	},
 	WithoutVerifyToken {
-		salt: i64,
-		message_signature: Buffer,
+		salt: <i64 as MCP>::Data,
+		message_signature: <Buffer as MCP>::Data,
 	},
 }
 
+impl MCP for Crypto {
+	type Data = Self;
+}
 impl MCPWrite for Crypto {
-	fn mcp_write(&self, output: &mut Vec<u8>) -> usize {
+	fn mcp_write(data: &Self, output: &mut Vec<u8>) -> usize {
 		let mut written_bytes = 0;
 
-		match self {
+		match data {
 			Crypto::WithVerifyToken { verify_token } => {
-				written_bytes += true.mcp_write(output);
-				written_bytes += verify_token.mcp_write(output);
+				written_bytes += bool::mcp_write(&true, output);
+				written_bytes += <Buffer>::mcp_write(verify_token, output);
 			}
 			Crypto::WithoutVerifyToken {
 				salt,
 				message_signature,
 			} => {
-				written_bytes += false.mcp_write(output);
-				written_bytes += salt.mcp_write(output);
-				written_bytes += message_signature.mcp_write(output);
+				written_bytes += bool::mcp_write(&false, output);
+				written_bytes += i64::mcp_write(salt, output);
+				written_bytes += <Buffer>::mcp_write(message_signature, output);
 			}
 		}
 
@@ -122,11 +131,11 @@ impl<'a> MCPRead<'a> for Crypto {
 		let has_verify_token = bool::mcp_read(input)?;
 
 		if has_verify_token {
-			let verify_token = Buffer::mcp_read(input)?;
+			let verify_token = <Buffer>::mcp_read(input)?;
 			Ok(Self::WithVerifyToken { verify_token })
 		} else {
 			let salt = i64::mcp_read(input)?;
-			let message_signature = Buffer::mcp_read(input)?;
+			let message_signature = <Buffer>::mcp_read(input)?;
 			Ok(Self::WithoutVerifyToken {
 				salt,
 				message_signature,
