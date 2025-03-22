@@ -6,17 +6,17 @@ use super::{MCP, MCPRead, MCPWrite};
 #[derive(Debug, Clone, Copy, PartialEq, Hash, Eq, PartialOrd, Ord)]
 pub struct VarLong;
 
-impl VarLong {
-	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
-	pub fn num_bytes(data: i64) -> usize {
-		let value = data as u64;
-		if value == 0 {
-			return 1;
-		}
-		let bits_needed = 64 - value.leading_zeros();
-		((bits_needed + 6) / 7) as usize
-	}
-}
+// impl VarLong {
+// 	/// Returns the length (in bytes) of the VarInt in the Minecraft Protocol format.
+// 	pub fn num_bytes(data: i64) -> usize {
+// 		let value = data as u64;
+// 		if value == 0 {
+// 			return 1;
+// 		}
+// 		let bits_needed = 64 - value.leading_zeros();
+// 		((bits_needed + 6) / 7) as usize
+// 	}
+// }
 
 impl MCP for VarLong {
 	type Data = i64;
@@ -129,10 +129,10 @@ mod tests {
 		}
 	}
 
-	#[test]
-	fn varlong_len() {
-		for (i, case) in TEST_CASES.into_iter().enumerate() {
-			assert_eq!(VarLong::num_bytes(case.0), case.1.len(), "{i}");
-		}
-	}
+	// #[test]
+	// fn varlong_len() {
+	// 	for (i, case) in TEST_CASES.into_iter().enumerate() {
+	// 		assert_eq!(VarLong::num_bytes(case.0), case.1.len(), "{i}");
+	// 	}
+	// }
 }

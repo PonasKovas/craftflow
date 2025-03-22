@@ -41,7 +41,7 @@ macro_rules! mcp {
         }
 
         impl MCPWrite for $name {
-            fn mcp_write(data: &Self, #[allow(unused_variables)] output: &mut Vec<u8>) -> usize {
+            fn mcp_write(#[allow(unused_variables)] data: &Self, #[allow(unused_variables)] output: &mut Vec<u8>) -> usize {
                 #[allow(unused_mut)]
                 let mut written_bytes = 0;
 
