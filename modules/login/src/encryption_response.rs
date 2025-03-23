@@ -38,8 +38,8 @@ pub async fn encryption_response(
 						verify_token = Some(t);
 					}
 					Crypto::WithoutVerifyToken {
-						salt,
-						message_signature,
+						salt: _,
+						message_signature: _,
 					} => {
 						// TODO idk what to even do with this shit??
 						verify_token = None;
