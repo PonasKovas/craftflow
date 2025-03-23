@@ -11,6 +11,6 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct RegistryDataV764 {
-		pub codec: Nbt,
+		pub codec: (Nbt),
 	}
 }

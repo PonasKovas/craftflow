@@ -44,17 +44,17 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct SuccessV759 {
-		pub uuid: u128,
-		pub username: String,
-		pub properties: Array<Property>,
+		pub uuid: (u128),
+		pub username: (String),
+		pub properties: (Array<(Property)>),
 	}
 }
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct Property {
-		pub name: String,
-		pub value: String,
-		pub signature: Option<String>,
+		pub name: (String),
+		pub value: (String),
+		pub signature: (Option<(String)>),
 	}
 }

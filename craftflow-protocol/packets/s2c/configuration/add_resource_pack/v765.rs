@@ -30,10 +30,10 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct AddResourcePackV765 {
-		pub uuid: u128,
-		pub url: String,
-		pub hash: String,
-		pub forced: bool,
-		pub prompt_message: Option<Nbt>,
+		pub uuid: (u128),
+		pub url: (String),
+		pub hash: (String),
+		pub forced: (bool),
+		pub prompt_message: (Option<(Nbt)>),
 	}
 }

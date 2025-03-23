@@ -19,8 +19,8 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct LoginPluginRequestV393 {
-		pub message_id: VarInt,
-		pub channel: String,
-		pub data: RestBuffer,
+		pub message_id: (VarInt),
+		pub channel: (String),
+		pub data: (RestBuffer),
 	}
 }

@@ -1,37 +1,37 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct EntityInformationV18 {
-		pub entity_id: i32,
-		pub entity_type: OptVarInt,
-		pub entity_num: VarLong,
-		pub blob: Buffer<u64>,
-		pub entity_uuid: u128,
-		pub is_player: Option<String>,
-		pub position: Position,
-		pub information: Information,
-		pub associated_data: NamedNbt,
-		pub block_nbt: Nbt,
-		pub history: Array<VarInt>,
-		pub crypto: Crypto,
+		pub entity_id: (i32),
+		pub entity_type: (OptVarInt),
+		pub entity_num: (VarLong),
+		pub blob: (Buffer<(u64)>),
+		pub entity_uuid: (u128),
+		pub is_player: (Option<(String)>),
+		pub position: (Position),
+		pub information: (Information),
+		pub associated_data: (NamedNbt),
+		pub block_nbt: (Nbt),
+		pub history: (Array<(VarInt)>),
+		pub crypto: (Crypto),
 	}
 }
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
 	pub struct Position {
-		pub x: i32,
-		pub z: i32,
-		pub y: i16,
+		pub x: (i32),
+		pub z: (i32),
+		pub y: (i16),
 	}
 }
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct Information {
-		pub inventory: Array<u8>,
-		pub priority: f32,
-		pub world_status: WorldStatus,
-		pub plugin_data: RestBuffer,
+		pub inventory: (Array<(u8)>),
+		pub priority: (f32),
+		pub world_status: (WorldStatus),
+		pub plugin_data: (RestBuffer),
 	}
 }
 

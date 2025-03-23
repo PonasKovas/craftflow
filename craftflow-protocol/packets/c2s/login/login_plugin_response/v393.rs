@@ -18,7 +18,7 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct LoginPluginResponseV393 {
-		pub message_id: VarInt,
-		pub data: Option<RestBuffer>,
+		pub message_id: (VarInt),
+		pub data: (Option<(RestBuffer)>),
 	}
 }

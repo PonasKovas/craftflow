@@ -17,8 +17,9 @@ assumptions or write anything more than is requested of you, you will be fired. 
 definition are ALREADY DEFINED and have MCP, MCPRead and MCPWrite traits implemented for them. Do not import anything,
 everything you need is already imported. Derive essential traits for all types (Debug, PartialEq, Clone, Hash, PartialOrd,
 Ord and Eq if possible). There is a macro mcp!{} that automatically implements MCP, MCPRead and MCPWrite for straightforward
-structures. Use it where appropriate. It does not support enums of any kind. If the data is not just fields in a sequence
-you must implement MCPRead and MCPWrite manually. Do not use the macro in those cases.
+structures, but you have to type all types in (), including inner generics. Use it where appropriate.
+It does not support enums of any kind. If the data is not just fields in a sequence you must implement MCPRead and MCPWrite manually.
+Do not use the macro in those cases.
 
 You only get one chance to submit the correct code. If you make a mistake, you will be fired, this is your last chance.
 Triple check before submitting!

@@ -48,18 +48,18 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct SuccessV766 {
-		pub uuid: u128,
-		pub username: String,
-		pub properties: Array<Property>,
-		pub strict_error_handling: bool,
+		pub uuid: (u128),
+		pub username: (String),
+		pub properties: (Array<(Property)>),
+		pub strict_error_handling: (bool),
 	}
 }
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct Property {
-		pub name: String,
-		pub value: String,
-		pub signature: Option<String>,
+		pub name: (String),
+		pub value: (String),
+		pub signature: (Option<(String)>),
 	}
 }

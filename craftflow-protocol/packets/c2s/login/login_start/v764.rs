@@ -15,7 +15,7 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct LoginStartV764 {
-		pub username: String,
-		pub player_uuid: u128,
+		pub username: (String),
+		pub player_uuid: (u128),
 	}
 }

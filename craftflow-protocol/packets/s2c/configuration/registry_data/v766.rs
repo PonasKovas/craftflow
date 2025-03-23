@@ -36,15 +36,15 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct RegistryDataV766 {
-		pub id: String,
-		pub entries: Array<RegistryEntry>,
+		pub id: (String),
+		pub entries: (Array<(RegistryEntry)>),
 	}
 }
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct RegistryEntry {
-		pub key: String,
-		pub value: Option<Nbt>,
+		pub key: (String),
+		pub value: (Option<(Nbt)>),
 	}
 }

@@ -63,8 +63,8 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct EncryptionBeginV759 {
-		pub shared_secret: Buffer,
-		pub crypto: Crypto,
+		pub shared_secret: (Buffer),
+		pub crypto: (Crypto),
 	}
 }
 

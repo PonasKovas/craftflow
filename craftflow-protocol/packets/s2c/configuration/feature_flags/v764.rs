@@ -17,6 +17,6 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
 	pub struct FeatureFlagsV764 {
-		pub features: Array<String>,
+		pub features: (Array<(String)>),
 	}
 }
