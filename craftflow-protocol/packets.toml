@@ -55,6 +55,43 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 # <packet id> = [<versions that use that packet id>]
 3 = [764, 765, 766, 767, 768, 769]
 
+[c2s.configuration.settings.764]
+# <packet id> = [<versions that use that packet id>]
+0 = [764, 765, 766, 767]
+
+[c2s.configuration.settings.768]
+# <packet id> = [<versions that use that packet id>]
+0 = [768, 769]
+
+[c2s.configuration.custom_payload.764]
+# <packet id> = [<versions that use that packet id>]
+1 = [764, 765]
+2 = [766, 767, 768, 769]
+
+[c2s.configuration.finish_configuration.764]
+# <packet id> = [<versions that use that packet id>]
+2 = [764, 765]
+3 = [766, 767, 768, 769]
+
+[c2s.configuration.keep_alive.764]
+# <packet id> = [<versions that use that packet id>]
+3 = [764, 765]
+4 = [766, 767, 768, 769]
+
+[c2s.configuration.pong.764]
+# <packet id> = [<versions that use that packet id>]
+4 = [764, 765]
+5 = [766, 767, 768, 769]
+
+[c2s.configuration.resource_pack_receive.764]
+# <packet id> = [<versions that use that packet id>]
+5 = [764]
+
+[c2s.configuration.resource_pack_receive.765]
+# <packet id> = [<versions that use that packet id>]
+5 = [765]
+6 = [766, 767, 768, 769]
+
 [s2c.status.server_info.5]
 # <packet id> = [<versions that use that packet id>]
 0 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]

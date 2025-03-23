@@ -14,8 +14,8 @@ PACKETS = {
         "handshaking": ["set_protocol"],
         "status": ["ping_start", "ping"],
         "login": ["login_start", "encryption_begin", "login_plugin_response", "login_acknowledged"],
-        # "configuration": ["settings", "custom_payload", "finish_configuration", "keep_alive", "pong",
-        #     "resource_pack_receive"],
+        "configuration": ["settings", "custom_payload", "finish_configuration", "keep_alive", "pong",
+                          "resource_pack_receive"],
     },
     "s2c": {
         "status": ["server_info", "ping"],
