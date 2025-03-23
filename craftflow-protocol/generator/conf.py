@@ -5,6 +5,7 @@ CARGO_TOML_PATH = Path("../Cargo.toml")
 CARGO_TOML_START_MARKER = "# START AUTO FEATURES SECTOR #"
 CARGO_TOML_END_MARKER = "# END AUTO FEATURES SECTOR #"
 PACKETS_IMPL_PATH = Path("../packets/")
+TYPES_IMPL_PATH = Path("../packets/")
 CACHE_DIR = Path(".cache/")
 REPOSITORY = "https://github.com/PrismarineJS/minecraft-data.git"
 COMMIT = "89afb7586417a3b3a64d3ffca26dc96dddb7ae50"
@@ -24,3 +25,4 @@ PACKETS = {
                           "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags", "tags", "reset_chat"],
     }
 }
+TYPES = ["tags"]

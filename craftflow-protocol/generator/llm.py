@@ -6,7 +6,7 @@ openai_client = OpenAI()
 MODEL = "gpt-4o"
 
 
-def llm_gen_packet_impl(packet: str, version: int, spec) -> str:
+def llm_gen_impl(packet: str, version: int, spec) -> str:
     p = Path(__file__).parent
     with open(p / "prompt.py", 'r') as file:
         prompt = file.read()

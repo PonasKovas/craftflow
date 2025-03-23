@@ -5,16 +5,17 @@ import subprocess
 from pathlib import Path
 from colorama import init, Fore, Style
 
-from .parse_protocol import get_packet_id, get_packet_spec, has_packet
+from conf import *
+from parse_protocol import get_packet_id, get_packet_spec, has_packet
 
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
 
 
-def gen(args, toml, protocols: Dict[int, any], packets_impl_path: Path, direction: str, state: str, packet: str):
+def gen_packets(args, toml, protocols: Dict[int, any], direction: str, state: str, packet: str):
     # only load llm module if gen_llm flag passed
     # because otherwise OpenAI requires an API key
     if args.gen_llm:
-        from .llm import llm_gen_packet_impl
+        from llm import llm_gen_packet_impl
 
     # find all versions that have an identical packet
     # format:
@@ -68,7 +69,7 @@ def gen(args, toml, protocols: Dict[int, any], packets_impl_path: Path, directio
         #############################
 
         # if implementation not generated yet - generate
-        packet_impl_path = packets_impl_path / direction / state / packet
+        packet_impl_path = PACKETS_IMPL_PATH / direction / state / packet
         impl_path = packet_impl_path / f"v{first_version}.rs"
         if not impl_path.exists():
             if not args.gen_llm:
@@ -79,7 +80,7 @@ def gen(args, toml, protocols: Dict[int, any], packets_impl_path: Path, directio
 
             spec = get_packet_spec(
                 protocols[first_version], direction, state, packet)
-            code = llm_gen_packet_impl(packet, first_version, spec)
+            code = llm_gen_impl(packet, first_version, spec)
 
             with open(impl_path, "w") as f:
                 f.write(code)

@@ -8,7 +8,8 @@ from colorama import init, Fore, Style
 from conf import *
 from find_all_versions import find_all_versions
 from load_protocols import load_protocols
-from gen import gen
+from gen_packets import gen_packets
+from gen_types import gen_types
 from tomlkit import table, inline_table, dumps, document
 import tomlkit
 import argparse
@@ -60,8 +61,17 @@ def main():
             for packet in packets:
                 packet_table = table(True)
                 state_table.add(packet, packet_table)
-                gen(args, packet_table, protocols, PACKETS_IMPL_PATH,
-                    direction, state, packet)
+                gen_packets(args, packet_table, protocols,
+                            direction, state, packet)
+
+    # Generate types
+    types_table = table(True)
+    packets_toml.add("type", types_table)
+    for ty in TYPES:
+        type_table = table()
+        types_table.add(packet, type_table)
+        types_table.add(tomlkit.comment("<group id> = [<versions>]"))
+        gen_types(args, type_table, protocols, ty)
 
     # write the packets.toml
     with open(PACKETS_TOML_PATH, "w") as f:
