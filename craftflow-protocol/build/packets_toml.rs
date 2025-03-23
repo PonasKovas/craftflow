@@ -6,11 +6,13 @@ use std::fs::read_to_string;
 mod direction;
 mod packet_name;
 mod state;
+mod r#type;
 mod version;
 
 pub use direction::Direction;
 pub use packet_name::PacketName;
 pub use state::State;
+pub use r#type::Type;
 pub use version::Version;
 
 type Map<T> = IndexMap<String, T>;
@@ -20,6 +22,9 @@ type Map<T> = IndexMap<String, T>;
 struct PacketsTomlInternal {
 	/// All supported protocol versions
 	pub versions: Vec<u32>,
+	/// types
+	#[serde(rename = "type")]
+	pub types: Map<Map<Vec<u32>>>,
 	/// direction -> state -> packet -> group version : 	packet id -> versions
 	#[serde(flatten)]
 	pub packets: Map<Map<Map<Map<Map<Vec<u32>>>>>>,
@@ -30,6 +35,8 @@ struct PacketsTomlInternal {
 pub struct PacketsToml {
 	/// All supported protocol versions
 	pub versions: Vec<u32>,
+	/// types
+	pub types: IndexMap<Type, IndexMap<Version, Vec<u32>>>,
 	/// direction -> state -> packet -> group version : 	packet id -> versions
 	pub packets: IndexMap<
 		Direction,
@@ -44,6 +51,25 @@ pub fn load() -> PacketsToml {
 
 	PacketsToml {
 		versions: internal.versions,
+		types: internal
+			.types
+			.into_iter()
+			.map(|(k, v)| {
+				(
+					Type(k),
+					v.into_iter()
+						.map(|(k, v)| {
+							(
+								Version(
+									k.parse().expect("group version must be valid u32 integer"),
+								),
+								v,
+							)
+						})
+						.collect(),
+				)
+			})
+			.collect(),
 		packets: internal
 			.packets
 			.into_iter()

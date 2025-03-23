@@ -9,6 +9,7 @@ mod shared;
 const PACKETS_TOML: &str = "packets.toml";
 const PROMPT_CODE_EXAMPLE_PATH: &str = "generator/example_code.rs";
 const PACKETS_DIR: &str = "packets/";
+const TYPES_DIR: &str = "types/";
 const GENERATED_CODE_PATH: &str = "generated.rs";
 const DEFAULT_ENUM_DERIVES: &str = "#[derive(Debug, PartialEq, Clone)]";
 const DEFAULT_IMPORTS_FOR_IMPLS: &str = "#[allow(unused_imports)] use crate::datatypes::*;
@@ -27,6 +28,9 @@ fn main() {
 
 	// Generate packets and their enums
 	code += &generate::packets(&pkts_toml);
+
+	// Generate types
+	code += &generate::types(&pkts_toml);
 
 	// disabled_versions!() macro
 	code += &generate::disabled_versions_macro(&pkts_toml);
