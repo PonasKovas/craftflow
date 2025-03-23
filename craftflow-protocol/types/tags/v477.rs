@@ -25,16 +25,14 @@
 // ]
 
 mcp! {
-	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
-	pub struct TagsV477(
-		Array<(
-			TagEntry
-		)>
-	);
+	#[derive(Debug, PartialEq, Clone)]
+	pub struct TagsV477 {
+		pub inner: (Array<(TagEntry)>),
+	}
 }
 
 mcp! {
-	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
+	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Eq, Ord)]
 	pub struct TagEntry {
 		pub tag_name: (String),
 		pub entries: (Array<(VarInt)>),

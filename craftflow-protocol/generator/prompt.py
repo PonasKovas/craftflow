@@ -32,7 +32,7 @@ No need to specify if not explicitly needed.
 - Optional fields which presence is determined by a bool before them can be modeled using Option<T> directly.
 - If implementing MCP, MCPRead and MCPWrite traits manually, always set MCP::Data to Self.
 - None of the NBT types implement PartialOrd, Eq, Ord or Hash, because they may contain floating-point.
-
+- If the packet only has one top level field without a name, just use a "inner" name. NEVER use tuple structs in the mcp!{} macro.
 
 Here is the packet specification:
 Packet name: {{{example_name}}}
