@@ -1,21 +1,15 @@
 use super::{MCP, MCPRead, MCPWrite};
-use crate::{Error, Result, limits::DEFAULT_ARRAY_LEN_LIMIT};
-use maxlen::BVec;
+use crate::Result;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct RestBuffer<const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT>;
+pub struct RestBuffer;
 
-impl<const MAX: usize> MCP for RestBuffer<MAX> {
-	type Data = BVec<u8, MAX>;
+impl MCP for RestBuffer {
+	type Data = Vec<u8>;
 }
 impl<'a> MCPRead<'a> for RestBuffer {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
-		let bvec = BVec::from_vec(input.to_owned()).map_err(|e| Error::ArrayTooLong {
-			length: e.length,
-			max: e.maximum,
-		})?;
-
-		Ok(bvec)
+		Ok(input.to_owned())
 	}
 }
 

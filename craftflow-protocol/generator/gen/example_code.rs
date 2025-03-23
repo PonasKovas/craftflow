@@ -4,14 +4,14 @@ mcp! {
 		pub entity_id: i32,
 		pub entity_type: OptVarInt,
 		pub entity_num: VarLong,
-		pub blob: Buffer<DEFAULT_ARRAY_LEN_LIMIT, u64>,
+		pub blob: Buffer<u64>,
 		pub entity_uuid: u128,
 		pub is_player: Option<String>,
 		pub position: Position,
 		pub information: Information,
 		pub associated_data: NamedNbt,
 		pub block_nbt: Nbt,
-		pub history: Array<VarInt, DEFAULT_ARRAY_LEN_LIMIT, VarInt>,
+		pub history: Array<VarInt>,
 		pub crypto: Crypto,
 	}
 }
@@ -28,7 +28,7 @@ mcp! {
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct Information {
-		pub inventory: Array<u8, DEFAULT_ARRAY_LEN_LIMIT, VarInt>,
+		pub inventory: Array<u8>,
 		pub priority: f32,
 		pub world_status: WorldStatus,
 		pub plugin_data: RestBuffer,

@@ -20,7 +20,7 @@ PACKETS = {
     "s2c": {
         "status": ["server_info", "ping"],
         "login": ["disconnect", "encryption_begin", "success", "compress", "login_plugin_request"],
-        # "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
-        #     "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags", "tags", "reset_chat"],
+        "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
+                          "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags", "tags", "reset_chat"],
     }
 }

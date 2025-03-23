@@ -7,10 +7,8 @@
 
 mod datatypes;
 mod error;
-mod limits;
 pub use craftflow_nbt;
 pub use error::{Error, Result};
-pub use maxlen;
 
 /// Trait for writing a packet.
 pub trait PacketWrite {

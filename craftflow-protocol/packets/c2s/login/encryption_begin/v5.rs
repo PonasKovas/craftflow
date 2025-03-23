@@ -25,7 +25,7 @@
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
 	pub struct EncryptionBeginV5 {
-		pub shared_secret: Buffer<DEFAULT_ARRAY_LEN_LIMIT, i16>,
-		pub verify_token: Buffer<DEFAULT_ARRAY_LEN_LIMIT, i16>,
+		pub shared_secret: Buffer<i16>,
+		pub verify_token: Buffer<i16>,
 	}
 }

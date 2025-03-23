@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 craftflow-nbt = { path = "../craftflow-nbt" }
 thiserror = { workspace = true }
-maxlen = { workspace = true }
 closureslop = { path = "../closureslop", optional = true }
 
 [build-dependencies]

@@ -1,6 +1,5 @@
 use crate::{Error, Result};
-use craftflow_nbt::{NbtRead, NbtValue, NbtWrite};
-use maxlen::BStr;
+use craftflow_nbt::{NbtRead, NbtStr, NbtValue, NbtWrite};
 use std::marker::PhantomData;
 
 use super::{MCP, MCPRead, MCPWrite, peek};
@@ -90,13 +89,13 @@ impl<T: NbtWrite> MCPWrite for OptNbt<T> {
 }
 impl<T: NbtWrite> MCPWrite for NamedNbt<T> {
 	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize {
-		data.nbt_write_named(BStr::new(), output)
+		data.nbt_write_named(NbtStr::new(), output)
 	}
 }
 impl<T: NbtWrite> MCPWrite for OptNamedNbt<T> {
 	fn mcp_write(data: &Self::Data, output: &mut Vec<u8>) -> usize {
 		match &data {
-			Some(v) => v.nbt_write_named(BStr::new(), output),
+			Some(v) => v.nbt_write_named(NbtStr::new(), output),
 			None => {
 				output.push(0);
 				1

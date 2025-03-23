@@ -139,3 +139,66 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 [s2c.login.login_plugin_request.393]
 # <packet id> = [<versions that use that packet id>]
 4 = [393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+
+[s2c.configuration.custom_payload.764]
+# <packet id> = [<versions that use that packet id>]
+0 = [764, 765]
+1 = [766, 767, 768, 769]
+
+[s2c.configuration.disconnect.764]
+# <packet id> = [<versions that use that packet id>]
+1 = [764]
+
+[s2c.configuration.disconnect.765]
+# <packet id> = [<versions that use that packet id>]
+1 = [765]
+2 = [766, 767, 768, 769]
+
+[s2c.configuration.finish_configuration.764]
+# <packet id> = [<versions that use that packet id>]
+2 = [764, 765]
+3 = [766, 767, 768, 769]
+
+[s2c.configuration.keep_alive.764]
+# <packet id> = [<versions that use that packet id>]
+3 = [764, 765]
+4 = [766, 767, 768, 769]
+
+[s2c.configuration.ping.764]
+# <packet id> = [<versions that use that packet id>]
+4 = [764, 765]
+5 = [766, 767, 768, 769]
+
+[s2c.configuration.registry_data.764]
+# <packet id> = [<versions that use that packet id>]
+5 = [764, 765]
+
+[s2c.configuration.registry_data.766]
+# <packet id> = [<versions that use that packet id>]
+7 = [766, 767, 768, 769]
+
+[s2c.configuration.remove_resource_pack.765]
+# <packet id> = [<versions that use that packet id>]
+6 = [765]
+8 = [766, 767]
+
+[s2c.configuration.add_resource_pack.765]
+# <packet id> = [<versions that use that packet id>]
+7 = [765]
+9 = [766, 767]
+
+[s2c.configuration.feature_flags.764]
+# <packet id> = [<versions that use that packet id>]
+7 = [764]
+8 = [765]
+12 = [766, 767, 768, 769]
+
+[s2c.configuration.tags.764]
+# <packet id> = [<versions that use that packet id>]
+8 = [764]
+9 = [765]
+13 = [766, 767, 768, 769]
+
+[s2c.configuration.reset_chat.766]
+# <packet id> = [<versions that use that packet id>]
+6 = [766, 767, 768, 769]

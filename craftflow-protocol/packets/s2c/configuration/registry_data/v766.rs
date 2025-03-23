@@ -2,15 +2,11 @@
 //     "container",
 //     [
 //         {
-//             "name": "uuid",
-//             "type": "UUID"
-//         },
-//         {
-//             "name": "username",
+//             "name": "id",
 //             "type": "string"
 //         },
 //         {
-//             "name": "properties",
+//             "name": "entries",
 //             "type": [
 //                 "array",
 //                 {
@@ -19,47 +15,36 @@
 //                         "container",
 //                         [
 //                             {
-//                                 "name": "name",
+//                                 "name": "key",
 //                                 "type": "string"
 //                             },
 //                             {
 //                                 "name": "value",
-//                                 "type": "string"
-//                             },
-//                             {
-//                                 "name": "signature",
 //                                 "type": [
 //                                     "option",
-//                                     "string"
+//                                     "anonymousNbt"
 //                                 ]
 //                             }
 //                         ]
 //                     ]
 //                 }
 //             ]
-//         },
-//         {
-//             "name": "strictErrorHandling",
-//             "type": "bool"
 //         }
 //     ]
 // ]
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
-	pub struct SuccessV766 {
-		pub uuid: u128,
-		pub username: String,
-		pub properties: Array<Property>,
-		pub strict_error_handling: bool,
+	pub struct RegistryDataV766 {
+		pub id: String,
+		pub entries: Array<RegistryEntry>,
 	}
 }
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone)]
-	pub struct Property {
-		pub name: String,
-		pub value: String,
-		pub signature: Option<String>,
+	pub struct RegistryEntry {
+		pub key: String,
+		pub value: Option<Nbt>,
 	}
 }

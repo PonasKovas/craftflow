@@ -12,8 +12,7 @@ const PACKETS_DIR: &str = "packets/";
 const GENERATED_CODE_PATH: &str = "generated.rs";
 const DEFAULT_ENUM_DERIVES: &str = "#[derive(Debug, PartialEq, Clone)]";
 const DEFAULT_IMPORTS_FOR_IMPLS: &str = "#[allow(unused_imports)] use crate::datatypes::*;
-#[allow(unused_imports)] use crate::limits::*;
-#[allow(unused_imports)] use crate::{Error, Result, maxlen::BString};";
+#[allow(unused_imports)] use crate::{Error, Result};";
 
 fn main() {
 	println!("cargo:rerun-if-changed=packets.toml");

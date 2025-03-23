@@ -46,7 +46,7 @@ mcp! {
 	pub struct SuccessV759 {
 		pub uuid: u128,
 		pub username: String,
-		pub properties: Array<Property, DEFAULT_ARRAY_LEN_LIMIT, VarInt>,
+		pub properties: Array<Property>,
 	}
 }
 

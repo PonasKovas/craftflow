@@ -24,13 +24,13 @@ You only get one chance to submit the correct code. If you make a mistake, you w
 Triple check before submitting!
 
 Quick cheatsheet:
-- Array<T, const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT, LEN = VarInt> is Array of T, MAX elements, length serialized as LEN type.
-No need to specify MAX or LEN if default is ok. If different LEN needed, specify MAX to be DEFAULT_ARRAY_LEN_LIMIT.
-- Buffer<const MAX: usize = DEFAULT_ARRAY_LEN_LIMIT, LEN = VarInt> - is an array of bytes. Similar to Array, MAX is max number of bytes,
-and LEN is the type as which to serialize the length. No need to specify if not explicitly needed.
-- Both of these LEN types default to VarInt so there is no need to specify it if its VarInt.
+- Array<T, LEN = VarInt> is Array of T, length serialized as LEN type.
+No need to specify LEN if default (VarInt).
+- Buffer<LEN = VarInt> - is an array of bytes. Similar to Array LEN is the type as which to serialize the length.
+No need to specify if not explicitly needed.
 - Optional fields which presence is determined by a bool before them can be modeled using Option<T> directly.
 - If implementing MCP, MCPRead and MCPWrite traits manually, always set MCP::Data to Self.
+- None of the NBT types implement PartialOrd, Eq, Ord or Hash, because they may contain floating-point.
 
 
 Here is the packet specification:

@@ -12,14 +12,10 @@ pub enum Error {
 	VarIntTooBig,
 	#[error("varlong too big")]
 	VarLongTooBig,
-	#[error("string too long ({length}), limit is {max}")]
-	StringTooLong { length: usize, max: usize },
 	#[error("string not valid utf-8")]
 	StringInvalidUtf8,
 	#[error("invalid array length {0}")]
 	InvalidArrayLength(i128),
-	#[error("array too long ({length}), limit is {max}")]
-	ArrayTooLong { length: usize, max: usize },
 	#[error("{0}")]
 	InvalidNbt(#[from] craftflow_nbt::Error),
 	#[error("invalid enum tag {tag} in {enum_name}")]
