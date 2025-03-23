@@ -202,3 +202,7 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 [s2c.configuration.reset_chat.766]
 # <packet id> = [<versions that use that packet id>]
 6 = [766, 767, 768, 769]
+
+[type.reset_chat]
+# <group id> = [<versions>]
+477 = [477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]

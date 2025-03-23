@@ -70,7 +70,7 @@ def main():
     for ty in TYPES:
         type_table = table()
         types_table.add(packet, type_table)
-        types_table.add(tomlkit.comment("<group id> = [<versions>]"))
+        type_table.add(tomlkit.comment("<group id> = [<versions>]"))
         gen_types(args, type_table, protocols, ty)
 
     # write the packets.toml

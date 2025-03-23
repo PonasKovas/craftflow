@@ -15,7 +15,7 @@ def gen_packets(args, toml, protocols: Dict[int, any], direction: str, state: st
     # only load llm module if gen_llm flag passed
     # because otherwise OpenAI requires an API key
     if args.gen_llm:
-        from llm import llm_gen_packet_impl
+        from llm import llm_gen_impl
 
     # find all versions that have an identical packet
     # format:

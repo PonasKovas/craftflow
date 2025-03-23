@@ -7,7 +7,7 @@ mod packets_toml;
 mod shared;
 
 const PACKETS_TOML: &str = "packets.toml";
-const PROMPT_CODE_EXAMPLE_PATH: &str = "generator/gen/example_code.rs";
+const PROMPT_CODE_EXAMPLE_PATH: &str = "generator/example_code.rs";
 const PACKETS_DIR: &str = "packets/";
 const GENERATED_CODE_PATH: &str = "generated.rs";
 const DEFAULT_ENUM_DERIVES: &str = "#[derive(Debug, PartialEq, Clone)]";

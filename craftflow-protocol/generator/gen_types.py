@@ -10,11 +10,11 @@ from conf import *
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
 
 
-def gen_packets(args, toml, protocols: Dict[int, any], ty: str):
+def gen_types(args, toml, protocols: Dict[int, any], ty: str):
     # only load llm module if gen_llm flag passed
     # because otherwise OpenAI requires an API key
     if args.gen_llm:
-        from .llm import llm_gen_packet_impl
+        from llm import llm_gen_impl
 
     # find all versions that have an def of this type
     # format:
@@ -43,9 +43,9 @@ def gen_packets(args, toml, protocols: Dict[int, any], ty: str):
         # no identical packet found - add a new list
         identical_versions.append([v])
 
-     # now we can generate the groups of identical types
+    # now we can generate the groups of identical types
     for group in identical_versions:
-        first_version = group[next(iter(group))][0]
+        first_version = group[0]
 
         # packets.toml generation
         #########################
@@ -57,13 +57,13 @@ def gen_packets(args, toml, protocols: Dict[int, any], ty: str):
 
         # if implementation not generated yet - generate
         type_impl_path = TYPES_IMPL_PATH / ty
-        impl_path = packet_impl_path / f"v{first_version}.rs"
+        impl_path = type_impl_path / f"v{first_version}.rs"
         if not impl_path.exists():
             if not args.gen_llm:
                 print(Fore.YELLOW + f"Not generating {impl_path} using an LLM. Use --gen_llm flag to generate")
                 continue
 
-            packet_impl_path.mkdir(parents=True, exist_ok=True)
+            type_impl_path.mkdir(parents=True, exist_ok=True)
 
             spec = protocols[first_version]["types"][ty]
             code = llm_gen_impl(ty, first_version, spec)
