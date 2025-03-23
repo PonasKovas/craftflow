@@ -66,10 +66,8 @@ pub async fn login_start(
 		// Send the packet to enable encryption
 		let server_id = "".to_owned();
 		let public_key =
-			rsa_der::public_key_to_der(&rsa_key.n().to_bytes_be(), &rsa_key.e().to_bytes_be())
-				.try_into()
-				.expect("public key somehow too long?");
-		let verify_token = VERIFY_TOKEN.as_bytes().try_into().unwrap();
+			rsa_der::public_key_to_der(&rsa_key.n().to_bytes_be(), &rsa_key.e().to_bytes_be());
+		let verify_token = VERIFY_TOKEN.as_bytes().to_owned();
 
 		cf.build_packet(conn_id, |b| match b {
 			EncryptionBeginBuilder::V5(p) => p(EncryptionBeginV5 {

@@ -352,7 +352,6 @@ dependencies = [
  "closureslop",
  "craftflow-nbt",
  "indexmap",
- "maxlen",
  "serde",
  "thiserror 1.0.69",
  "toml",

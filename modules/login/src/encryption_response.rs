@@ -3,7 +3,6 @@ use craftflow::CraftFlow;
 use craftflow_protocol::{
 	c2s::login::{EncryptionBegin, encryption_begin::v759::Crypto},
 	disabled_versions,
-	maxlen::BVec,
 	s2c::login::{
 		SuccessBuilder,
 		success::{v5::SuccessV5, v735::SuccessV735, v759::SuccessV759, v766::SuccessV766},
@@ -118,12 +117,12 @@ pub async fn encryption_response(
 					SuccessBuilder::V759(p) => p(SuccessV759 {
 						uuid,
 						username,
-						properties: BVec::new(),
+						properties: Vec::new(),
 					}),
 					SuccessBuilder::V766(p) => p(SuccessV766 {
 						uuid,
 						username,
-						properties: BVec::new(),
+						properties: Vec::new(),
 						strict_error_handling: false,
 					}),
 					disabled_versions!(s2c::login::SuccessBuilder) => unreachable!(),
