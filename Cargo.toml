@@ -15,7 +15,6 @@ resolver = "2"
 [workspace.dependencies]
 shallowclone = { git = "https://github.com/PonasKovas/shallowclone.git" }
 anyhow = "1.0.86"
-byteorder = "1.5.0"
 tokio = { version = "1.40.0", features = ["full"] }
 tracing = "0.1.40"
 serde = { version = "1.0", features = ["derive"] }
@@ -27,10 +26,8 @@ flate2 = "1.0.33"
 base64 = "0.22.1"
 futures = "0.3.30"
 thiserror = "1.0"
-cesu8 = "1.1.0"
 indexmap = { version = "2.6", features = ["serde"] }
 proc-macro-error = "1.0"
-is_type = "0.2.1"
 smallbox = { version = "0.8.6", features = ["nightly"] }
 maxlen = "0.1.2"
 
