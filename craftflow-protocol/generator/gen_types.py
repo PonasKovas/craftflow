@@ -10,10 +10,10 @@ from conf import *
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
 
 
-def gen_types(args, toml, protocols: Dict[int, any], ty: str):
-    # only load llm module if gen_llm flag passed
+def gen_types(toml, protocols: Dict[int, any], ty: str):
+    # only load llm module if gen-llm flag passed
     # because otherwise OpenAI requires an API key
-    if args.gen_llm:
+    if ARGS.gen_llm:
         from llm import llm_gen_impl
 
     # find all versions that have an def of this type
@@ -59,8 +59,8 @@ def gen_types(args, toml, protocols: Dict[int, any], ty: str):
         type_impl_path = TYPES_IMPL_PATH / ty
         impl_path = type_impl_path / f"v{first_version}.rs"
         if not impl_path.exists():
-            if not args.gen_llm:
-                print(Fore.YELLOW + f"Not generating {impl_path} using an LLM. Use --gen_llm flag to generate")
+            if not ARGS.gen_llm:
+                print(Fore.YELLOW + f"Not generating {impl_path} using an LLM. Use --gen-llm flag to generate")
                 continue
 
             type_impl_path.mkdir(parents=True, exist_ok=True)

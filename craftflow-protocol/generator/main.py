@@ -16,11 +16,6 @@ import argparse
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--gen_llm', action='store_true',
-                        help='Generates missing packet implementations using an LLM')
-    args = parser.parse_args()
-
     versions = find_all_versions()
 
     # for debugging purposes
@@ -61,7 +56,7 @@ def main():
             for packet in packets:
                 packet_table = table(True)
                 state_table.add(packet, packet_table)
-                gen_packets(args, packet_table, protocols,
+                gen_packets(packet_table, protocols,
                             direction, state, packet)
 
     # Generate types
@@ -71,7 +66,7 @@ def main():
         type_table = table()
         types_table.add(ty, type_table)
         type_table.add(tomlkit.comment("<group id> = [<versions>]"))
-        gen_types(args, type_table, protocols, ty)
+        gen_types(type_table, protocols, ty)
 
     # write the packets.toml
     with open(PACKETS_TOML_PATH, "w") as f:

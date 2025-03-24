@@ -11,10 +11,10 @@ from parse_protocol import get_packet_id, get_packet_spec, has_packet
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
 
 
-def gen_packets(args, toml, protocols: Dict[int, any], direction: str, state: str, packet: str):
-    # only load llm module if gen_llm flag passed
+def gen_packets(toml, protocols: Dict[int, any], direction: str, state: str, packet: str):
+    # only load llm module if gen-llm flag passed
     # because otherwise OpenAI requires an API key
-    if args.gen_llm:
+    if ARGS.gen_llm:
         from llm import llm_gen_impl
 
     # find all versions that have an identical packet
@@ -72,8 +72,8 @@ def gen_packets(args, toml, protocols: Dict[int, any], direction: str, state: st
         packet_impl_path = PACKETS_IMPL_PATH / direction / state / packet
         impl_path = packet_impl_path / f"v{first_version}.rs"
         if not impl_path.exists():
-            if not args.gen_llm:
-                print(Fore.YELLOW + f"Not generating {impl_path} using an LLM. Use --gen_llm flag to generate")
+            if not ARGS.gen_llm:
+                print(Fore.YELLOW + f"Not generating {impl_path} using an LLM. Use --gen-llm flag to generate")
                 continue
 
             packet_impl_path.mkdir(parents=True, exist_ok=True)

@@ -26,3 +26,15 @@ PACKETS = {
     }
 }
 TYPES = ["tags"]
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--gen-llm', action='store_true',
+                        help='Generates missing packet implementations using an LLM')
+    parser.add_argument('--keep-spec-changes', action='store_true',
+                        help='Does not fetch the minecraft-data repository or checkout the configured commit, uses it straight as it is in the filesystem')
+    return parser.parse_args()
+
+
+ARGS = _parse_args()
