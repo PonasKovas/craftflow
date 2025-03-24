@@ -6,15 +6,9 @@ import json
 
 from conf import *
 
-# Reads the minecraft-data repository and returns a dictionary mapping protocol
-# versions to their protocol.json file paths
 
-
-def find_all_versions() -> Dict[str, Path]:
-    # first thing we gotta do is clone the minecraft-data repo
-    # or fetch updates if already cloned
-    repo_path = CACHE_DIR / "minecraft-data"
-
+# fetches the repo from upstream and checkouts the configured commit, discarding any local changes
+def sync_repo(repo_path: Path):
     if repo_path.exists():
         print(Fore.GREEN + Style.BRIGHT + "minecraft-data" +
               Fore.CYAN + " already cloned, fetching updates")
@@ -27,6 +21,17 @@ def find_all_versions() -> Dict[str, Path]:
 
     print(Fore.CYAN + Style.BRIGHT + "Checking out commit " + Fore.GREEN + COMMIT)
     subprocess.run(f"git checkout --force {COMMIT}", shell=True, check=True, cwd=repo_path)
+
+
+# Reads the minecraft-data repository and returns a dictionary mapping protocol
+# versions to their protocol.json file paths
+def find_all_versions() -> Dict[str, Path]:
+    # first thing we gotta do is clone the minecraft-data repo
+    # or fetch updates if already cloned
+    repo_path = CACHE_DIR / "minecraft-data"
+
+    if not ARGS.keep_spec_changes:
+        sync_repo(repo_path)
 
     # read the data/pc/common/protocolVersions.json because it contains a list versions without the classic
     # versions that are present in this repository for whatever fucking reason

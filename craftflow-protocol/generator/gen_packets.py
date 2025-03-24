@@ -8,9 +8,44 @@ from colorama import init, Fore, Style
 from conf import *
 from parse_protocol import get_packet_id, get_packet_spec, has_packet
 
+
+# Checks if the given spec contains a keyvalue pair "type": "<type>" anywhere recursively
+def does_use_type(spec, type: str) -> bool:
+    if isinstance(spec, dict):
+        for key, value in spec.items():
+            if key == "type" and value == type:
+                return True
+            elif does_use_type(value, type):
+                return True
+    elif isinstance(spec, list):
+        for item in spec:
+            if does_use_type(item, type):
+                return True
+
+    return False
+
+
+# compares a packet spec in two different versions, including its used types
+def compare_spec(protocols: Dict[int, any], v1: int, v2: int, spec1, spec2) -> bool:
+    if spec1 != spec2:
+        return False
+
+    # check for types
+    for type in TYPES:
+        if not does_use_type(spec1, type):
+            continue
+
+        # the type is used in the spec. gotta make sure that its the same for both versions
+        type_spec1 = protocols[v1]["types"][type]
+        type_spec2 = protocols[v2]["types"][type]
+        if not compare_spec(protocols, v1, v2, type_spec1, type_spec2):
+            return False
+
+    # everything matches
+    return True
+
+
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
-
-
 def gen_packets(toml, protocols: Dict[int, any], direction: str, state: str, packet: str):
     # only load llm module if gen-llm flag passed
     # because otherwise OpenAI requires an API key
@@ -39,7 +74,7 @@ def gen_packets(toml, protocols: Dict[int, any], direction: str, state: str, pac
             group_spec = get_packet_spec(
                 protocols[first_version], direction, state, packet)
 
-            if spec == group_spec:
+            if compare_spec(protocols, v, first_version, spec, group_spec):
                 # add it to the group
                 if packet_id not in group:
                     group[packet_id] = []

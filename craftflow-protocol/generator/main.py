@@ -12,7 +12,6 @@ from gen_packets import gen_packets
 from gen_types import gen_types
 from tomlkit import table, inline_table, dumps, document
 import tomlkit
-import argparse
 
 
 def main():

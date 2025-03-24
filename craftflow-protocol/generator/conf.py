@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 
 PACKETS_TOML_PATH = Path("../packets.toml")
 CARGO_TOML_PATH = Path("../Cargo.toml")
