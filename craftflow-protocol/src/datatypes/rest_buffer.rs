@@ -1,4 +1,4 @@
-use super::{MCP, MCPRead, MCPWrite};
+use super::{MCP, MCPRead, MCPWrite, advance};
 use crate::Result;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
@@ -9,6 +9,8 @@ impl MCP for RestBuffer {
 }
 impl<'a> MCPRead<'a> for RestBuffer {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
+		advance(input, input.len());
+
 		Ok(input.to_owned())
 	}
 }

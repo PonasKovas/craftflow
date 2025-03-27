@@ -75,9 +75,9 @@ async fn send(
 				*conn.reader_state.write().unwrap() = State::Play;
 			}
 		}
-		// S2C::Configuration(s2c::Configuration::FinishConfiguration(_)) => {
-		// 	*conn.writer_state.write().unwrap() = State::Play;
-		// }
+		S2C::Configuration(s2c::Configuration::FinishConfiguration(_)) => {
+			*conn.writer_state.write().unwrap() = State::Play;
+		}
 		_ => {}
 	}
 

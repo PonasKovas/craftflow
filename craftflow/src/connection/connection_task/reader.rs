@@ -44,9 +44,9 @@ pub(super) async fn reader_task(
 			C2S::Login(c2s::Login::LoginAcknowledged(_)) => {
 				*conn.reader_state.write().unwrap() = State::Configuration;
 			}
-			// C2S::Configuration(c2s::Configuration::FinishConfiguration(_)) => {
-			// 	*conn.reader_state.write().unwrap() = State::Play;
-			// }
+			C2S::Configuration(c2s::Configuration::FinishConfiguration(_)) => {
+				*conn.reader_state.write().unwrap() = State::Play;
+			}
 			_ => {}
 		}
 

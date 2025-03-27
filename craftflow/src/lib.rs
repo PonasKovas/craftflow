@@ -99,7 +99,8 @@ impl CraftFlow {
 	pub async fn disconnect(&self, conn_id: u64) {
 		if self.connections.read().unwrap().is_connected(conn_id) {
 			// emit the disconnect event
-			self.reactor
+			let _ = self
+				.reactor
 				.trigger::<Disconnect>(&self, &mut conn_id.clone())
 				.await;
 
