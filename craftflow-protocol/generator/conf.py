@@ -17,13 +17,14 @@ PACKETS = {
         "status": ["ping_start", "ping"],
         "login": ["login_start", "encryption_begin", "login_plugin_response", "login_acknowledged"],
         "configuration": ["settings", "custom_payload", "finish_configuration", "keep_alive", "pong",
-                          "resource_pack_receive"],
+                          "resource_pack_receive", "select_known_packs"],
     },
     "s2c": {
         "status": ["server_info", "ping"],
         "login": ["disconnect", "encryption_begin", "success", "compress", "login_plugin_request"],
         "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
-                          "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags", "tags", "reset_chat"],
+                          "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags",
+                          "tags", "reset_chat", "select_known_packs"],
     }
 }
 TYPES = ["tags"]

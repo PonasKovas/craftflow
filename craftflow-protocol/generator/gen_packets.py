@@ -86,6 +86,9 @@ def gen_packets(toml, protocols: Dict[int, any], direction: str, state: str, pac
             # no identical packet found - add a new list
             identical_versions.append({packet_id: [v]})
 
+    if len(identical_versions) == 0:
+        print(Fore.RED + f"NOT FOUND {direction} -> {state} -> {packet}")
+
     # now we can generate the groups of identical packets
     for group in identical_versions:
         first_version = group[next(iter(group))][0]
