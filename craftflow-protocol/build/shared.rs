@@ -50,3 +50,33 @@ pub fn closureslop_event_impl(name: &str) -> String {
 		})
 		.unwrap_or_else(String::new)
 }
+
+pub fn group_consecutive(
+	iter: impl Iterator<Item = (u32, bool)>,
+) -> impl Iterator<Item = (u32, u32, bool)> {
+	let mut iter = iter.peekable();
+	let mut current = None;
+
+	std::iter::from_fn(move || {
+		// Initialize current group if empty
+		if current.is_none() {
+			let (num, b) = iter.next()?;
+			current = Some((num, num, b));
+		}
+
+		// Extend group while next element has the same bool
+		while let Some((next_num, next_b)) = iter.peek() {
+			let (start, _end, b) = current.unwrap();
+			if *next_b == b {
+				// Extend the current group
+				current = Some((start, *next_num, b));
+				iter.next(); // Consume the element
+			} else {
+				break;
+			}
+		}
+
+		// Return the completed group
+		current.take()
+	})
+}

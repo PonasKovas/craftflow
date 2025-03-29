@@ -1,7 +1,7 @@
 use crate::{
 	gen_enum::{Variant, gen_enum},
 	packets_toml::{Direction, PacketName, State, Version},
-	shared::{closureslop_event_impl, versions_pattern},
+	shared::{closureslop_event_impl, group_consecutive, versions_pattern},
 };
 use indexmap::IndexMap;
 
@@ -10,6 +10,7 @@ pub fn generate(
 	state: &State,
 	packet: &PacketName,
 	version_groups: &IndexMap<Version, IndexMap<u32, Vec<u32>>>,
+	all_possible_versions: &[u32],
 ) -> String {
 	let dir_enum = direction.enum_name();
 	let state_enum = state.enum_name();
@@ -38,12 +39,28 @@ pub fn generate(
 	let mut all_supported_versions = version_groups
 		.values()
 		.flat_map(|pkt_ids| pkt_ids.values().flatten())
-		.map(ToString::to_string)
+		.copied()
 		.collect::<Vec<_>>();
 	all_supported_versions.sort_unstable();
 	all_supported_versions.dedup();
-	let all_supported_versions_list: String = all_supported_versions.join(", ");
-	let all_supported_versions_pattern: String = all_supported_versions.join("|");
+	let all_supported_versions_str: Vec<String> = all_supported_versions
+		.iter()
+		.map(ToString::to_string)
+		.collect();
+	let all_supported_versions_len = all_supported_versions.len();
+	let all_supported_versions_list: String = all_supported_versions_str.join(", ");
+	let all_supported_versions_pattern: String = all_supported_versions_str.join("|");
+
+	let all_supported_versions_pretty: String = group_consecutive(
+		all_possible_versions
+			.iter()
+			.map(|v| (*v, all_supported_versions.contains(v))),
+	)
+	.map(|(l, r, supported)| {
+		let mark = if supported { '✅' } else { '❌' };
+		format!("/// {mark} {l} - {r}\n///\n")
+	})
+	.collect::<String>();
 
 	let write_match_arms: String = version_groups
 		.keys()
@@ -78,6 +95,13 @@ pub fn generate(
 
 	format!(
 		r#"{enum_code}
+
+		impl {enum_name} {{
+			/// This packet is used in the following protocol versions:
+			///
+			{all_supported_versions_pretty}
+			pub const VERSIONS: [u32; {all_supported_versions_len}] = [{all_supported_versions_list}];
+		}}
 
 		impl crate::PacketWrite for {enum_name} {{
 			fn packet_write(&self, output: &mut Vec<u8>, protocol_version: u32) -> usize {{

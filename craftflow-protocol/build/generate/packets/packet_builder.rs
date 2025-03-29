@@ -1,13 +1,14 @@
 use crate::{
 	gen_enum::{Variant, gen_enum},
 	packets_toml::{PacketName, Version},
-	shared::versions_pattern,
+	shared::{group_consecutive, versions_pattern},
 };
 use indexmap::IndexMap;
 
 pub fn generate(
 	packet: &PacketName,
 	version_groups: &IndexMap<Version, IndexMap<u32, Vec<u32>>>,
+	all_possible_versions: &[u32],
 ) -> String {
 	let packet_enum_name = packet.enum_name();
 	let enum_name = format!("{}Builder", packet.enum_name());
@@ -56,8 +57,40 @@ pub fn generate(
 		})
 		.collect();
 
+	let mut all_supported_versions = version_groups
+		.values()
+		.flat_map(|pkt_ids| pkt_ids.values().flatten())
+		.copied()
+		.collect::<Vec<_>>();
+	all_supported_versions.sort_unstable();
+	all_supported_versions.dedup();
+	let all_supported_versions_pretty: String = group_consecutive(
+		all_possible_versions
+			.iter()
+			.map(|v| (*v, all_supported_versions.contains(v))),
+	)
+	.map(|(l, r, supported)| {
+		let mark = if supported { '✅' } else { '❌' };
+		format!("/// {mark} {l} - {r}\n///\n")
+	})
+	.collect::<String>();
+	let all_supported_versions_str: Vec<String> = all_supported_versions
+		.iter()
+		.map(ToString::to_string)
+		.collect();
+	let all_supported_versions_len = all_supported_versions.len();
+	let all_supported_versions_list: String = all_supported_versions_str.join(", ");
+
 	format!(
 		r#"{enum_code}
+
+		impl {enum_name} {{
+			/// This packet is used in the following protocol versions:
+			///
+			{all_supported_versions_pretty}
+			pub const VERSIONS: [u32; {all_supported_versions_len}] = [{all_supported_versions_list}];
+		}}
+
 
 		impl {enum_name} {{
 			/// Constructs a new packet builder for a specific protocol version

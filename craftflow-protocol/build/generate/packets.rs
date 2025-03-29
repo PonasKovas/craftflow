@@ -39,9 +39,16 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 						version_group.mod_name()
 					);
 				}
-				state_code += &packet_enum::generate(direction, state, packet, all_version_groups);
+				state_code += &packet_enum::generate(
+					direction,
+					state,
+					packet,
+					all_version_groups,
+					&pkts_toml.versions,
+				);
 
-				state_code += &packet_builder::generate(packet, all_version_groups);
+				state_code +=
+					&packet_builder::generate(packet, all_version_groups, &pkts_toml.versions);
 
 				state_code += &format!("pub mod {} {{ {packet_code} }}", packet.mod_name());
 			}

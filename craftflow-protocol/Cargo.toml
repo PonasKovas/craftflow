@@ -5,13 +5,13 @@ edition = "2024"
 
 [dependencies]
 craftflow-nbt = { path = "../craftflow-nbt" }
-thiserror = { workspace = true }
+thiserror.workspace = true
 closureslop = { path = "../closureslop", optional = true }
 
 [build-dependencies]
-toml = { workspace = true }
-serde = { workspace = true }
-indexmap = { workspace = true }
+toml.workspace = true
+serde.workspace = true
+indexmap.workspace = true
 
 [features]
 # Generates closureslop::Event implementations for all packets
