@@ -8,6 +8,7 @@ use crate::{
 	tag::Tag,
 };
 use maxlen::{BStr, BString, encoding::MCesu8};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
@@ -18,7 +19,7 @@ pub type NbtStr = BStr<{ u16::MAX as usize }, MCesu8>;
 pub type NbtCompound = HashMap<NbtString, NbtValue>;
 
 /// Any Nbt value
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum NbtValue {
 	Byte(i8),
 	Short(i16),
@@ -91,7 +92,7 @@ impl NbtRead for NbtValue {
 }
 
 /// NBT list of values
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum NbtList {
 	Byte(Vec<i8>),
 	Short(Vec<i16>),
@@ -129,7 +130,7 @@ impl NbtList {
 macro_rules! spec_array {
     ($(#[$($attrss:tt)*])* $name:ident ($type:ty)) => {
         $(#[$($attrss)*])*
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 		pub struct $name(pub Vec<$type>);
 
 		impl Deref for $name {

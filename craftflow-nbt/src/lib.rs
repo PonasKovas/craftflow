@@ -10,6 +10,7 @@ mod error;
 /// exposed for macros
 #[doc(hidden)]
 pub mod internal;
+mod r#macro;
 mod nbtvalue;
 mod tag;
 
