@@ -44,15 +44,13 @@ impl Login {
 			"minecraft:banner_pattern": {},
 			"minecraft:chat_type": {
 				"minecraft:chat": {
-					"minecraft:chat": {
-						"chat": {
-							"parameters": ["sender", "content"],
-							"translation_key": "chat.type.text"
-						},
-						"narration": {
-							"parameters": ["sender", "content"],
-							"translation_key": "chat.type.text.narrate"
-						}
+					"chat": {
+						"parameters": ["sender", "content"],
+						"translation_key": "chat.type.text"
+					},
+					"narration": {
+						"parameters": ["sender", "content"],
+						"translation_key": "chat.type.text.narrate"
 					}
 				},
 			},
@@ -88,10 +86,23 @@ impl Login {
 					"ultrawarm": 0i8
 				}
 			},
-			"minecraft:painting_variant": {},
+			"minecraft:painting_variant": {
+				"minecraft:default": {
+					"asset_id": "minecraft:alban",
+					"height": 1i32,
+					"width": 1i32
+				}
+			},
 			"minecraft:trim_material": {},
 			"minecraft:trim_pattern": {},
-			"minecraft:wolf_variant": {},
+			"minecraft:wolf_variant": {
+				"minecraft:default": {
+					"angry_texture": "minecraft:entity/wolf/wolf_ashen_angry",
+					"biomes": "minecraft:snowy_taiga",
+					"tame_texture": "minecraft:entity/wolf/wolf_ashen_tame",
+					"wild_texture": "minecraft:entity/wolf/wolf_ashen"
+				}
+			},
 			"minecraft:worldgen/biome": {
 				"minecraft:default": {
 					"downfall": 0.4000000059604645f32,
@@ -109,6 +120,23 @@ impl Login {
 					},
 					"has_precipitation": 1i8,
 					"temperature": 0.800000011920929f32
+				},
+				"minecraft:snowy_taiga": { // client checks for this biome specifically for some reason...
+					"downfall": 0.4000000059604645f32,
+					"effects": {
+						"fog_color": 12638463i32,
+						"mood_sound": {
+							"block_search_extent": 8i32,
+							"offset": 2.0f64,
+							"sound": "minecraft:ambient.cave",
+							"tick_delay": 6000i32
+						},
+						"sky_color": 8625919i32,
+						"water_color": 4020182i32,
+						"water_fog_color": 329011i32
+					},
+					"has_precipitation": 1i8,
+					"temperature": -0.5f32
 				}
 			}
 							  }),

@@ -3,7 +3,8 @@ use craftflow_protocol::{
 	disabled_versions,
 	s2c::{
 		configuration::{
-			RegistryDataBuilder, SelectKnownPacksBuilder,
+			FinishConfigurationBuilder, RegistryDataBuilder, SelectKnownPacksBuilder,
+			finish_configuration::v764::FinishConfigurationV764,
 			registry_data::{
 				v764::RegistryDataV764,
 				v766::{RegistryDataV766, RegistryEntry},
@@ -62,6 +63,12 @@ pub async fn configuration(
 			disabled_versions!(s2c::configuration::RegistryDataBuilder) => unreachable!(),
 		}
 	}
+
+	cf.build_packet::<FinishConfigurationBuilder>(conn_id, |b| match b {
+		FinishConfigurationBuilder::V764(p) => p(FinishConfigurationV764),
+		disabled_versions!(s2c::configuration::FinishConfigurationBuilder) => unreachable!(),
+	})
+	.await;
 
 	ControlFlow::Continue(())
 }
