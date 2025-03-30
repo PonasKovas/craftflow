@@ -24,6 +24,8 @@ pub trait PacketRead<'a>: Sized {
 pub trait PacketBuilder {
 	type Packet;
 
+	const VERSIONS: &'static [u32];
+
 	fn new(protocol_version: u32) -> Self;
 }
 

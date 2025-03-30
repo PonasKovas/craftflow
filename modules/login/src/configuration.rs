@@ -25,22 +25,20 @@ pub async fn configuration(
 	let conn = cf.get(conn_id);
 
 	// known packs
-	if conn.protocol_version() >= 766 {
-		cf.build_packet::<SelectKnownPacksBuilder>(conn_id, |b| match b {
-			SelectKnownPacksBuilder::V766(p) => p(SelectKnownPacksV766 {
-				packs: vec![PackInfo {
-					namespace: "minecraft".into(),
-					id: "core".into(),
-					version: "1.21.4".into(),
-				}],
-			}),
-			disabled_versions!(s2c::configuration::SelectKnownPacksBuilder) => unreachable!(),
-		})
-		.await;
-	}
+	cf.build_packet::<SelectKnownPacksBuilder>(conn_id, |b| match b {
+		SelectKnownPacksBuilder::V766(p) => p(SelectKnownPacksV766 {
+			packs: vec![PackInfo {
+				namespace: "minecraft".into(),
+				id: "core".into(),
+				version: "1.21.4".into(),
+			}],
+		}),
+		disabled_versions!(s2c::configuration::SelectKnownPacksBuilder) => unreachable!(),
+	})
+	.await;
 
 	// registry data
-	if conn.protocol_version() >= 764 {
+	if RegistryDataBuilder::VERSIONS.contains(&conn.protocol_version()) {
 		let data = cf.modules.get::<Login>().registry_data.clone();
 
 		match RegistryDataBuilder::new(conn.protocol_version()) {

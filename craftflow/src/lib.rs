@@ -24,7 +24,7 @@ use std::{
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
 use tokio::{net::TcpListener, spawn};
-use tracing::error;
+use tracing::{error, trace};
 use various_events::{Disconnect, NewConnection};
 
 pub struct CraftFlow {
@@ -83,13 +83,24 @@ impl CraftFlow {
 		Arc::clone(&self.connections.read().unwrap().connections[&conn_id])
 	}
 	/// Convenience function for building and sending a packet to a connection
+	///
+	/// WARNING: automatically checks if the client version has that packet. If not - does nothing silently.
 	pub async fn build_packet<B: PacketBuilder>(&self, conn_id: u64, f: impl FnOnce(B) -> B::Packet)
 	where
 		B::Packet: Into<S2C>,
 	{
 		let conn = self.get(conn_id);
+		let version = conn.protocol_version();
 
-		let builder = B::new(conn.protocol_version());
+		if !B::VERSIONS.contains(&version) {
+			trace!(
+				"Not building {:?} for conn {conn_id}, because not available in protocol version {version}.",
+				std::any::type_name::<B>()
+			);
+			return;
+		}
+
+		let builder = B::new(version);
 		let packet = f(builder);
 
 		conn.send(packet).await;

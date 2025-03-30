@@ -105,6 +105,8 @@ pub fn generate(
 		impl crate::PacketBuilder for {enum_name} {{
 			type Packet = {packet_enum_name};
 
+			const VERSIONS: &'static [u32] = &Self::VERSIONS;
+
 			fn new(protocol_version: u32) -> Self {{
 				Self::new(protocol_version)
 			}}
