@@ -11,13 +11,11 @@ pub fn generate(
 	all_possible_versions: &[u32],
 ) -> String {
 	let packet_enum_name = packet.enum_name();
-	let enum_name = format!("{}Builder", packet.enum_name());
 	let enum_variants = version_groups
 		.keys()
 		.map(|&v| {
 			let name = v.variant_name();
 			let version = packet.struct_name(v);
-			// let value = format!("crate::PacketEat<{packet}::{v}::{version}, {packet_enum_name}>");
 			let value = format!("fn({packet}::{v}::{version}) -> {packet_enum_name}");
 
 			Variant { name, value }
@@ -30,6 +28,7 @@ pub fn generate(
 			value: "".to_string(),
 		}])
 		.collect::<Vec<_>>();
+	let enum_name = format!("{}Builder", packet.enum_name(),);
 	let enum_code = gen_enum(&enum_name, &enum_variants, false);
 
 	let version_match_arms: String = version_groups
@@ -82,12 +81,13 @@ pub fn generate(
 	let all_supported_versions_list: String = all_supported_versions_str.join(", ");
 
 	format!(
-		r#"{enum_code}
+		r#"
+		/// This packet is used in the following protocol versions:
+		///
+		{all_supported_versions_pretty}
+		{enum_code}
 
 		impl {enum_name} {{
-			/// This packet is used in the following protocol versions:
-			///
-			{all_supported_versions_pretty}
 			pub const VERSIONS: [u32; {all_supported_versions_len}] = [{all_supported_versions_list}];
 		}}
 

@@ -68,7 +68,7 @@ macro_rules! _nbt_internal {
             #[allow(unused_mut)]
             let mut vec = ::std::vec::Vec::new();
             $crate::_nbt_internal!(@list vec [$($tt)*]);
-            vec.into()
+            vec.try_into().unwrap()
         });
         list
     }};
@@ -84,7 +84,7 @@ macro_rules! _nbt_internal {
     }};
 	// Anything that NbtValue implements From<T> for
 	($val:expr) => {
-		$crate::NbtValue::from($val)
+		$crate::NbtValue::try_from($val).unwrap()
 	};
 }
 #[cfg(test)]

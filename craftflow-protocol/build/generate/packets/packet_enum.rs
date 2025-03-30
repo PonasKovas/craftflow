@@ -94,12 +94,13 @@ pub fn generate(
 	let closureslop_event_impl = closureslop_event_impl(&enum_name);
 
 	format!(
-		r#"{enum_code}
+		r#"
+		/// This packet is used in the following protocol versions:
+		///
+		{all_supported_versions_pretty}
+		{enum_code}
 
 		impl {enum_name} {{
-			/// This packet is used in the following protocol versions:
-			///
-			{all_supported_versions_pretty}
 			pub const VERSIONS: [u32; {all_supported_versions_len}] = [{all_supported_versions_list}];
 		}}
 

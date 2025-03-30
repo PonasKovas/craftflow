@@ -7,7 +7,7 @@ use crate::{
 	},
 	tag::Tag,
 };
-use maxlen::{BStr, BString, encoding::MCesu8};
+use maxlen::{BStr, BString, LengthExceeded, encoding::MCesu8};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
@@ -246,6 +246,46 @@ gen_from_impls_list_bypass!(List 		: Vec<NbtList>);
 gen_from_impls_list_bypass!(Compound 	: Vec<NbtCompound>);
 gen_from_impls_list_bypass!(IntArray 	: Vec<NbtIntArray>);
 gen_from_impls_list_bypass!(LongArray 	: Vec<NbtLongArray>);
+
+impl TryFrom<&str> for NbtValue {
+	type Error = LengthExceeded;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		NbtString::from_str(value).map(Into::into)
+	}
+}
+impl TryFrom<String> for NbtValue {
+	type Error = LengthExceeded;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		NbtString::from_string(value).map(Into::into)
+	}
+}
+
+impl TryFrom<Vec<&str>> for NbtList {
+	type Error = LengthExceeded;
+
+	fn try_from(value: Vec<&str>) -> Result<Self, Self::Error> {
+		let mut v = Vec::with_capacity(value.len());
+		for s in value {
+			v.push(NbtString::from_str(s)?);
+		}
+
+		Ok(v.into())
+	}
+}
+impl TryFrom<Vec<String>> for NbtList {
+	type Error = LengthExceeded;
+
+	fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
+		let mut v = Vec::with_capacity(value.len());
+		for s in value {
+			v.push(NbtString::from_string(s)?);
+		}
+
+		Ok(v.into())
+	}
+}
 
 // Brace for maximum slop
 impl NbtValue {

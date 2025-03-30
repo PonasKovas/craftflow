@@ -1,0 +1,69 @@
+use craftflow::{CraftFlow, callback};
+use craftflow_protocol::{
+	disabled_versions,
+	s2c::{
+		configuration::{
+			RegistryDataBuilder, SelectKnownPacksBuilder,
+			registry_data::{
+				v764::RegistryDataV764,
+				v766::{RegistryDataV766, RegistryEntry},
+			},
+			select_known_packs::v766::{PackInfo, SelectKnownPacksV766},
+		},
+		login::Success,
+	},
+};
+use std::ops::ControlFlow;
+
+use crate::Login;
+
+#[callback(event: Success)]
+pub async fn configuration(
+	cf: &CraftFlow,
+	&mut (conn_id, ref mut _request): &mut (u64, Success),
+) -> ControlFlow<()> {
+	let conn = cf.get(conn_id);
+
+	// known packs
+	if conn.protocol_version() >= 766 {
+		cf.build_packet::<SelectKnownPacksBuilder>(conn_id, |b| match b {
+			SelectKnownPacksBuilder::V766(p) => p(SelectKnownPacksV766 {
+				packs: vec![PackInfo {
+					namespace: "minecraft".into(),
+					id: "core".into(),
+					version: "1.21.4".into(),
+				}],
+			}),
+			disabled_versions!(s2c::configuration::SelectKnownPacksBuilder) => unreachable!(),
+		})
+		.await;
+	}
+
+	// registry data
+	if conn.protocol_version() >= 764 {
+		let data = cf.modules.get::<Login>().registry_data.clone();
+
+		match RegistryDataBuilder::new(conn.protocol_version()) {
+			RegistryDataBuilder::V764(p) => conn.send(p(RegistryDataV764 { codec: data })).await,
+			RegistryDataBuilder::V766(p) => {
+				for (key, value) in data.unwrap_compound() {
+					conn.send(p(RegistryDataV766 {
+						id: key.into_inner(),
+						entries: value
+							.unwrap_compound()
+							.into_iter()
+							.map(|(name, val)| RegistryEntry {
+								key: name.into_inner(),
+								value: Some(val),
+							})
+							.collect(),
+					}))
+					.await;
+				}
+			}
+			disabled_versions!(s2c::configuration::RegistryDataBuilder) => unreachable!(),
+		}
+	}
+
+	ControlFlow::Continue(())
+}

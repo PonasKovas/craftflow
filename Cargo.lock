@@ -894,11 +894,12 @@ dependencies = [
 
 [[package]]
 name = "maxlen"
-version = "0.1.2"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "76a8b4a065b19741b83ce770d552df7f1ca9ad095c65f2929a340f3be2240afc"
+checksum = "126762ba26854ab0bb0de120dd4dfea06ae7171a7f56e86fcc3b319a16b5f7be"
 dependencies = [
  "maxlen-macro",
+ "serde",
  "thiserror 1.0.69",
 ]
 
