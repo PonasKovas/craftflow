@@ -10,6 +10,7 @@ use aes::cipher::KeyIvInit;
 use anyhow::Context;
 use craftflow_protocol::{C2S, c2s};
 use std::sync::Arc;
+use tracing::debug;
 
 pub(super) async fn reader_task(
 	craftflow: Arc<CraftFlow>,
@@ -27,10 +28,27 @@ pub(super) async fn reader_task(
 		}
 
 		let state = *conn.reader_state.read().unwrap();
-		let packet = reader
+		let result = reader
 			.read_packet(state, conn.version, Some(&conn.compression), &mut decryptor)
-			.await
-			.with_context(|| format!("reading packet (state {:?})", state))?;
+			.await;
+
+		// TODO when whole protocol implemented REMOVE THIS
+		// but for now dont error if unknown packet received
+		if let Err(e) = &result {
+			if let Some(e) = e.downcast_ref::<craftflow_protocol::Error>() {
+				if let craftflow_protocol::Error::UnknownPacketId {
+					id: _,
+					protocol_version: _,
+					state: _,
+				} = &e
+				{
+					debug!("received unknown packet {e}");
+					continue;
+				}
+			}
+		}
+
+		let packet = result.with_context(|| format!("reading packet (state {:?})", state))?;
 
 		// If None returned, that means the connection was cleanly closed on a packet boundary
 		// in which case we dont want to print any errors

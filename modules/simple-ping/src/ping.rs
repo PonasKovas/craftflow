@@ -4,11 +4,11 @@ use craftflow_protocol::{
 	disabled_versions,
 	s2c::status::{PingBuilder, ping::v5::PingV5},
 };
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, sync::Arc};
 
 #[craftflow::callback(event: Ping)]
 pub async fn ping(
-	cf: &CraftFlow,
+	cf: &Arc<CraftFlow>,
 	&mut (conn_id, ref mut request): &mut (u64, Ping),
 ) -> ControlFlow<()> {
 	let time = match request {

@@ -13,9 +13,13 @@ mod set_compression;
 use craftflow::{CraftFlow, various_events::Disconnect};
 use craftflow_protocol::craftflow_nbt::{NbtValue, nbt};
 use rsa::RsaPrivateKey;
-use std::{collections::BTreeMap, ops::ControlFlow, sync::RwLock};
+use std::{
+	collections::BTreeMap,
+	ops::ControlFlow,
+	sync::{Arc, RwLock},
+};
 
-craftflow::init!(ctx: CraftFlow);
+craftflow::init!();
 
 /// A module that handles the login phase of the minecraft protocol
 /// This includes:
@@ -79,7 +83,7 @@ impl Login {
 }
 
 #[craftflow::callback(event: Disconnect)]
-async fn cleanup_player_names_uuids(cf: &CraftFlow, conn_id: &mut u64) -> ControlFlow<()> {
+async fn cleanup_player_names_uuids(cf: &Arc<CraftFlow>, conn_id: &mut u64) -> ControlFlow<()> {
 	cf.modules
 		.get::<Login>()
 		.player_names_uuids

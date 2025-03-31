@@ -6,6 +6,7 @@ use smallbox::SmallBox;
 use text::text;
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::EnvFilter;
+use world::World;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -28,12 +29,19 @@ async fn main() -> anyhow::Result<()> {
 		))
 		.register(&mut craftflow);
 
-	add_callback!(craftflow.reactor, LoginStart => "printer" => |_ctx, (conn_id, packet)| SmallBox::new(async move {
+	Login::default().register(&mut craftflow);
+
+	World::new().register(&mut craftflow);
+
+	add_callback!(craftflow.reactor, LoginStart => "printer" => |cf, (conn_id, packet)| SmallBox::new(async move {
 		println!("{} {:?}", conn_id, packet);
+
+		let world_id = cf.modules.get::<World>().add_world();
+
+		cf.modules.get::<World>().set_player(*conn_id, world_id).await;
+
 		std::ops::ControlFlow::Continue(())
 	}));
-
-	Login::default().register(&mut craftflow);
 
 	info!("Starting CraftFlow");
 

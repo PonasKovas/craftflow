@@ -3,12 +3,12 @@ use craftflow::{
 	CraftFlow,
 	connection::legacy::{LegacyPing, LegacyPingResponse},
 };
-use std::{net::IpAddr, ops::ControlFlow};
+use std::{net::IpAddr, ops::ControlFlow, sync::Arc};
 use text::{Text, TextContent};
 
 #[craftflow::callback(event: LegacyPing)]
 pub async fn legacy_ping(
-	cf: &CraftFlow,
+	cf: &Arc<CraftFlow>,
 	_ip: &mut IpAddr,
 ) -> ControlFlow<Option<LegacyPingResponse>> {
 	let protocol_version = 127; // pretty arbitrary, but its not gonna be compatible with any client anyway

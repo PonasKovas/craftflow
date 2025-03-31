@@ -6,6 +6,7 @@ use crate::{
 		packet_writer::{Encryptor, PacketWriter},
 	},
 	packet_events::trigger_s2c,
+	various_events::EnterPlayState,
 };
 use aes::cipher::KeyIvInit;
 use craftflow_protocol::{S2C, s2c};
@@ -42,7 +43,7 @@ fn try_init_encryptor(encryption_secret: &OnceLock<[u8; 16]>, encryptor: &mut Op
 }
 
 async fn send(
-	craftflow: &CraftFlow,
+	craftflow: &Arc<CraftFlow>,
 	writer: &mut PacketWriter,
 	conn: &ConnectionInfo,
 	encryptor: &mut Option<Encryptor>,
@@ -73,10 +74,18 @@ async fn send(
 			} else {
 				*conn.writer_state.write().unwrap() = State::Play;
 				*conn.reader_state.write().unwrap() = State::Play;
+				let _ = craftflow
+					.reactor
+					.trigger::<EnterPlayState>(craftflow, &mut { conn.id })
+					.await;
 			}
 		}
 		S2C::Configuration(s2c::Configuration::FinishConfiguration(_)) => {
 			*conn.writer_state.write().unwrap() = State::Play;
+			let _ = craftflow
+				.reactor
+				.trigger::<EnterPlayState>(craftflow, &mut { conn.id })
+				.await;
 		}
 		_ => {}
 	}

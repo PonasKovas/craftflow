@@ -538,6 +538,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "world",
 ]
 
 [[package]]
@@ -879,7 +880,6 @@ dependencies = [
  "rand 0.8.5",
  "rsa",
  "rsa-der",
- "smallbox",
  "tracing",
 ]
 
@@ -2239,6 +2239,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3268f3d866458b787f390cf61f4bbb563b922d091359f9608842999eaee3943c"
 dependencies = [
  "bitflags 2.6.0",
+]
+
+[[package]]
+name = "world"
+version = "0.1.0"
+dependencies = [
+ "craftflow",
+ "craftflow-protocol",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

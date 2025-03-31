@@ -12,6 +12,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 tracing = { workspace = true }
 simple-ping = { path = "../modules/simple-ping" }
 login = { path = "../modules/login" }
+world = { path = "../modules/world" }
 smallbox = { workspace = true }
 text = { path = "../modules/text" }
 

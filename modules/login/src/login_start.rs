@@ -12,11 +12,11 @@ use craftflow_protocol::{
 	},
 };
 use rsa::traits::PublicKeyParts;
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, sync::Arc};
 
 #[craftflow::callback(event: LoginStart)]
 pub async fn login_start(
-	cf: &CraftFlow,
+	cf: &Arc<CraftFlow>,
 	&mut (conn_id, ref mut request): &mut (u64, LoginStart),
 ) -> ControlFlow<()> {
 	let username;

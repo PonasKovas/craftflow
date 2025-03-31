@@ -19,6 +19,8 @@
 // actually nvm. these comments are from the era when i tried to do packets with lifetimes.
 // i trashed that idea now but im gonna keep these comments as a warning.
 
+use std::sync::Arc;
+
 use crate::CraftFlow;
 use closureslop::Event;
 use craftflow_protocol::{C2S, S2C};
@@ -36,7 +38,7 @@ impl<E: Event> Event for Post<E> {
 
 // Helper functions that trigger a packet event
 // returns true if the event was not stopped
-async fn helper<'a, P>(craftflow: &CraftFlow, conn_id: u64, packet: P) -> (bool, P)
+async fn helper<'a, P>(craftflow: &Arc<CraftFlow>, conn_id: u64, packet: P) -> (bool, P)
 where
 	P: Event<Args<'a> = (u64, P)>,
 {
@@ -53,7 +55,7 @@ where
 
 	(true, args.1)
 }
-async fn helper_post<'a, P>(craftflow: &CraftFlow, conn_id: u64, packet: P) -> (bool, P)
+async fn helper_post<'a, P>(craftflow: &Arc<CraftFlow>, conn_id: u64, packet: P) -> (bool, P)
 where
 	P: Event<Args<'a> = (u64, P)>,
 {
@@ -75,7 +77,7 @@ where
 
 pub(super) async fn trigger_c2s(
 	post: bool,
-	craftflow: &CraftFlow,
+	craftflow: &Arc<CraftFlow>,
 	conn_id: u64,
 	packet: C2S,
 ) -> (bool, C2S) {
@@ -99,7 +101,7 @@ pub(super) async fn trigger_c2s(
 }
 pub(super) async fn trigger_s2c(
 	post: bool,
-	craftflow: &CraftFlow,
+	craftflow: &Arc<CraftFlow>,
 	conn_id: u64,
 	packet: S2C,
 ) -> (bool, S2C) {

@@ -7,6 +7,7 @@
 // used for Craftflow::get to get access to a connection through a lock
 #![feature(mapped_lock_guards)]
 
+use anyhow::bail;
 pub use closureslop::{self, add_callback};
 pub use craftflow_macros::{callback, init, reg};
 
@@ -21,16 +22,17 @@ use craftflow_protocol::{PacketBuilder, S2C};
 use modules::Modules;
 use std::{
 	collections::HashMap,
+	ops::ControlFlow,
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
 use tokio::{net::TcpListener, spawn};
-use tracing::{error, trace};
-use various_events::{Disconnect, NewConnection};
+use tracing::{error, info, trace};
+use various_events::{Disconnect, Init, NewConnection};
 
 pub struct CraftFlow {
 	connections: RwLock<Connections>,
 	pub modules: Modules,
-	pub reactor: Reactor<CraftFlow>,
+	pub reactor: Reactor<Arc<CraftFlow>>,
 }
 
 struct Connections {
@@ -56,6 +58,14 @@ impl CraftFlow {
 
 		// Start accepting connections in this task
 		let listener = TcpListener::bind("0.0.0.0:25565").await?;
+
+		if let ControlFlow::Break(msg) =
+			craftflow.reactor.trigger::<Init>(&craftflow, &mut ()).await
+		{
+			bail!("CraftFlow could not initialize: {msg}");
+		}
+
+		info!("Craftflow started.");
 
 		loop {
 			let (stream, socket_addr) = listener.accept().await?;
@@ -107,7 +117,7 @@ impl CraftFlow {
 	}
 	/// Disconnects the client with the given connection ID
 	/// No-op if the client is already disconnected, panic if the client ID was never connected
-	pub async fn disconnect(&self, conn_id: u64) {
+	pub async fn disconnect(self: &Arc<Self>, conn_id: u64) {
 		if self.connections.read().unwrap().is_connected(conn_id) {
 			// emit the disconnect event
 			let _ = self

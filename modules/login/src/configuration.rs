@@ -14,13 +14,13 @@ use craftflow_protocol::{
 		login::Success,
 	},
 };
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, sync::Arc};
 
 use crate::Login;
 
 #[callback(event: Success)]
 pub async fn configuration(
-	cf: &CraftFlow,
+	cf: &Arc<CraftFlow>,
 	&mut (conn_id, ref mut _request): &mut (u64, Success),
 ) -> ControlFlow<()> {
 	let conn = cf.get(conn_id);

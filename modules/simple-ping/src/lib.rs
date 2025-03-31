@@ -12,7 +12,7 @@ mod status;
 use craftflow::CraftFlow;
 use text::{Text, text};
 
-craftflow::init!(ctx: CraftFlow);
+craftflow::init!();
 
 /// A simple ping module
 /// Responds to the ping packet with a simple fixed message, shows the true online player count.

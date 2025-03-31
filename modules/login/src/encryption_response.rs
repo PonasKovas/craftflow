@@ -9,12 +9,12 @@ use craftflow_protocol::{
 	},
 };
 use rsa::Pkcs1v15Encrypt;
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, sync::Arc};
 use tracing::error;
 
 #[craftflow::callback(event: EncryptionBegin)]
 pub async fn encryption_response(
-	cf: &CraftFlow,
+	cf: &Arc<CraftFlow>,
 	&mut (conn_id, ref mut request): &mut (u64, EncryptionBegin),
 ) -> ControlFlow<()> {
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {

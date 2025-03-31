@@ -10,7 +10,7 @@ pub fn init(args: TokenStream) -> TokenStream {
 	let args = TokenStream2::from(args);
 
 	quote! {
-		::craftflow::closureslop::init!(@::craftflow::closureslop #args);
+		::craftflow::closureslop::init!(@::craftflow::closureslop ctx: std::sync::Arc<::craftflow::CraftFlow>, #args);
 	}
 	.into()
 }

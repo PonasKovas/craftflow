@@ -7,7 +7,7 @@ use craftflow_protocol::{
 	s2c::status::{ServerInfoBuilder, server_info::v5::ServerInfoV5},
 };
 use serde::{Deserialize, Serialize};
-use std::ops::ControlFlow;
+use std::{ops::ControlFlow, sync::Arc};
 use text::Text;
 
 /// Server status (MOTD, player count, favicon, etc.) sent in response to a [`AbStatusRequestInfo`][crate::c2s::AbStatusRequestInfo] packet
@@ -69,7 +69,7 @@ pub struct PlayerSample {
 
 #[craftflow::callback(event: PingStart)]
 pub async fn status(
-	cf: &CraftFlow,
+	cf: &Arc<CraftFlow>,
 	&mut (conn_id, ref mut _request): &mut (u64, PingStart),
 ) -> ControlFlow<()> {
 	let version = cf.get(conn_id).protocol_version();
