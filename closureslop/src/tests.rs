@@ -30,7 +30,7 @@ async fn simple() {
 		})
 	}
 
-	reactor.trigger::<MyEvent>(&(), &mut ()).await;
+	let _ = reactor.trigger::<MyEvent>(&(), &mut ()).await;
 }
 
 #[pollster::test]
@@ -49,7 +49,7 @@ async fn change_arg() {
 		}),);
 
 	let mut x = 2;
-	reactor.trigger::<MyEvent>(&(), &mut x).await;
+	let _ = reactor.trigger::<MyEvent>(&(), &mut x).await;
 	assert_eq!(x, 3);
 }
 
@@ -85,6 +85,6 @@ async fn ordered() {
 		}), after: "closureslop:A");
 
 	let mut x = Vec::new();
-	reactor.trigger::<MyEvent>(&(), &mut x).await;
+	let _ = reactor.trigger::<MyEvent>(&(), &mut x).await;
 	assert_eq!(&x, &['C', 'A', 'D', 'E', 'B']);
 }
