@@ -52,6 +52,12 @@ impl Modules {
 	}
 }
 
+impl Default for Modules {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;

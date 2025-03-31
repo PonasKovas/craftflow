@@ -101,7 +101,7 @@ mod tests {
 
 	#[test]
 	fn varlong_read() {
-		for (i, case) in TEST_CASES.into_iter().enumerate() {
+		for (i, case) in TEST_CASES.iter().enumerate() {
 			let result = VarLong::mcp_read(&mut &case.1[..]).unwrap();
 			assert_eq!(result, case.0, "{i}");
 		}
@@ -109,7 +109,7 @@ mod tests {
 
 	#[test]
 	fn varlong_write() {
-		for (i, case) in TEST_CASES.into_iter().enumerate() {
+		for (i, case) in TEST_CASES.iter().enumerate() {
 			let mut buf = Vec::new();
 			let result = VarLong::mcp_write(&case.0, &mut buf);
 			assert_eq!(result, case.1.len(), "{i}");

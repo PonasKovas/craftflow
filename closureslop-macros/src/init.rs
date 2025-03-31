@@ -24,11 +24,7 @@ impl Parse for Args {
 
 		let mut id = None;
 		let mut context = None;
-		loop {
-			let keyword = match input.parse::<Ident>() {
-				Ok(keyword) => keyword,
-				Err(_) => break,
-			};
+		while let Ok(keyword) = input.parse::<Ident>() {
 			input.parse::<Token![:]>()?;
 
 			match keyword.to_string().as_str() {

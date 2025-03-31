@@ -14,3 +14,6 @@ simple-ping = { path = "../modules/simple-ping" }
 login = { path = "../modules/login" }
 smallbox = { workspace = true }
 text = { path = "../modules/text" }
+
+[lints]
+workspace = true

@@ -134,7 +134,7 @@ impl PacketWriter {
 	}
 }
 
-fn prepend_to_buffer(buffer: &mut Vec<u8>, cursor: &mut usize, value: i32) {
+fn prepend_to_buffer(buffer: &mut [u8], cursor: &mut usize, value: i32) {
 	*cursor -= varint_num_bytes(value);
 	write_varint(value, &mut buffer[*cursor..]);
 }

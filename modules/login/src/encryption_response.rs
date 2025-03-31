@@ -51,13 +51,13 @@ pub async fn encryption_response(
 		match (
 			rsa_key.decrypt(Pkcs1v15Encrypt, shared_secret),
 			verify_token
-				.map(|t| rsa_key.decrypt(Pkcs1v15Encrypt, &t))
+				.map(|t| rsa_key.decrypt(Pkcs1v15Encrypt, t))
 				.transpose(),
 		) {
 			(Ok(decrypted_shared_secret), Ok(decrypted_verification_token)) => {
 				// Check if the verification token is correct
 				if let Some(token) = decrypted_verification_token {
-					if &token != VERIFY_TOKEN.as_bytes() {
+					if token != VERIFY_TOKEN.as_bytes() {
 						error!("{} sent bad encryption response", cf.get(conn_id));
 						cf.disconnect(conn_id).await;
 

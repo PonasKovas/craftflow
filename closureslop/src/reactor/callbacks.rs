@@ -80,11 +80,8 @@ impl Callbacks {
 	}
 	/// Finds a callback with the given id, returning it's index
 	fn find_with_id(&self, id: &str) -> Option<NodeIndex> {
-		for callback in self.graph.node_indices() {
-			if &self.graph[callback].id == id {
-				return Some(callback);
-			}
-		}
-		None
+		self.graph
+			.node_indices()
+			.find(|callback| self.graph[*callback].id == id)
 	}
 }

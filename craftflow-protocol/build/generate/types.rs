@@ -98,8 +98,7 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 					"pub(crate) mod {state} {{ {} }}",
 					directions
 						.get(&direction)
-						.map(|i| i.get(state))
-						.flatten()
+						.and_then(|i| i.get(state))
 						.unwrap_or(&"".to_string())
 				);
 			}

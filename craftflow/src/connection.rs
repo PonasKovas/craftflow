@@ -53,7 +53,7 @@ impl ConnectionInterface {
 	/// this method has no safeguards.
 	/// You can only set the encryption shared secret once.
 	pub fn set_encryption(&self, shared_secret: [u8; 16]) {
-		if let Err(_) = self.encryption_secret.set(shared_secret) {
+		if self.encryption_secret.set(shared_secret).is_err() {
 			error!("client encryption shared secret already set");
 		}
 	}
@@ -64,7 +64,7 @@ impl ConnectionInterface {
 	///
 	/// The threshold is the size of packet in bytes at which the server will start compressing it.
 	pub fn set_compression_threshold(&self, threshold: usize) {
-		if let Err(_) = self.compression.set(threshold) {
+		if self.compression.set(threshold).is_err() {
 			error!("client compression threshold already set");
 		}
 	}

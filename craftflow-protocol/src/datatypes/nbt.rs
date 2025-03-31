@@ -39,7 +39,7 @@ impl<T> MCP for OptNamedNbt<T> {
 
 impl<'a, T: NbtRead> MCPRead<'a> for Nbt<T> {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
-		let value = T::nbt_read(input).map_err(|e| Error::from(e))?;
+		let value = T::nbt_read(input).map_err(Error::from)?;
 
 		Ok(value)
 	}
@@ -48,7 +48,7 @@ impl<'a, T: NbtRead> MCPRead<'a> for OptNbt<T> {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
 		let v = match peek(input)? {
 			0 => None,
-			_ => Some(T::nbt_read(input).map_err(|e| Error::from(e))?),
+			_ => Some(T::nbt_read(input).map_err(Error::from)?),
 		};
 
 		Ok(v)
@@ -56,7 +56,7 @@ impl<'a, T: NbtRead> MCPRead<'a> for OptNbt<T> {
 }
 impl<'a, T: NbtRead> MCPRead<'a> for NamedNbt<T> {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
-		let (_, value) = T::nbt_read_named(input).map_err(|e| Error::from(e))?;
+		let (_, value) = T::nbt_read_named(input).map_err(Error::from)?;
 
 		Ok(value)
 	}
@@ -65,7 +65,7 @@ impl<'a, T: NbtRead> MCPRead<'a> for OptNamedNbt<T> {
 	fn mcp_read(input: &mut &'a [u8]) -> Result<Self::Data> {
 		let v = match peek(input)? {
 			0 => None,
-			_ => Some(T::nbt_read_named(input).map_err(|e| Error::from(e))?.1),
+			_ => Some(T::nbt_read_named(input).map_err(Error::from)?.1),
 		};
 
 		Ok(v)

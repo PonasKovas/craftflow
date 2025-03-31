@@ -22,7 +22,7 @@ fn main() {
 
 	let pkts_toml = packets_toml::load();
 
-	let mut code = String::new();
+	let mut code = "".to_string();
 
 	code += &generate::supported_versions_list(&pkts_toml);
 

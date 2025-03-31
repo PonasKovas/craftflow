@@ -33,11 +33,7 @@ impl Parse for Args {
 		let mut event = None;
 		let mut before = Vec::new();
 		let mut after = Vec::new();
-		loop {
-			let keyword = match input.parse::<Ident>() {
-				Ok(keyword) => keyword,
-				Err(_) => break,
-			};
+		while let Ok(keyword) = input.parse::<Ident>() {
 			input.parse::<Token![:]>()?;
 
 			match keyword.to_string().as_str() {

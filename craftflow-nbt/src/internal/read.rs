@@ -11,7 +11,7 @@ use std::{
 };
 
 pub fn read_tag(input: &mut &[u8]) -> Result<Tag> {
-	if input.len() < 1 {
+	if input.is_empty() {
 		return Err(Error::NotEnoughData(1));
 	}
 
@@ -73,10 +73,7 @@ pub fn read_seq<T: InternalNbtRead>(input: &mut &[u8]) -> Result<Vec<T>> {
 				copy_nonoverlapping(input.as_ptr(), vec.as_mut_ptr() as *mut u8, bytes);
 				vec.set_len(length as usize);
 				/// Enforces that the slice has the same lifetime as the vector borrow
-				unsafe fn as_mut_byte_slice<'a, T>(
-					vec: &'a mut Vec<T>,
-					bytes: usize,
-				) -> &'a mut [u8] {
+				unsafe fn as_mut_byte_slice<T>(vec: &mut Vec<T>, bytes: usize) -> &mut [u8] {
 					slice::from_raw_parts_mut(vec.as_mut_ptr() as *mut u8, bytes)
 				}
 				as_mut_byte_slice(&mut vec, bytes)

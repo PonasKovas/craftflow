@@ -70,7 +70,7 @@ pub fn load() -> PacketsToml {
 				Type::Specific {
 					direction: Direction::S2C,
 					state: State(state.clone()),
-					name: name,
+					name,
 				},
 				v.into_iter()
 					.map(|(k, v)| {
@@ -89,7 +89,7 @@ pub fn load() -> PacketsToml {
 				Type::Specific {
 					direction: Direction::C2S,
 					state: State(state.clone()),
-					name: name,
+					name,
 				},
 				v.into_iter()
 					.map(|(k, v)| {

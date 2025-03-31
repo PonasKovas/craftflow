@@ -43,8 +43,8 @@ impl PacketReader {
 		}
 	}
 	/// Reads a single packet from the client (Cancel-safe)
-	pub(crate) async fn read_packet<'a>(
-		&'a mut self,
+	pub(crate) async fn read_packet(
+		&mut self,
 		state: State,
 		protocol_version: u32,
 		compression: Option<&OnceLock<usize>>,
@@ -84,7 +84,7 @@ impl PacketReader {
 		// if compression is enabled, read the uncompressed data length
 		// this will be set to Some(uncompressed_len) if the packet is compressed
 		// (threshold was reached)
-		let decompressed_len = match compression.map(|c| c.get()).flatten() {
+		let decompressed_len = match compression.and_then(|c| c.get()) {
 			None => None,
 			Some(&threshold) => {
 				// read the uncompressed data length
@@ -156,7 +156,7 @@ impl PacketReader {
 		};
 
 		// simple sanity test of parsing the packet, all the bytes should have been used to parse it
-		if packet_bytes.len() != 0 {
+		if !packet_bytes.is_empty() {
 			bail!(
 				"Parsed packet and got {} remaining bytes left\n{packet:?}\n",
 				packet_bytes.len()

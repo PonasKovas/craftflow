@@ -50,7 +50,7 @@ where
 		});
 
 		written += LEN::mcp_write(&len, output);
-		output.extend_from_slice(&data);
+		output.extend_from_slice(data);
 
 		written + data.len()
 	}

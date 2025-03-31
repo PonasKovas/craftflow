@@ -58,3 +58,6 @@ no-v767 = []
 no-v768 = []
 no-v769 = []
 # END AUTO FEATURES SECTOR #
+
+[lints]
+workspace = true

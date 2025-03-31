@@ -63,7 +63,7 @@ nbt!({
 	},
 	"minecraft:worldgen/biome": {
 		"minecraft:default": {
-			"downfall": 0.4000000059604645f32,
+			"downfall": 0.4f32,
 			"effects": {
 				"fog_color": 12638463i32,
 				"mood_sound": {
@@ -77,10 +77,10 @@ nbt!({
 				"water_fog_color": 329011i32
 			},
 			"has_precipitation": 1i8,
-			"temperature": 0.800000011920929f32
+			"temperature": 0.8f32
 		},
 		"minecraft:snowy_taiga": { // client checks for this biome specifically for some reason...
-			"downfall": 0.4000000059604645f32,
+			"downfall": 0.4f32,
 			"effects": {
 				"fog_color": 12638463i32,
 				"mood_sound": {

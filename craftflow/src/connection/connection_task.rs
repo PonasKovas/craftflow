@@ -98,32 +98,30 @@ pub(crate) async fn handle_new_conn(
 	let version = set_protocol.protocol_version as u32;
 
 	// unless the next state is status, we need to check that the client protocol version is supported
-	if next_state != State::Status {
-		if !SUPPORTED_VERSIONS.contains(&version) {
-			let message = match craftflow
-				.reactor
-				.trigger::<UnsupportedClientVersion>(&craftflow, &mut (socket_addr.ip(), version))
-				.await
-			{
-				ControlFlow::Continue(_) => {
-					// default response
-					"Your version is not supported.".to_string()
-				}
-				ControlFlow::Break(message) => message,
-			};
-
-			let disconnect = match login::DisconnectBuilder::new(version) {
-				login::DisconnectBuilder::V5(p) => p(DisconnectV5 { reason: message }),
-				disabled_versions!(s2c::login::DisconnectBuilder) => unreachable!(),
+	if next_state != State::Status && !SUPPORTED_VERSIONS.contains(&version) {
+		let message = match craftflow
+			.reactor
+			.trigger::<UnsupportedClientVersion>(&craftflow, &mut (socket_addr.ip(), version))
+			.await
+		{
+			ControlFlow::Continue(_) => {
+				// default response
+				"Your version is not supported.".to_string()
 			}
-			.into();
+			ControlFlow::Break(message) => message,
+		};
 
-			packet_writer
-				.send(next_state, version, None, &mut None, &disconnect)
-				.await?;
-
-			return Ok(()); // close the connection
+		let disconnect = match login::DisconnectBuilder::new(version) {
+			login::DisconnectBuilder::V5(p) => p(DisconnectV5 { reason: message }),
+			disabled_versions!(s2c::login::DisconnectBuilder) => unreachable!(),
 		}
+		.into();
+
+		packet_writer
+			.send(next_state, version, None, &mut None, &disconnect)
+			.await?;
+
+		return Ok(()); // close the connection
 	}
 
 	// All is good, can add to the client list now and spawn the tasks for reading/writing to it

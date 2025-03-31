@@ -17,10 +17,10 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 				);
 				for (&version_group, packet_ids) in all_version_groups {
 					// if all versions of this version group are disabled, add it to the pattern
-					let all_versions = packet_ids.values().flat_map(|v| v.iter()).copied();
-					let all_disabled = all_versions.fold(true, |acc, version| {
-						acc && env::var(format!("CARGO_FEATURE_NO_V{}", version)).is_ok()
-					});
+					let all_disabled = packet_ids
+						.values()
+						.flat_map(|v| v.iter())
+						.all(|version| env::var(format!("CARGO_FEATURE_NO_V{}", version)).is_ok());
 
 					if all_disabled {
 						let variant = version_group.variant_name();

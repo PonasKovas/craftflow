@@ -88,7 +88,7 @@ pub async fn status(
 
 	let status_info = StatusInfo {
 		version: Version {
-			name: format!("§f§lCraftFlow").into(),
+			name: "§f§lCraftFlow".to_owned(),
 			protocol: version,
 		},
 		players: Some(Players {
@@ -151,7 +151,7 @@ mod favicon {
 			Some(favicon) => {
 				let s = format!(
 					"data:image/png;base64,{}",
-					base64::prelude::BASE64_STANDARD.encode(&favicon)
+					base64::prelude::BASE64_STANDARD.encode(favicon)
 				);
 
 				serializer.serialize_str(&s)

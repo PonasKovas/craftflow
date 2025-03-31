@@ -112,7 +112,7 @@ impl CraftFlow {
 			// emit the disconnect event
 			let _ = self
 				.reactor
-				.trigger::<Disconnect>(&self, &mut conn_id.clone())
+				.trigger::<Disconnect>(self, &mut conn_id.clone())
 				.await;
 
 			self.connections
@@ -142,5 +142,11 @@ impl Connections {
 		}
 
 		self.connections.contains_key(&conn_id)
+	}
+}
+
+impl Default for CraftFlow {
+	fn default() -> Self {
+		todo!()
 	}
 }

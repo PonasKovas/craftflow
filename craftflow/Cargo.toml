@@ -16,3 +16,6 @@ cfb8.workspace = true
 flate2.workspace = true
 futures.workspace = true
 smallbox.workspace = true
+
+[lints]
+workspace = true

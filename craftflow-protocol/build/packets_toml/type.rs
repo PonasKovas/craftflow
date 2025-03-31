@@ -15,12 +15,12 @@ pub enum Type {
 impl Type {
 	fn last(&self) -> &str {
 		match self {
-			Type::Common(s) => &s,
+			Type::Common(s) => s,
 			Type::Specific {
 				direction: _,
 				state: _,
 				name,
-			} => &name,
+			} => name,
 		}
 	}
 	pub fn parts(&self) -> Vec<String> {
@@ -41,7 +41,7 @@ impl Type {
 		snake_to_pascal_case(self.last())
 	}
 	pub fn struct_name(&self, version: Version) -> String {
-		format!("{}V{}", snake_to_pascal_case(&self.last()), version.0)
+		format!("{}V{}", snake_to_pascal_case(self.last()), version.0)
 	}
 }
 

@@ -23,6 +23,7 @@ pub use varint::{OptVarInt, VarInt};
 pub use varlong::VarLong;
 
 /// Marks a Minecraft Protocol datatype format
+#[allow(clippy::upper_case_acronyms)]
 pub trait MCP {
 	/// The actual data
 	type Data;
@@ -50,7 +51,7 @@ fn advance<'a>(s: &mut &'a [u8], n: usize) -> &'a [u8] {
 
 /// 👹
 fn peek(input: &&[u8]) -> Result<u8> {
-	if input.len() < 1 {
+	if input.is_empty() {
 		return Err(Error::NotEnoughData(1));
 	}
 

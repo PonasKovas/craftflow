@@ -37,4 +37,9 @@ pub trait PacketBuilder {
 include! {"mcp_macro.rs"}
 
 // The generated code by build.rs
-include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+#[allow(clippy::manual_range_patterns)]
+#[allow(clippy::empty_line_after_doc_comments)]
+mod generated {
+	include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+}
+pub use generated::*;

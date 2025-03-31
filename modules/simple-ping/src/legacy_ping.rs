@@ -18,7 +18,7 @@ pub async fn legacy_ping(
 
 	ControlFlow::Break(Some(
 		LegacyPingResponse::new(protocol_version, online_players, max_players)
-			.set_version(format!("§f§lCraftFlow"))
+			.set_version("§f§lCraftFlow".to_owned())
 			.set_description(text_to_legacy(description)),
 	))
 }
@@ -95,7 +95,7 @@ pub fn text_to_legacy(text: &Text) -> String {
 			strikethrough: this.strikethrough,
 			underlined: this.underlined,
 			italic: this.italic,
-			color: this.color.as_ref().map(|color| color_to_char(&color)),
+			color: this.color.as_ref().map(|color| color_to_char(color)),
 		};
 
 		// If any modifiers were removed
@@ -106,8 +106,7 @@ pub fn text_to_legacy(text: &Text) -> String {
 			this.underlined,
 			this.italic,
 		]
-		.iter()
-		.any(|m| *m == Some(false))
+		.contains(&Some(false))
 		{
 			// Reset and print sum of old and new modifiers
 			result.push_str("§r");

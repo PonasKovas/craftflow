@@ -2,7 +2,7 @@ use super::{MCP, MCPRead, MCPWrite, VarInt, advance};
 use crate::{Error, Result};
 use core::str;
 
-impl<'a> MCP for &'a str {
+impl MCP for &str {
 	type Data = Self;
 }
 impl<'a> MCPRead<'a> for &'a str {

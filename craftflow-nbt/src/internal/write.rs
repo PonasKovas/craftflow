@@ -48,7 +48,7 @@ pub fn write_seq<T: InternalNbtWrite>(seq: &Vec<T>, output: &mut Vec<u8>) -> usi
 			let start_indice = output.len();
 			unsafe {
 				// SAFETY: output is definitely not overlapping with seq.
-				let output_ptr = output.as_mut_ptr().offset(start_indice as isize);
+				let output_ptr = output.as_mut_ptr().add(start_indice);
 				copy_nonoverlapping(seq.as_ptr() as *const u8, output_ptr, bytes);
 				output.set_len(start_indice + bytes);
 			}

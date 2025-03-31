@@ -115,6 +115,12 @@ impl<CTX: 'static> Reactor<CTX> {
 	}
 }
 
+impl<CTX: 'static> Default for Reactor<CTX> {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 impl<CTX> std::fmt::Debug for Reactor<CTX> {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> core::fmt::Result {
 		write!(f, "Closureslop Reactor")

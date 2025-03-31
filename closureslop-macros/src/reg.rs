@@ -16,11 +16,7 @@ impl Parse for Args {
 	fn parse(input: ParseStream) -> Result<Self> {
 		let mut id = None;
 		let mut reactor = None;
-		loop {
-			let keyword = match input.parse::<Ident>() {
-				Ok(keyword) => keyword,
-				Err(_) => break,
-			};
+		while let Ok(keyword) = input.parse::<Ident>() {
 			input.parse::<Token![:]>()?;
 
 			match keyword.to_string().as_str() {

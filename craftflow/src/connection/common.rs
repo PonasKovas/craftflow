@@ -4,5 +4,5 @@ pub fn varint_num_bytes(varint: i32) -> usize {
 		return 1;
 	}
 	let bits_needed = 32 - value.leading_zeros();
-	((bits_needed + 6) / 7) as usize
+	bits_needed.div_ceil(7) as usize
 }

@@ -40,19 +40,14 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 					);
 				}
 
-				state_code += &packet_enum::generate(
-					&pkts_toml,
-					direction,
-					state,
-					packet,
-					all_version_groups,
-				);
+				state_code +=
+					&packet_enum::generate(pkts_toml, direction, state, packet, all_version_groups);
 
-				state_code += &packet_builder::generate(&pkts_toml, packet, all_version_groups);
+				state_code += &packet_builder::generate(pkts_toml, packet, all_version_groups);
 
 				state_code += &format!("pub mod {} {{ {packet_code} }}", packet.mod_name());
 			}
-			direction_code += &state_enum::generate(direction, state, &all_packets);
+			direction_code += &state_enum::generate(direction, state, all_packets);
 
 			direction_code += &format!(
 				"pub mod {} {{ {DEFAULT_IMPORTS_FOR_IMPLS} {state_code} }}",
