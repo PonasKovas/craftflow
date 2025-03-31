@@ -5,8 +5,9 @@ use craftflow::CraftFlow;
 use craftflow_protocol::{
 	disabled_versions,
 	s2c::play::{
-		Login, LoginBuilder,
+		Login, LoginBuilder, PositionBuilder,
 		login::{v5::LoginV5, v47::LoginV47},
+		position::{v5::PositionV5, v47::PositionV47},
 	},
 };
 use tokio::sync::mpsc::Receiver;
@@ -62,6 +63,32 @@ pub async fn world_task(cf: Arc<CraftFlow>, id: WorldId, mut receiver: Receiver<
 						LoginBuilder::V766(p) => todo!(),
 						LoginBuilder::V768(p) => todo!(),
 						disabled_versions!(s2c::play::LoginBuilder) => unreachable!(),
+					})
+					.await;
+
+				state
+					.cf
+					.build_packet::<PositionBuilder>(conn_id, |b| match b {
+						PositionBuilder::V5(p) => p(PositionV5 {
+							x: 0.0,
+							y: 0.0,
+							z: 0.0,
+							yaw: 0.0,
+							pitch: 0.0,
+							on_ground: false,
+						}),
+						PositionBuilder::V47(p) => p(PositionV47 {
+							x: 0.0,
+							y: 0.0,
+							z: 0.0,
+							yaw: 0.0,
+							pitch: 0.0,
+							flags: 0,
+						}),
+						PositionBuilder::V107(p) => todo!(),
+						PositionBuilder::V755(p) => todo!(),
+						PositionBuilder::V768(p) => todo!(),
+						disabled_versions!(s2c::play::PositionBuilder) => unreachable!(),
 					})
 					.await;
 			}
