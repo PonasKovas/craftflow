@@ -26,10 +26,10 @@ PACKETS = {
         "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
                           "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags",
                           "tags", "reset_chat", "select_known_packs"],
-        "play": ["keep_alive", "login"],
+        "play": ["keep_alive", "login", "position"],
     }
 }
-TYPES = ["tags", "s2c.play.SpawnInfo"]
+TYPES = ["tags", "s2c.play.SpawnInfo", "s2c.play.PositionUpdateRelatives"]
 
 
 def _parse_args():

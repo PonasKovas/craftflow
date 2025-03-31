@@ -9,6 +9,7 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 	let mut code = String::new();
 
 	// first load the actual implementations in a clean-for-the-user way
+	let mut directions: IndexMap<Direction, IndexMap<String, String>> = IndexMap::new();
 	for (ty, all_version_groups) in &pkts_toml.types {
 		let mut type_code = String::new();
 		for (&group_id, _versions) in all_version_groups {
@@ -30,13 +31,29 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 			);
 		}
 
-		let mut inner_code = type_code;
-		let mut parts = ty.parts();
-		parts.reverse();
-		for part in parts {
-			inner_code = format!("pub mod {part} {{ {inner_code} }}");
+		match ty {
+			Type::Common(name) => {
+				code += &format!("pub mod {name} {{ {type_code} }}");
+			}
+			Type::Specific {
+				direction,
+				state,
+				name,
+			} => {
+				*directions
+					.entry(*direction)
+					.or_default()
+					.entry(state.0.clone())
+					.or_default() += &format!("pub mod {name} {{ {type_code} }}");
+			}
 		}
-		code += &inner_code;
+	}
+	for (dir, states) in directions {
+		let mut direction_code = String::new();
+		for (state, code) in states {
+			direction_code += &format!("pub mod {state} {{ {code} }}");
+		}
+		code += &format!("pub mod {dir} {{ {direction_code} }}");
 	}
 
 	// then generate private version modules and reexports for internal usage

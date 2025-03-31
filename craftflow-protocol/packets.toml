@@ -326,6 +326,36 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 # <packet id> = [<versions that use that packet id>]
 44 = [768, 769]
 
+[s2c.play.position.5]
+# <packet id> = [<versions that use that packet id>]
+8 = [5]
+
+[s2c.play.position.47]
+# <packet id> = [<versions that use that packet id>]
+8 = [47]
+
+[s2c.play.position.107]
+# <packet id> = [<versions that use that packet id>]
+46 = [107, 109, 110, 210, 315, 335]
+47 = [338, 340]
+50 = [393, 401, 404]
+53 = [477, 490, 498, 735, 480, 736]
+54 = [573, 575, 578]
+52 = [751]
+60 = [762, 763]
+62 = [764, 765]
+64 = [766, 767]
+
+[s2c.play.position.755]
+# <packet id> = [<versions that use that packet id>]
+56 = [755, 756, 757, 758, 761]
+54 = [759]
+57 = [760]
+
+[s2c.play.position.768]
+# <packet id> = [<versions that use that packet id>]
+66 = [768, 769]
+
 [type.tags]
 # <group id> = [<versions>]
 477 = [477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769, 480, 575, 578, 736]
@@ -333,4 +363,8 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 [type.s2c.play.spawn_info]
 # <group id> = [<versions>]
 766 = [766, 767]
+768 = [768, 769]
+
+[type.s2c.play.position_update_relatives]
+# <group id> = [<versions>]
 768 = [768, 769]
