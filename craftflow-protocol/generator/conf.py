@@ -18,7 +18,7 @@ PACKETS = {
         "login": ["login_start", "encryption_begin", "login_plugin_response", "login_acknowledged"],
         "configuration": ["settings", "custom_payload", "finish_configuration", "keep_alive", "pong",
                           "resource_pack_receive", "select_known_packs"],
-        "play": ["teleport_confirm"],
+        "play": ["keep_alive", "teleport_confirm"],
     },
     "s2c": {
         "status": ["server_info", "ping"],
@@ -26,7 +26,7 @@ PACKETS = {
         "configuration": ["custom_payload", "disconnect", "finish_configuration", "keep_alive", "ping",
                           "registry_data", "remove_resource_pack", "add_resource_pack", "feature_flags",
                           "tags", "reset_chat", "select_known_packs"],
-        "play": ["login"],
+        "play": ["keep_alive", "login"],
     }
 }
 TYPES = ["tags", "s2c.play.SpawnInfo"]

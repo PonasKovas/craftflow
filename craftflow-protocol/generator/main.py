@@ -74,7 +74,7 @@ def main():
             for packet in packets:
                 packet_table = table(True)
                 state_table.add(packet, packet_table)
-                gen_packets(packet_table, protocols,
+                gen_packets(packet_table, version_aliases, protocols,
                             direction, state, packet)
 
     # Generate types
@@ -92,7 +92,7 @@ def main():
             parent = type_table
 
         type_table.add(tomlkit.comment("<group id> = [<versions>]"))
-        gen_types(type_table, protocols, type_segments)
+        gen_types(type_table, version_aliases, protocols, type_segments)
 
     # write the packets.toml
     with open(PACKETS_TOML_PATH, "w") as f:

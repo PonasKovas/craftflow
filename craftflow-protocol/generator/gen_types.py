@@ -9,8 +9,16 @@ from parse_protocol import get_type_spec
 from conf import *
 
 
+def add_aliased_versions(version_aliases: Dict[int, int], versions: List[int]) -> List[int]:
+    for alias, v in version_aliases.items():
+        if v in versions:
+            versions.append(alias)
+
+    return versions
+
+
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
-def gen_types(toml, protocols: Dict[int, any], ty: List[str]):
+def gen_types(toml, version_aliases: Dict[int, int], protocols: Dict[int, any], ty: List[str]):
     # only load llm module if gen-llm flag passed
     # because otherwise OpenAI requires an API key
     if ARGS.gen_llm:
@@ -50,7 +58,8 @@ def gen_types(toml, protocols: Dict[int, any], ty: List[str]):
         # packets.toml generation
         #########################
 
-        toml.add(str(first_version), group)
+        all_versions = add_aliased_versions(version_aliases, group)
+        toml.add(str(first_version), all_versions)
 
         # actual rust code generation
         #############################

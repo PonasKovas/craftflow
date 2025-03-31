@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from tomlkit import table, inline_table, dumps
 import tomlkit
 import subprocess
@@ -7,6 +7,14 @@ from colorama import init, Fore, Style
 
 from conf import *
 from parse_protocol import get_packet_id, get_packet_spec, has_packet, get_type_spec
+
+
+def add_aliased_versions(version_aliases: Dict[int, int], versions: List[int]) -> List[int]:
+    for alias, v in version_aliases.items():
+        if v in versions:
+            versions.append(alias)
+
+    return versions
 
 
 # Checks if the given spec contains a keyvalue pair "type": "<type>" anywhere recursively
@@ -48,7 +56,7 @@ def compare_spec(protocols: Dict[int, any], v1: int, v2: int, spec1, spec2) -> b
 
 
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
-def gen_packets(toml, protocols: Dict[int, any], direction: str, state: str, packet: str):
+def gen_packets(toml, version_aliases: Dict[int, int], protocols: Dict[int, any], direction: str, state: str, packet: str):
     # only load llm module if gen-llm flag passed
     # because otherwise OpenAI requires an API key
     if ARGS.gen_llm:
@@ -103,7 +111,8 @@ def gen_packets(toml, protocols: Dict[int, any], direction: str, state: str, pac
         group_table.add(tomlkit.comment(
             "<packet id> = [<versions that use that packet id>]"))
         for packet_id, versions in group.items():
-            group_table.add(str(packet_id), versions)
+            all_versions = add_aliased_versions(version_aliases, versions)
+            group_table.add(str(packet_id), all_versions)
 
         # actual rust code generation
         #############################
