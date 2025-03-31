@@ -116,11 +116,4 @@ mod tests {
 			assert_eq!(buf, case.1, "{i}");
 		}
 	}
-
-	// #[test]
-	// fn varlong_len() {
-	// 	for (i, case) in TEST_CASES.into_iter().enumerate() {
-	// 		assert_eq!(VarLong::num_bytes(case.0), case.1.len(), "{i}");
-	// 	}
-	// }
 }

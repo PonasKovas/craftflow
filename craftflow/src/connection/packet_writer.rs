@@ -50,6 +50,10 @@ impl PacketWriter {
 				self.write_unchecked(protocol_version, compression, encryptor, p)
 					.await?;
 			}
+			S2C::Play(p) if state == State::Play => {
+				self.write_unchecked(protocol_version, compression, encryptor, p)
+					.await?;
+			}
 			_ => {
 				bail!(
 					"Attempt to send packet on wrong state.\nState: {:?}\nPacket: {:?}",

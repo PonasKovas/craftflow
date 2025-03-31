@@ -104,5 +104,7 @@ macro_rules! mcp_map_type {
     (Buffer $(<($($generic:tt)*)>)?) => { Vec<u8> };
     (RestBuffer) => { Vec<u8> };
     (Option<($($generic:tt)*)>) => { Option<mcp_map_type!( $($generic)* )> };
+    (PositionV5) => { (i32, i16, i32) };
+    (PositionV477) => { (i32, i16, i32) };
     ($($any:tt)*) => { $($any)* };
 }

@@ -96,6 +96,10 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 # <packet id> = [<versions that use that packet id>]
 7 = [766, 767, 768, 769]
 
+[c2s.play.teleport_confirm.107]
+# <packet id> = [<versions that use that packet id>]
+0 = [107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+
 [s2c.status.server_info.5]
 # <packet id> = [<versions that use that packet id>]
 0 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
@@ -210,6 +214,64 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 [s2c.configuration.select_known_packs.766]
 # <packet id> = [<versions that use that packet id>]
 14 = [766, 767, 768, 769]
+
+[s2c.play.login.5]
+# <packet id> = [<versions that use that packet id>]
+1 = [5]
+
+[s2c.play.login.47]
+# <packet id> = [<versions that use that packet id>]
+1 = [47]
+35 = [107]
+
+[s2c.play.login.109]
+# <packet id> = [<versions that use that packet id>]
+35 = [109, 110, 210, 315, 335, 338, 340]
+37 = [393, 401, 404]
+
+[s2c.play.login.477]
+# <packet id> = [<versions that use that packet id>]
+37 = [477, 490, 498]
+
+[s2c.play.login.573]
+# <packet id> = [<versions that use that packet id>]
+38 = [573]
+
+[s2c.play.login.735]
+# <packet id> = [<versions that use that packet id>]
+37 = [735]
+
+[s2c.play.login.751]
+# <packet id> = [<versions that use that packet id>]
+36 = [751]
+
+[s2c.play.login.755]
+# <packet id> = [<versions that use that packet id>]
+38 = [755, 756]
+
+[s2c.play.login.757]
+# <packet id> = [<versions that use that packet id>]
+38 = [757, 758]
+
+[s2c.play.login.759]
+# <packet id> = [<versions that use that packet id>]
+35 = [759]
+37 = [760]
+36 = [761]
+40 = [762]
+
+[s2c.play.login.763]
+# <packet id> = [<versions that use that packet id>]
+40 = [763]
+
+[s2c.play.login.764]
+# <packet id> = [<versions that use that packet id>]
+41 = [764, 765]
+
+[s2c.play.login.766]
+# <packet id> = [<versions that use that packet id>]
+43 = [766, 767]
+44 = [768, 769]
 
 [type.tags]
 # <group id> = [<versions>]

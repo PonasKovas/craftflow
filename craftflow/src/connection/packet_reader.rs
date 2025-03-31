@@ -3,7 +3,7 @@ use aes::cipher::{BlockDecryptMut, generic_array::GenericArray};
 use anyhow::bail;
 use craftflow_protocol::{
 	C2S, PacketRead,
-	c2s::{Configuration, Handshaking, Login, Status},
+	c2s::{Configuration, Handshaking, Login, Play, Status},
 };
 use flate2::write::ZlibDecoder;
 use std::{io::Write, sync::OnceLock};
@@ -149,7 +149,10 @@ impl PacketReader {
 				let packet = Configuration::packet_read(&mut packet_bytes, protocol_version)?;
 				packet.into()
 			}
-			State::Play => todo!(),
+			State::Play => {
+				let packet = Play::packet_read(&mut packet_bytes, protocol_version)?;
+				packet.into()
+			}
 		};
 
 		// simple sanity test of parsing the packet, all the bytes should have been used to parse it
