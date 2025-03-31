@@ -3,6 +3,13 @@
 
 versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 480, 490, 498, 573, 575, 578, 735, 736, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
 
+[version_aliases]
+# some versions are identical to the previous one protocol-wise
+480 = 477
+575 = 573
+578 = 573
+736 = 735
+
 [c2s.handshaking.set_protocol.5]
 # <packet id> = [<versions that use that packet id>]
 0 = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
@@ -271,8 +278,16 @@ versions = [5, 47, 107, 109, 110, 210, 315, 335, 338, 340, 393, 401, 404, 477, 4
 [s2c.play.login.766]
 # <packet id> = [<versions that use that packet id>]
 43 = [766, 767]
+
+[s2c.play.login.768]
+# <packet id> = [<versions that use that packet id>]
 44 = [768, 769]
 
 [type.tags]
 # <group id> = [<versions>]
 477 = [477, 490, 498, 573, 735, 751, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769]
+
+[type.s2c.play.spawn_info]
+# <group id> = [<versions>]
+766 = [766, 767]
+768 = [768, 769]

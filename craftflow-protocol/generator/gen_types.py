@@ -1,37 +1,37 @@
-from typing import Dict
+from typing import Dict, List
 from tomlkit import table, inline_table, dumps
 import tomlkit
 import subprocess
 from pathlib import Path
 from colorama import init, Fore, Style
 
+from parse_protocol import get_type_spec
 from conf import *
 
+
 # will add entries to packets.toml and also generate any not-already generated packets using an LLM
-
-
-def gen_types(toml, protocols: Dict[int, any], ty: str):
+def gen_types(toml, protocols: Dict[int, any], ty: List[str]):
     # only load llm module if gen-llm flag passed
     # because otherwise OpenAI requires an API key
     if ARGS.gen_llm:
         from llm import llm_gen_impl
 
-    # find all versions that have an def of this type
+    # find all versions that have a def of this type
     # format:
     # [ [int] ] - a list of lists of versions that have identical type def
     identical_versions = []
     # basically group identical versions together
-    for v, p in protocols.items():
-        if ty not in p["types"]:
-            continue
+    for v in protocols.keys():
+        spec = get_type_spec(protocols, v, ty)
 
-        spec = p["types"][ty]
+        if spec is None:
+            continue
 
         # check if any version that we already iterated over has an identical packet
         found = False
         for v_list in identical_versions:
             # each list must have at least one version
-            spec2 = protocols[v_list[0]]["types"][ty]
+            spec2 = get_type_spec(protocols, v_list[0], ty)
             if spec == spec2:
                 v_list.append(v)
                 found = True
@@ -56,7 +56,10 @@ def gen_types(toml, protocols: Dict[int, any], ty: str):
         #############################
 
         # if implementation not generated yet - generate
-        type_impl_path = TYPES_IMPL_PATH / ty
+        type_impl_path = TYPES_IMPL_PATH
+        for type_segment in ty:
+            type_impl_path /= type_segment
+
         impl_path = type_impl_path / f"v{first_version}.rs"
         if not impl_path.exists():
             if not ARGS.gen_llm:
@@ -65,8 +68,8 @@ def gen_types(toml, protocols: Dict[int, any], ty: str):
 
             type_impl_path.mkdir(parents=True, exist_ok=True)
 
-            spec = protocols[first_version]["types"][ty]
-            code = llm_gen_impl(ty, first_version, spec)
+            spec = get_type_spec(protocols, first_version, ty)
+            code = llm_gen_impl(ty[-1], first_version, spec)
 
             with open(impl_path, "w") as f:
                 f.write(code)

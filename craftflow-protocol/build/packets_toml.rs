@@ -22,12 +22,24 @@ type Map<T> = IndexMap<String, T>;
 struct PacketsTomlInternal {
 	/// All supported protocol versions
 	pub versions: Vec<u32>,
+	/// versions that are identical to others
+	pub version_aliases: Map<u32>,
 	/// types
 	#[serde(rename = "type")]
-	pub types: Map<Map<Vec<u32>>>,
+	pub types: TypesInternal,
 	/// direction -> state -> packet -> group version : 	packet id -> versions
 	#[serde(flatten)]
 	pub packets: Map<Map<Map<Map<Map<Vec<u32>>>>>>,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+struct TypesInternal {
+	#[serde(default)]
+	pub s2c: Map<Map<Map<Vec<u32>>>>,
+	#[serde(default)]
+	pub c2s: Map<Map<Map<Vec<u32>>>>,
+	#[serde(flatten)]
+	pub common: Map<Map<Vec<u32>>>,
 }
 
 // Same as internal but uses integers instead of strings for some keys to be more convenient
@@ -35,6 +47,8 @@ struct PacketsTomlInternal {
 pub struct PacketsToml {
 	/// All supported protocol versions
 	pub versions: Vec<u32>,
+	/// versions that are identical to others
+	pub version_aliases: IndexMap<u32, u32>,
 	/// types
 	pub types: IndexMap<Type, IndexMap<Version, Vec<u32>>>,
 	/// direction -> state -> packet -> group version : 	packet id -> versions
@@ -49,27 +63,67 @@ pub fn load() -> PacketsToml {
 
 	let internal: PacketsTomlInternal = toml::from_str(&s).expect("parsing packets.toml");
 
+	let mut types = IndexMap::new();
+	types.extend(internal.types.s2c.into_iter().flat_map(|(state, v)| {
+		v.into_iter().map(move |(name, v)| {
+			(
+				Type::Specific {
+					direction: Direction::S2C,
+					state: State(state.clone()),
+					name: name,
+				},
+				v.into_iter()
+					.map(|(k, v)| {
+						(
+							Version(k.parse().expect("group version must be valid u32 integer")),
+							v,
+						)
+					})
+					.collect(),
+			)
+		})
+	}));
+	types.extend(internal.types.c2s.into_iter().flat_map(|(state, v)| {
+		v.into_iter().map(move |(name, v)| {
+			(
+				Type::Specific {
+					direction: Direction::C2S,
+					state: State(state.clone()),
+					name: name,
+				},
+				v.into_iter()
+					.map(|(k, v)| {
+						(
+							Version(k.parse().expect("group version must be valid u32 integer")),
+							v,
+						)
+					})
+					.collect(),
+			)
+		})
+	}));
+	types.extend(internal.types.common.into_iter().map(|(k, v)| {
+		(
+			Type::Common(k),
+			v.into_iter()
+				.map(|(k, v)| {
+					(
+						Version(k.parse().expect("group version must be valid u32 integer")),
+						v,
+					)
+				})
+				.collect(),
+		)
+	}));
+
 	PacketsToml {
 		versions: internal.versions,
-		types: internal
-			.types
+		version_aliases: internal
+			.version_aliases
 			.into_iter()
-			.map(|(k, v)| {
-				(
-					Type(k),
-					v.into_iter()
-						.map(|(k, v)| {
-							(
-								Version(
-									k.parse().expect("group version must be valid u32 integer"),
-								),
-								v,
-							)
-						})
-						.collect(),
-				)
-			})
+			.map(|(k, v)| (k.parse().expect("version must be valid u32 integer"), v))
 			.collect(),
+		types,
 		packets: internal
 			.packets
 			.into_iter()

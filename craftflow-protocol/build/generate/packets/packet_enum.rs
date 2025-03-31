@@ -1,16 +1,16 @@
 use crate::{
 	gen_enum::{Variant, gen_enum},
-	packets_toml::{Direction, PacketName, State, Version},
+	packets_toml::{Direction, PacketName, PacketsToml, State, Version},
 	shared::{closureslop_event_impl, group_consecutive, versions_pattern},
 };
 use indexmap::IndexMap;
 
 pub fn generate(
+	pkts_toml: &PacketsToml,
 	direction: Direction,
 	state: &State,
 	packet: &PacketName,
 	version_groups: &IndexMap<Version, IndexMap<u32, Vec<u32>>>,
-	all_possible_versions: &[u32],
 ) -> String {
 	let dir_enum = direction.enum_name();
 	let state_enum = state.enum_name();
@@ -51,16 +51,18 @@ pub fn generate(
 	let all_supported_versions_list: String = all_supported_versions_str.join(", ");
 	let all_supported_versions_pattern: String = all_supported_versions_str.join("|");
 
-	let all_supported_versions_pretty: String = group_consecutive(
-		all_possible_versions
-			.iter()
-			.map(|v| (*v, all_supported_versions.contains(v))),
-	)
-	.map(|(l, r, supported)| {
-		let mark = if supported { '✅' } else { '❌' };
-		format!("/// {mark} {l} - {r}\n///\n")
-	})
-	.collect::<String>();
+	let all_supported_versions_pretty: String =
+		group_consecutive(pkts_toml.versions.iter().map(|v| {
+			(
+				*v,
+				all_supported_versions.contains(pkts_toml.version_aliases.get(v).unwrap_or(v)), // resolve alias if its an alias
+			)
+		}))
+		.map(|(l, r, supported)| {
+			let mark = if supported { '✅' } else { '❌' };
+			format!("/// {mark} {l} - {r}\n///\n")
+		})
+		.collect::<String>();
 
 	let write_match_arms: String = version_groups
 		.keys()

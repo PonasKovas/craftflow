@@ -29,7 +29,7 @@ PACKETS = {
         "play": ["login"],
     }
 }
-TYPES = ["tags", "SpawnInfo"]
+TYPES = ["tags", "s2c.play.SpawnInfo"]
 
 
 def _parse_args():

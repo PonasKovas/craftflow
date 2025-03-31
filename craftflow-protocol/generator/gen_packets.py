@@ -6,7 +6,7 @@ from pathlib import Path
 from colorama import init, Fore, Style
 
 from conf import *
-from parse_protocol import get_packet_id, get_packet_spec, has_packet
+from parse_protocol import get_packet_id, get_packet_spec, has_packet, get_type_spec
 
 
 # Checks if the given spec contains a keyvalue pair "type": "<type>" anywhere recursively
@@ -32,12 +32,14 @@ def compare_spec(protocols: Dict[int, any], v1: int, v2: int, spec1, spec2) -> b
 
     # check for types
     for type in TYPES:
-        if not does_use_type(spec1, type):
+        type = type.split(".")
+        typename = type[-1]
+        if not does_use_type(spec1, typename):
             continue
 
         # the type is used in the spec. gotta make sure that its the same for both versions
-        type_spec1 = protocols[v1]["types"][type]
-        type_spec2 = protocols[v2]["types"][type]
+        type_spec1 = get_type_spec(protocols, v1, type)
+        type_spec2 = get_type_spec(protocols, v2, type)
         if not compare_spec(protocols, v1, v2, type_spec1, type_spec2):
             return False
 

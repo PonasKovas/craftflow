@@ -50,6 +50,7 @@ pub fn generate(
 	format!(
 		r#"{DEFAULT_IMPORTS_FOR_IMPLS}
 		#[allow(unused_imports)] use crate::types::{version_group}::*;
+		#[allow(unused_imports)] use crate::types::{version_group}::{direction}::{state}::*;
 		include!{{ "{impl_path}" }}
 
 		impl crate::PacketWrite for {struct_name} {{

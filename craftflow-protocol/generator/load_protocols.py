@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 from colorama import Fore, Style
 import json
 
@@ -8,20 +8,26 @@ from conf import *
 # a dict mapping protocol versions to their protocols json
 
 
-def load_protocols(versions: Dict[int, Path]) -> Dict[int, any]:
+def load_protocols(versions: Dict[int, Path]) -> Tuple[Dict[int, any], Dict[int, int]]:
     protocols = {}
-    prev_version = None
+    aliases = {}
     for version, version_path in versions.items():
         with open(versions[version] / "protocol.json", "r") as f:
             p = json.loads(f.read())
 
         # just in case minecraft-data is even more retarded than i realize
-        # if the previous version protocol is identical to this one, we can just skip it
-        if prev_version is not None and protocols[prev_version] == p:
-            print(Fore.YELLOW + Style.BRIGHT + f"Skipping {version} due to being identical to {prev_version}")
+        # if any other version protocol is identical to this one, we can just skip it
+        identical = False
+        for other_v, other in protocols.items():
+            if other == p:
+                identical = True
+                break
+
+        if identical:
+            print(Fore.YELLOW + Style.BRIGHT + f"Skipping {version} due to being identical to {other_v}")
+            aliases[version] = other_v
             continue
-        prev_version = version
 
         protocols[version] = p
 
-    return protocols
+    return protocols, aliases

@@ -38,3 +38,26 @@ def get_packet_id(protocol, direction: str, state: str, packet: str) -> int:
     for id, name in mappings.items():
         if name == packet:
             return int(id, 16)
+
+
+def get_type_spec(protocols, version: int, ty):
+    p = protocols[version]
+
+    if len(ty) > 1:
+        direction = "toClient" if ty[0] == "s2c" else "toServer"
+        state = ty[1]
+        p = p[state][direction]
+
+    name = ty[-1]
+
+    # this is what fucking happens when you mix cases.... TY Javascriptards 🙏
+    if name in p["types"]:
+        return p["types"][name]
+    if snake_to_pascal(name) in p["types"]:
+        return p["types"][snake_to_pascal(name)]
+
+    return None
+
+
+def snake_to_pascal(s):
+    return ''.join(word.capitalize() for word in s.split('_'))

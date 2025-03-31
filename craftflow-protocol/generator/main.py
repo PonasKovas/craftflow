@@ -14,6 +14,18 @@ from tomlkit import table, inline_table, dumps, document
 import tomlkit
 
 
+def pascal_to_snake_case(s: str) -> str:
+    if not s:
+        return ""
+
+    result = s[0].lower()
+    for char in s[1:]:
+        if char.isupper():
+            result += "_"
+        result += char.lower()
+    return result
+
+
 def main():
     versions = find_all_versions()
 
@@ -33,7 +45,7 @@ def main():
     versions = dict(sorted(versions.items()))
 
     # load all the protocol.json files into a dictionary
-    protocols = load_protocols(versions)
+    protocols, version_aliases = load_protocols(versions)
 
     # initialise the packets.toml file
     packets_toml = document()
@@ -45,6 +57,13 @@ def main():
 
     # add the list of supported versions
     packets_toml.add("versions", list(versions.keys()))
+
+    version_aliases_table = table()
+    packets_toml.add("version_aliases", version_aliases_table)
+    version_aliases_table.add(tomlkit.comment(
+        "some versions are identical to the previous one protocol-wise"))
+    for v, alias in version_aliases.items():
+        version_aliases_table.add(str(v), alias)
 
     for direction, states in PACKETS.items():
         direction_table = table(True)
@@ -62,10 +81,18 @@ def main():
     types_table = table(True)
     packets_toml.add("type", types_table)
     for ty in TYPES:
-        type_table = table()
-        types_table.add(ty, type_table)
+        type_segments = ty.split(".")
+        for i in range(len(type_segments)):
+            type_segments[i] = pascal_to_snake_case(type_segments[i])
+
+        parent = types_table
+        for type_seg in type_segments:
+            type_table = table()
+            parent.add(type_seg, type_table)
+            parent = type_table
+
         type_table.add(tomlkit.comment("<group id> = [<versions>]"))
-        gen_types(type_table, protocols, ty)
+        gen_types(type_table, protocols, type_segments)
 
     # write the packets.toml
     with open(PACKETS_TOML_PATH, "w") as f:

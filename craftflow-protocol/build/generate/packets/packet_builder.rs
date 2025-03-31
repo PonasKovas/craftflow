@@ -1,14 +1,14 @@
 use crate::{
 	gen_enum::{Variant, gen_enum},
-	packets_toml::{PacketName, Version},
+	packets_toml::{PacketName, PacketsToml, Version},
 	shared::{group_consecutive, versions_pattern},
 };
 use indexmap::IndexMap;
 
 pub fn generate(
+	pkts_toml: &PacketsToml,
 	packet: &PacketName,
 	version_groups: &IndexMap<Version, IndexMap<u32, Vec<u32>>>,
-	all_possible_versions: &[u32],
 ) -> String {
 	let packet_enum_name = packet.enum_name();
 	let enum_variants = version_groups
@@ -63,16 +63,19 @@ pub fn generate(
 		.collect::<Vec<_>>();
 	all_supported_versions.sort_unstable();
 	all_supported_versions.dedup();
-	let all_supported_versions_pretty: String = group_consecutive(
-		all_possible_versions
-			.iter()
-			.map(|v| (*v, all_supported_versions.contains(v))),
-	)
-	.map(|(l, r, supported)| {
-		let mark = if supported { '✅' } else { '❌' };
-		format!("/// {mark} {l} - {r}\n///\n")
-	})
-	.collect::<String>();
+
+	let all_supported_versions_pretty: String =
+		group_consecutive(pkts_toml.versions.iter().map(|v| {
+			(
+				*v,
+				all_supported_versions.contains(pkts_toml.version_aliases.get(v).unwrap_or(v)), // resolve alias if its an alias
+			)
+		}))
+		.map(|(l, r, supported)| {
+			let mark = if supported { '✅' } else { '❌' };
+			format!("/// {mark} {l} - {r}\n///\n")
+		})
+		.collect::<String>();
 	let all_supported_versions_str: Vec<String> = all_supported_versions
 		.iter()
 		.map(ToString::to_string)

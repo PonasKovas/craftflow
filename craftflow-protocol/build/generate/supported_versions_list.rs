@@ -6,6 +6,9 @@ pub fn generate(pkts_toml: &PacketsToml) -> String {
 		.versions
 		.iter()
 		.filter_map(|&version| {
+			// resolve alias if its an alias
+			let version = pkts_toml.version_aliases.get(&version).unwrap_or(&version);
+
 			let enabled = env::var(format!("CARGO_FEATURE_NO_V{}", version)).is_err();
 
 			enabled.then(|| format!("{version}"))

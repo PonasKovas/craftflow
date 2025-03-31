@@ -56,7 +56,7 @@
 
 mcp! {
 	#[derive(Debug, PartialEq, Clone, Hash, PartialOrd, Ord, Eq)]
-	pub struct LoginV766 {
+	pub struct LoginV768 {
 		pub entity_id: (i32),
 		pub is_hardcore: (bool),
 		pub world_names: (Array<(String)>),
