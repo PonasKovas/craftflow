@@ -27,7 +27,7 @@ async fn base() {
 	reg!(to: reactor);
 
 	let mut acc = String::new();
-	reactor.trigger::<Adder>(&(), &mut acc).await;
+	let _ = reactor.trigger::<Adder>(&(), &mut acc).await;
 
 	assert_eq!(acc, "a")
 }
@@ -52,7 +52,7 @@ async fn with_groups() {
 	reg!(to: reactor, group: "2");
 
 	let mut acc = String::new();
-	reactor.trigger::<Adder>(&(), &mut acc).await;
+	let _ = reactor.trigger::<Adder>(&(), &mut acc).await;
 
 	assert_eq!(acc, "bc")
 }
@@ -80,7 +80,7 @@ async fn with_order() {
 	reg!(to: reactor, group: "ordered");
 
 	let mut acc = String::new();
-	reactor.trigger::<Adder>(&(), &mut acc).await;
+	let _ = reactor.trigger::<Adder>(&(), &mut acc).await;
 
 	assert_eq!(acc, "123")
 }
@@ -101,8 +101,8 @@ async fn multiple_groups() {
 	reg!(to: reactor2, group: "m2");
 
 	let mut acc = String::new();
-	reactor1.trigger::<Adder>(&(), &mut acc).await;
-	reactor2.trigger::<Adder>(&(), &mut acc).await;
+	let _ = reactor1.trigger::<Adder>(&(), &mut acc).await;
+	let _ = reactor2.trigger::<Adder>(&(), &mut acc).await;
 
 	assert_eq!(acc, "yeye")
 }
