@@ -1,11 +1,11 @@
 use crate::{World, WorldMessage};
-use craftflow::CraftFlow;
 use craftflow::various_events::EnterPlayState;
+use craftflow::{ConnId, CraftFlow};
 use std::ops::ControlFlow;
 use std::sync::Arc;
 
 #[craftflow::callback(event: EnterPlayState)]
-pub async fn start_play_cb(cf: &Arc<CraftFlow>, &mut conn_id: &mut u64) -> ControlFlow<()> {
+pub async fn start_play_cb(cf: &Arc<CraftFlow>, &mut conn_id: &mut ConnId) -> ControlFlow<()> {
 	let world = cf
 		.modules
 		.get::<World>()

@@ -1,7 +1,7 @@
 use crate::{
 	gen_enum::{Variant, gen_enum},
 	packets_toml::{Direction, PacketName, PacketsToml, State, Version},
-	shared::{closureslop_event_impl, group_consecutive, versions_pattern},
+	shared::{group_consecutive, versions_pattern},
 };
 use indexmap::IndexMap;
 
@@ -93,8 +93,6 @@ pub fn generate(
 		})
 		.collect();
 
-	let closureslop_event_impl = closureslop_event_impl(&enum_name);
-
 	format!(
 		r#"
 		/// This packet is used in the following protocol versions:
@@ -139,8 +137,6 @@ pub fn generate(
 				Self::{state_enum}(value.into())
 			}}
 		}}
-
-		{closureslop_event_impl}
 		"#,
 	)
 }

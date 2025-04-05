@@ -1,4 +1,4 @@
-use craftflow::{CraftFlow, add_callback};
+use craftflow::{CraftFlow, add_callback, packet_events::Packet};
 use craftflow_protocol::c2s::login::LoginStart;
 use login::Login;
 use simple_ping::SimplePing;
@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
 
 	World::new().register(&mut craftflow);
 
-	add_callback!(craftflow.reactor, LoginStart => "printer" => |cf, (conn_id, packet)| SmallBox::new(async move {
+	add_callback!(craftflow.reactor, Packet<LoginStart> => "printer" => |cf, (conn_id, packet)| SmallBox::new(async move {
 		println!("{} {:?}", conn_id, packet);
 
 		let world_id = cf.modules.get::<World>().add_world();

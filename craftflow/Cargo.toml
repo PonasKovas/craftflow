@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 craftflow-macros = { path = "../craftflow-macros" }
-craftflow-protocol = { path = "../craftflow-protocol", features = ["closureslop-events"] }
+craftflow-protocol = { path = "../craftflow-protocol" }
 closureslop = { path = "../closureslop" }
 tokio.workspace = true
 tracing.workspace = true

@@ -8,7 +8,7 @@
 mod login_play;
 mod world_task;
 
-use craftflow::{CraftFlow, callback, connection::State, various_events::Init};
+use craftflow::{ConnId, CraftFlow, callback, connection::State, various_events::Init};
 use std::{
 	collections::HashMap,
 	ops::ControlFlow,
@@ -32,7 +32,7 @@ pub struct World {
 	craftflow: OnceLock<Weak<CraftFlow>>,
 	worlds: RwLock<HashMap<WorldId, WorldInstance>>,
 	id_counter: AtomicU64,
-	players: RwLock<HashMap<u64, WorldId>>,
+	players: RwLock<HashMap<ConnId, WorldId>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
@@ -46,7 +46,7 @@ pub struct WorldInstance {
 #[derive(Debug, Clone, PartialEq)]
 pub enum WorldMessage {
 	/// Sent when a client is in this world and in the Play state
-	InitPlayer { conn_id: u64 },
+	InitPlayer { conn_id: ConnId },
 }
 
 impl World {
@@ -81,7 +81,7 @@ impl World {
 
 		new_id
 	}
-	pub async fn set_player(&self, id: u64, world_id: WorldId) {
+	pub async fn set_player(&self, id: ConnId, world_id: WorldId) {
 		self.players
 			.write()
 			.unwrap()

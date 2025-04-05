@@ -7,7 +7,9 @@ use super::{
 	packet_reader::PacketReader,
 	packet_writer::PacketWriter,
 };
-use crate::{CraftFlow, packet_events::trigger_c2s, various_events::UnsupportedClientVersion};
+use crate::{
+	ConnId, CraftFlow, packet_events::trigger_c2s, various_events::UnsupportedClientVersion,
+};
 use anyhow::{Context, bail};
 use craftflow_protocol::{
 	C2S, SUPPORTED_VERSIONS,
@@ -30,7 +32,7 @@ const PACKET_CHANNEL_SIZE: usize = 16;
 
 #[derive(Clone, Debug)]
 struct ConnectionInfo {
-	id: u64,
+	id: ConnId,
 	version: u32,
 	compression: Arc<OnceLock<usize>>,
 	encryption_secret: Arc<OnceLock<[u8; 16]>>,
@@ -133,7 +135,7 @@ pub(crate) async fn handle_new_conn(
 	let id = {
 		let mut lock = craftflow.connections.write().unwrap();
 
-		let id = lock.next_conn_id;
+		let id = ConnId(lock.next_conn_id);
 		lock.next_conn_id += 1;
 
 		lock.connections.insert(

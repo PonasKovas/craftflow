@@ -1,5 +1,5 @@
 use crate::{Login, VERIFY_TOKEN};
-use craftflow::CraftFlow;
+use craftflow::{ConnId, CraftFlow, packet_events::Packet};
 use craftflow_protocol::{
 	c2s::login::{EncryptionBegin, encryption_begin::v759::Crypto},
 	disabled_versions,
@@ -12,10 +12,10 @@ use rsa::Pkcs1v15Encrypt;
 use std::{ops::ControlFlow, sync::Arc};
 use tracing::error;
 
-#[craftflow::callback(event: EncryptionBegin)]
+#[craftflow::callback(event: Packet<EncryptionBegin>)]
 pub async fn encryption_response(
 	cf: &Arc<CraftFlow>,
-	&mut (conn_id, ref mut request): &mut (u64, EncryptionBegin),
+	&mut (conn_id, ref mut request): &mut (ConnId, EncryptionBegin),
 ) -> ControlFlow<()> {
 	if let Some(rsa_key) = &cf.modules.get::<Login>().rsa_key {
 		let shared_secret;

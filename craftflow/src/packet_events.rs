@@ -19,15 +19,32 @@
 // actually nvm. these comments are from the era when i tried to do packets with lifetimes.
 // i trashed that idea now but im gonna keep these comments as a warning.
 
-use std::sync::Arc;
-
+use crate::ConnId;
 use crate::CraftFlow;
 use closureslop::Event;
-use craftflow_protocol::{C2S, S2C};
+use craftflow_protocol::{C2S, S2C, impl_for};
+use std::sync::Arc;
 use tracing::trace;
 
+/// Event wrapper for packets
+// wrapper because cant implement Event for packets directly bcs neither Event or the packets are defined in this crate
+pub struct Packet<E> {
+	_packet: E,
+}
+
+impl_for! {packet:
+impl Event for Packet<packet> {
+	type Args<'a> = (ConnId, packet);
+	type Return = ();
+}}
+impl_for! {vpacket:
+impl Event for Packet<vpacket> {
+	type Args<'a> = (ConnId, vpacket);
+	type Return = ();
+}}
+
 /// `Post<Packet>` events are emitted after their respective packet events,
-/// and in the case of outgoing packets - after the packet is sent
+/// outgoing packets - after the packet is sent
 pub struct Post<E> {
 	pub packet: E,
 }
@@ -38,15 +55,15 @@ impl<E: Event> Event for Post<E> {
 
 // Helper functions that trigger a packet event
 // returns true if the event was not stopped
-async fn helper<'a, P>(craftflow: &Arc<CraftFlow>, conn_id: u64, packet: P) -> (bool, P)
+async fn helper<'a, P>(craftflow: &Arc<CraftFlow>, conn_id: ConnId, packet: P) -> (bool, P)
 where
-	P: Event<Args<'a> = (u64, P)>,
+	Packet<P>: Event<Args<'a> = (ConnId, P)>,
 {
 	let mut args = (conn_id, packet);
 
 	if craftflow
 		.reactor
-		.trigger::<P>(craftflow, &mut args)
+		.trigger::<Packet<P>>(craftflow, &mut args)
 		.await
 		.is_break()
 	{
@@ -55,15 +72,15 @@ where
 
 	(true, args.1)
 }
-async fn helper_post<'a, P>(craftflow: &Arc<CraftFlow>, conn_id: u64, packet: P) -> (bool, P)
+async fn helper_post<'a, P>(craftflow: &Arc<CraftFlow>, conn_id: ConnId, packet: P) -> (bool, P)
 where
-	P: Event<Args<'a> = (u64, P)>,
+	Packet<P>: Event<Args<'a> = (ConnId, P)>,
 {
 	let mut args = (conn_id, packet);
 
 	if craftflow
 		.reactor
-		.trigger::<Post<P>>(craftflow, &mut args)
+		.trigger::<Post<Packet<P>>>(craftflow, &mut args)
 		.await
 		.is_break()
 	{
@@ -78,7 +95,7 @@ where
 pub(super) async fn trigger_c2s(
 	post: bool,
 	craftflow: &Arc<CraftFlow>,
-	conn_id: u64,
+	conn_id: ConnId,
 	packet: C2S,
 ) -> (bool, C2S) {
 	if !post {
@@ -102,7 +119,7 @@ pub(super) async fn trigger_c2s(
 pub(super) async fn trigger_s2c(
 	post: bool,
 	craftflow: &Arc<CraftFlow>,
-	conn_id: u64,
+	conn_id: ConnId,
 	packet: S2C,
 ) -> (bool, S2C) {
 	if !post {

@@ -1,5 +1,5 @@
 use crate::{Login, VERIFY_TOKEN};
-use craftflow::CraftFlow;
+use craftflow::{ConnId, CraftFlow, packet_events::Packet};
 use craftflow_protocol::{
 	c2s::login::LoginStart,
 	disabled_versions,
@@ -14,10 +14,10 @@ use craftflow_protocol::{
 use rsa::traits::PublicKeyParts;
 use std::{ops::ControlFlow, sync::Arc};
 
-#[craftflow::callback(event: LoginStart)]
+#[craftflow::callback(event: Packet<LoginStart>)]
 pub async fn login_start(
 	cf: &Arc<CraftFlow>,
-	&mut (conn_id, ref mut request): &mut (u64, LoginStart),
+	&mut (conn_id, ref mut request): &mut (ConnId, LoginStart),
 ) -> ControlFlow<()> {
 	let username;
 	let mut uuid = None;

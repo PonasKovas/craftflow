@@ -1,11 +1,10 @@
+use super::{State, common::varint_num_bytes};
 use aes::cipher::{BlockEncryptMut, generic_array::GenericArray};
 use anyhow::bail;
 use craftflow_protocol::{PacketWrite, S2C};
 use flate2::write::ZlibEncoder;
 use std::io::Write;
 use tokio::{io::AsyncWriteExt, net::tcp::OwnedWriteHalf};
-
-use super::{State, common::varint_num_bytes};
 
 // 0 is no compression, 9 - take as long as you'd like
 const COMPRESSION_LEVEL: u32 = 6;

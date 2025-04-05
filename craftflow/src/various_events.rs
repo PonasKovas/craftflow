@@ -1,3 +1,4 @@
+use crate::ConnId;
 use closureslop::Event;
 use std::net::IpAddr;
 
@@ -34,7 +35,7 @@ impl Event for NewConnection {
 
 impl Event for Disconnect {
 	/// The ID of the connection that was closed.
-	type Args<'a> = u64;
+	type Args<'a> = ConnId;
 	type Return = ();
 }
 
@@ -48,6 +49,6 @@ impl Event for UnsupportedClientVersion {
 
 impl Event for EnterPlayState {
 	/// The connection ID
-	type Args<'a> = u64;
+	type Args<'a> = ConnId;
 	type Return = ();
 }

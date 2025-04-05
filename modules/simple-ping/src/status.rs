@@ -1,5 +1,5 @@
 use crate::SimplePing;
-use craftflow::CraftFlow;
+use craftflow::{ConnId, CraftFlow, packet_events::Packet};
 use craftflow_protocol::{
 	SUPPORTED_VERSIONS,
 	c2s::status::PingStart,
@@ -67,10 +67,10 @@ pub struct PlayerSample {
 	pub id: u128,
 }
 
-#[craftflow::callback(event: PingStart)]
+#[craftflow::callback(event: Packet<PingStart>)]
 pub async fn status(
 	cf: &Arc<CraftFlow>,
-	&mut (conn_id, ref mut _request): &mut (u64, PingStart),
+	&mut (conn_id, ref mut _request): &mut (ConnId, PingStart),
 ) -> ControlFlow<()> {
 	let version = cf.get(conn_id).protocol_version();
 

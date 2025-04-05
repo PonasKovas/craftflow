@@ -4,6 +4,7 @@ pub mod legacy;
 mod packet_reader;
 mod packet_writer;
 
+use crate::ConnId;
 use craftflow_protocol::S2C;
 use std::{
 	fmt::Display,
@@ -18,7 +19,7 @@ pub(crate) use connection_task::handle_new_conn;
 /// An interface to a client connection.
 /// Use this to send packets or end the connection (by dropping this handle).
 pub struct ConnectionInterface {
-	id: u64,
+	id: ConnId,
 	ip: IpAddr,
 	protocol_version: u32,
 	packet_sender: Sender<S2C>,
@@ -81,7 +82,7 @@ impl ConnectionInterface {
 		self.ip
 	}
 	/// Returns the ID of the connection
-	pub fn id(&self) -> u64 {
+	pub fn id(&self) -> ConnId {
 		self.id
 	}
 }

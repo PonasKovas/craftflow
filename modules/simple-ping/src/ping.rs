@@ -1,4 +1,4 @@
-use craftflow::CraftFlow;
+use craftflow::{ConnId, CraftFlow, packet_events::Packet};
 use craftflow_protocol::{
 	c2s::status::Ping,
 	disabled_versions,
@@ -6,10 +6,10 @@ use craftflow_protocol::{
 };
 use std::{ops::ControlFlow, sync::Arc};
 
-#[craftflow::callback(event: Ping)]
+#[craftflow::callback(event: Packet<Ping>)]
 pub async fn ping(
 	cf: &Arc<CraftFlow>,
-	&mut (conn_id, ref mut request): &mut (u64, Ping),
+	&mut (conn_id, ref mut request): &mut (ConnId, Ping),
 ) -> ControlFlow<()> {
 	let time = match request {
 		Ping::V5(ping) => ping.time,

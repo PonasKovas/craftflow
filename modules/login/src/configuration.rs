@@ -1,4 +1,5 @@
-use craftflow::{CraftFlow, callback};
+use crate::Login;
+use craftflow::{ConnId, CraftFlow, callback, packet_events::Packet};
 use craftflow_protocol::{
 	disabled_versions,
 	s2c::{
@@ -16,12 +17,10 @@ use craftflow_protocol::{
 };
 use std::{ops::ControlFlow, sync::Arc};
 
-use crate::Login;
-
-#[callback(event: Success)]
+#[callback(event: Packet<Success>)]
 pub async fn configuration(
 	cf: &Arc<CraftFlow>,
-	&mut (conn_id, ref mut _request): &mut (u64, Success),
+	&mut (conn_id, ref mut _request): &mut (ConnId, Success),
 ) -> ControlFlow<()> {
 	let conn = cf.get(conn_id);
 

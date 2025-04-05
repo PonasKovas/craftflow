@@ -34,22 +34,6 @@ pub fn versions_pattern(versions: &[u32]) -> String {
 		.join("|")
 }
 
-pub fn closureslop_event_impl(name: &str) -> String {
-	if std::env::var("CARGO_FEATURE_CLOSURESLOP_EVENTS").is_ok() {
-		format!(
-			"impl closureslop::Event for {name} {{
-				/// The connection ID and the packet
-				///
-				/// Obviously, don't try to change the connection ID, as it will propagate to other handlers
-			    type Args<'a> = (u64, Self);
-                type Return = ();
-			}}"
-		)
-	} else {
-		String::new()
-	}
-}
-
 pub fn group_consecutive(
 	iter: impl Iterator<Item = (u32, bool)>,
 ) -> impl Iterator<Item = (u32, u32, bool)> {

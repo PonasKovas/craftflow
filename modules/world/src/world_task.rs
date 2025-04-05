@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use crate::{WorldId, WorldMessage};
-use craftflow::CraftFlow;
+use craftflow::{ConnId, CraftFlow};
 use craftflow_protocol::{
 	disabled_versions,
 	s2c::play::{
-		Login, LoginBuilder, PositionBuilder,
+		LoginBuilder, PositionBuilder,
 		login::{v5::LoginV5, v47::LoginV47},
 		position::{v5::PositionV5, v47::PositionV47},
 	},
@@ -14,7 +14,7 @@ use tokio::sync::mpsc::Receiver;
 
 struct WorldState {
 	cf: Arc<CraftFlow>,
-	players: Vec<u64>,
+	players: Vec<ConnId>,
 }
 
 pub async fn world_task(cf: Arc<CraftFlow>, id: WorldId, mut receiver: Receiver<WorldMessage>) {

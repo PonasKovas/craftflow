@@ -22,6 +22,7 @@ use craftflow_protocol::{PacketBuilder, S2C};
 use modules::Modules;
 use std::{
 	collections::HashMap,
+	fmt::Display,
 	ops::ControlFlow,
 	sync::{Arc, MappedRwLockReadGuard, RwLock, RwLockReadGuard},
 };
@@ -36,9 +37,12 @@ pub struct CraftFlow {
 }
 
 struct Connections {
-	connections: HashMap<u64, Arc<ConnectionInterface>>,
+	connections: HashMap<ConnId, Arc<ConnectionInterface>>,
 	next_conn_id: u64,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Copy)]
+pub struct ConnId(u64);
 
 impl CraftFlow {
 	pub fn new() -> Self {
@@ -89,14 +93,17 @@ impl CraftFlow {
 		}
 	}
 	/// Accesses the connection handle of the given connection ID
-	pub fn get(&self, conn_id: u64) -> Arc<ConnectionInterface> {
+	pub fn get(&self, conn_id: ConnId) -> Arc<ConnectionInterface> {
 		Arc::clone(&self.connections.read().unwrap().connections[&conn_id])
 	}
 	/// Convenience function for building and sending a packet to a connection
 	///
 	/// WARNING: automatically checks if the client version has that packet. If not - does nothing silently.
-	pub async fn build_packet<B: PacketBuilder>(&self, conn_id: u64, f: impl FnOnce(B) -> B::Packet)
-	where
+	pub async fn build_packet<B: PacketBuilder>(
+		&self,
+		conn_id: ConnId,
+		f: impl FnOnce(B) -> B::Packet,
+	) where
 		B::Packet: Into<S2C>,
 	{
 		let conn = self.get(conn_id);
@@ -117,12 +124,12 @@ impl CraftFlow {
 	}
 	/// Disconnects the client with the given connection ID
 	/// No-op if the client is already disconnected, panic if the client ID was never connected
-	pub async fn disconnect(self: &Arc<Self>, conn_id: u64) {
+	pub async fn disconnect(self: &Arc<Self>, conn_id: ConnId) {
 		if self.connections.read().unwrap().is_connected(conn_id) {
 			// emit the disconnect event
 			let _ = self
 				.reactor
-				.trigger::<Disconnect>(self, &mut conn_id.clone())
+				.trigger::<Disconnect>(self, &mut { conn_id })
 				.await;
 
 			self.connections
@@ -137,7 +144,7 @@ impl CraftFlow {
 	/// Use the `disconnect` method to disconnect a client
 	pub fn connections<'a>(
 		&'a self,
-	) -> MappedRwLockReadGuard<'a, HashMap<u64, Arc<ConnectionInterface>>> {
+	) -> MappedRwLockReadGuard<'a, HashMap<ConnId, Arc<ConnectionInterface>>> {
 		RwLockReadGuard::map(self.connections.read().unwrap(), |inner| &inner.connections)
 	}
 }
@@ -146,8 +153,8 @@ impl Connections {
 	/// Checks if the given connection ID is connected
 	///
 	/// Panics if this ID was never connected
-	fn is_connected(&self, conn_id: u64) -> bool {
-		if self.next_conn_id <= conn_id {
+	fn is_connected(&self, conn_id: ConnId) -> bool {
+		if self.next_conn_id <= conn_id.0 {
 			panic!("attempt to check client with ID {conn_id} that was never connected");
 		}
 
@@ -158,5 +165,11 @@ impl Connections {
 impl Default for CraftFlow {
 	fn default() -> Self {
 		todo!()
+	}
+}
+
+impl Display for ConnId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "c{}", self.0)
 	}
 }

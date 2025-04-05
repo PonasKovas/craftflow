@@ -10,7 +10,7 @@ mod encryption_response;
 mod login_start;
 mod set_compression;
 
-use craftflow::{CraftFlow, various_events::Disconnect};
+use craftflow::{ConnId, CraftFlow, various_events::Disconnect};
 use craftflow_protocol::craftflow_nbt::{NbtValue, nbt};
 use rsa::RsaPrivateKey;
 use std::{
@@ -29,7 +29,7 @@ pub struct Login {
 	pub rsa_key: Option<RsaPrivateKey>,
 	pub compression_threshold: Option<usize>,
 	// The usernames and UUIDs that the client sends in the LoginStart packet
-	pub player_names_uuids: RwLock<BTreeMap<u64, (String, Option<u128>)>>,
+	pub player_names_uuids: RwLock<BTreeMap<ConnId, (String, Option<u128>)>>,
 	registry_data: NbtValue,
 }
 
@@ -83,7 +83,7 @@ impl Login {
 }
 
 #[craftflow::callback(event: Disconnect)]
-async fn cleanup_player_names_uuids(cf: &Arc<CraftFlow>, conn_id: &mut u64) -> ControlFlow<()> {
+async fn cleanup_player_names_uuids(cf: &Arc<CraftFlow>, conn_id: &mut ConnId) -> ControlFlow<()> {
 	cf.modules
 		.get::<Login>()
 		.player_names_uuids
